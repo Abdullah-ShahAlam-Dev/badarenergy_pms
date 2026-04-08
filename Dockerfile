@@ -66,11 +66,16 @@ COPY --from=assets /app/public/mix-manifest.json ./public/
 COPY --from=assets /app/public/css ./public/css
 COPY --from=assets /app/public/js ./public/js
 
+# Ensure required directories exist and have correct permissions
+RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
 # Optimize Laravel for production
 RUN composer install --no-dev --optimize-autoloader --no-scripts
 RUN php artisan config:clear && php artisan cache:clear
 
-# Set permissions
+# Final permissions check
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Expose port 9000

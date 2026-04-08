@@ -33,7 +33,8 @@ RUN apk add --no-cache \
     git \
     unzip \
     nginx \
-    supervisor
+    supervisor \
+    mysql-client
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \

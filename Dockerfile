@@ -67,6 +67,9 @@ COPY --from=assets /app/public/mix-manifest.json ./public/
 COPY --from=assets /app/public/css ./public/css
 COPY --from=assets /app/public/js ./public/js
 
+# Wipe existing cache from host to prevent class-not-found errors during build
+RUN rm -rf bootstrap/cache/*.php
+
 # Ensure required directories exist and have correct permissions
 RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \

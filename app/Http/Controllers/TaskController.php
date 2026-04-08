@@ -573,7 +573,7 @@ class TaskController extends AccountBaseController
 
         $uniqueId = $this->task->task_short_code;
         // check if unuqueId contains -
-        if (strpos($uniqueId, '-') !== false) {
+        if (!is_null($uniqueId) && strpos($uniqueId, '-') !== false) {
             $uniqueId = explode('-', $uniqueId, 2);
             $this->projectUniId = $uniqueId[0];
             $this->taskUniId = $uniqueId[1];
@@ -712,9 +712,9 @@ class TaskController extends AccountBaseController
 
         $project = $task->project;
 
-        if ($project) {
+        if ($project && empty($task->task_short_code)) {
             $projectLastTaskCount = Task::projectTaskCount($project->id);
-            $task->task_short_code = ($project) ? $project->project_short_code . '-' . ((int)$projectLastTaskCount + 1) : null;
+            $task->task_short_code = $project->project_short_code . '-' . ((int)$projectLastTaskCount + 1);
         }
 
         $task->saveQuietly();
@@ -834,24 +834,38 @@ class TaskController extends AccountBaseController
             ->orderBy('users.name')
             ->get();
 
-        // --- SUB-TASK ASSIGNEE LIST (Departmental Isolation) ---
-        // RULE: Only system Admins see all task members.
-        // All other users (including HODs with view_sub_tasks=all) MUST see their department members.
-        // The 'view_sub_tasks' permission controls VISIBILITY, not ASSIGNMENT scope.
-        if (in_array('admin', user_roles())) {
-            // Admins see all task members (no restriction)
-            $this->assignees = $this->task->users;
+        // --- SUB-TASK ASSIGNEE LIST (Departmental Isolation & Project Scope) ---
+        // RULE: Admins or users with 'assign_sub_tasks' == 'all' see all project members.
+        // All other users (e.g. HODs) see only their department members who are ALSO project members.
+        $assignSubTaskPermission = user()->permission('assign_sub_tasks');
+        $canAssignToAll = in_array('admin', user_roles()) || $assignSubTaskPermission == 'all';
+
+        if ($canAssignToAll) {
+            // Admins/ALL see all people who are added in the project
+            if ($this->task->project_id) {
+                // Return all project members
+                $this->assignees = $this->task->project->projectMembers;
+            } else {
+                // Fallback for global tasks without a project
+                $this->assignees = $this->task->users;
+            }
         } else {
-            // All non-admin users (including HODs) see employees from their OWN department
+            // All other non-admin users (HODs) see employees from their OWN department BUT only those in the project
             $userDeptId = optional(user()->employeeDetail)->department_id;
             if ($userDeptId) {
-                $this->assignees = User::join('employee_details', 'employee_details.user_id', '=', 'users.id')
+                $query = User::join('employee_details', 'employee_details.user_id', '=', 'users.id')
                     ->where('employee_details.department_id', $userDeptId)
-                    ->where('users.status', 'active')
-                    ->select('users.id', 'users.name', 'users.image', 'users.email')
-                    ->get();
+                    ->where('users.status', 'active');
+                
+                // Restrict to project-related people only
+                if ($this->task->project_id) {
+                    $query->join('project_members', 'project_members.user_id', '=', 'users.id')
+                          ->where('project_members.project_id', $this->task->project_id);
+                }
+
+                $this->assignees = $query->select('users.*')->distinct()->get();
             } else {
-                // User has no department — empty list (Rule 7: no silent access)
+                // User has no department — empty list
                 $this->assignees = collect([]);
             }
         }
@@ -1108,6 +1122,218 @@ class TaskController extends AccountBaseController
 
             return $data;
         }
+    }
+
+    /**
+     * Export a blank CSV import template for the given project.
+     * Headers only — no task data — ready for the user to fill in.
+     */
+    public function exportTaskFormat(Project $project)
+    {
+        $filename = 'task_template_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', $project->project_name) . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        $columns = [
+            'Title *',
+            'Project',
+            'Project ID',
+            'Doc SNo#',
+            'Description',
+            'Annex A',
+            'Mode',
+            'Days',
+            'UOM',
+            'Qty',
+        ];
+
+        $projectName = $project->project_name;
+        $projectId   = $project->id;
+
+        $callback = function () use ($columns, $projectName, $projectId) {
+            $file = fopen('php://output', 'w');
+            // UTF-8 BOM — ensures Excel opens the file with correct encoding
+            fputs($file, "\xEF\xBB\xBF");
+            fputcsv($file, $columns);
+            // One reference row so the user knows which project they are filling for;
+            // Title is intentionally empty — user fills it in
+            fputcsv($file, ['', $projectName, $projectId, '', '', '', '', '', '', '']);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Import tasks from a filled CSV template.
+     * Bypasses form-layer validation — start_date defaults to today, due_date → null.
+     * project_id is taken from the form (current project context), NOT from the CSV.
+     */
+    public function importTaskFormat(\Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'import_file' => 'required|file|mimes:csv,txt',
+            'project_id'  => 'required|exists:projects,id',
+        ]);
+
+        $addPermission = user()->permission('add_tasks');
+        abort_403(!in_array($addPermission, ['all', 'added']));
+
+        $project          = Project::findOrFail($request->project_id);
+        $taskBoardColumn  = TaskboardColumn::where('slug', 'incomplete')->first();
+
+        $file    = $request->file('import_file');
+        $content = file_get_contents($file->getRealPath());
+
+        // Strip UTF-8 BOM so it never contaminates the first header cell
+        if (substr($content, 0, 3) === "\xEF\xBB\xBF") {
+            $content = substr($content, 3);
+        }
+
+        // Normalise line endings (Windows \r\n, old Mac \r, Unix \n)
+        $content = str_replace(["\r\n", "\r"], "\n", trim($content));
+        $lines   = explode("\n", $content);
+
+        if (empty($lines) || trim($lines[0]) === '') {
+            return Reply::error('CSV file is empty or the header row is missing.');
+        }
+
+        // ── Step 1: Detect delimiter from the header line ───────────────────────
+        $delimiter  = $this->detectCsvDelimiter($lines[0]);
+
+        // ── Step 2: Parse header row → build name→index map ─────────────────────
+        $headerCells = str_getcsv($lines[0], $delimiter);
+        $colMap      = [];
+        foreach ($headerCells as $idx => $cell) {
+            $colMap[$this->normCsvHeader($cell)] = $idx;
+        }
+
+        // ── Step 3: Process data rows ────────────────────────────────────────────
+        $successCount         = 0;
+        $errorRows            = [];
+        $projectLastTaskCount = Task::projectTaskCount($project->id);
+
+        DB::beginTransaction();
+
+        try {
+            // Skip index 0 (header), iterate from 1
+            for ($i = 1; $i < count($lines); $i++) {
+                $lineStr = $lines[$i];
+
+                // Skip blank lines
+                if (trim($lineStr) === '') {
+                    continue;
+                }
+
+                $row = str_getcsv($lineStr, $delimiter);
+
+                // Helper: get a cell value by trying one or more normalised header keys
+                $get = function (string ...$keys) use ($row, $colMap): string {
+                    foreach ($keys as $key) {
+                        $norm = $this->normCsvHeader($key);   // normalise the lookup key too
+                        $idx  = $colMap[$norm] ?? null;
+                        if ($idx !== null && isset($row[$idx])) {
+                            return trim((string) $row[$idx]);
+                        }
+                    }
+                    return '';
+                };
+
+                // Title is required — column header is "Title *"
+                // normCsvHeader('Title *') → 'title_'  so we look up both 'Title *' and 'Title'
+                $title = $get('Title *', 'Title', 'heading', 'Task Title', 'Task');
+
+                if ($title === '') {
+                    continue;   // skip rows without a title silently
+                }
+
+                try {
+                    $daysRaw = $get('Days', 'days');
+                    $qtyRaw  = $get('Qty', 'qty', 'Quantity');
+
+                    $task                  = new Task();
+                    $task->heading         = $title;
+                    $task->project_id      = $project->id;
+                    $task->doc_sno         = $get('Doc SNo#', 'Doc SNo', 'doc_sno', 'SNo') ?: null;
+                    $task->description     = $get('Description', 'description', 'Desc') ?: null;
+                    $task->annex_a         = $get('Annex A', 'annex_a', 'Annex') ?: null;
+                    $task->mode            = $get('Mode', 'mode') ?: null;
+                    $task->days            = is_numeric($daysRaw) ? (float) $daysRaw : null;
+                    $task->uom             = $get('UOM', 'uom', 'Unit') ?: null;
+                    $task->qty             = is_numeric($qtyRaw)  ? (float) $qtyRaw  : null;
+                    // Dates: start_date defaults to today; due_date null — user completes later
+                    $task->start_date      = Carbon::today()->format('Y-m-d');
+                    $task->due_date        = null;
+                    $task->priority        = 'medium';
+                    $task->board_column_id = $taskBoardColumn->id;
+                    $task->added_by        = user()->id;
+                    $task->save();
+
+                    // Assign task short code (e.g. PROJ-12)
+                    $projectLastTaskCount++;
+                    $task->task_short_code = $project->project_short_code . '-' . $projectLastTaskCount;
+                    $task->saveQuietly();
+
+                    $successCount++;
+
+                } catch (\Exception $rowEx) {
+                    $errorRows[] = 'Row "' . $title . '": ' . $rowEx->getMessage();
+                }
+            }
+
+            DB::commit();
+
+            return Reply::successWithData(
+                $successCount . ' task(s) imported successfully.',
+                [
+                    'successCount' => $successCount,
+                    'errorRows'    => $errorRows,
+                ]
+            );
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return Reply::error($e->getMessage());
+        }
+    }
+
+    /**
+     * Auto-detect the CSV delimiter by counting occurrences in the header line.
+     * Supports comma, semicolon, tab, and pipe.
+     */
+    private function detectCsvDelimiter(string $line): string
+    {
+        $candidates = [',', ';', "\t", '|'];
+        $best       = ',';
+        $max        = 0;
+
+        foreach ($candidates as $d) {
+            $count = substr_count($line, $d);
+            if ($count > $max) {
+                $max  = $count;
+                $best = $d;
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * Normalise a CSV header or lookup key to lowercase-underscored form so
+     * header matching is case-insensitive and special-character-tolerant.
+     * e.g. "Title *" → "title_"   "Doc SNo#" → "doc_sno_"   "Annex A" → "annex_a"
+     */
+    private function normCsvHeader(string $header): string
+    {
+        $h = strtolower(trim($header));
+        $h = preg_replace('/[^a-z0-9]+/', '_', $h);  // replace non-alphanumeric runs with _
+        return trim($h, '_');
     }
 
 }

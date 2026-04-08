@@ -21,23 +21,38 @@ class SubTaskController extends AccountBaseController
     {
         $this->subTask = SubTask::with(['files', 'task', 'task.users'])->findOrFail($id);
 
-        // --- SUB-TASK ASSIGNEE LIST (Departmental Isolation) ---
-        // RULE: Only system Admins see all task members.
-        // All other users (including HODs with view_sub_tasks=all) see ONLY their department members.
-        if (in_array('admin', user_roles())) {
-            // Admins see all task members (no restriction)
-            $this->assignees = $this->subTask->task->users;
+        // --- SUB-TASK ASSIGNEE LIST (Departmental Isolation & Project Scope) ---
+        // RULE: Admins or users with 'assign_sub_tasks' == 'all' see all project members.
+        // All other users (e.g. HODs) see ONLY their department members who are ALSO project members.
+        $assignSubTaskPermission = user()->permission('assign_sub_tasks');
+        $canAssignToAll = in_array('admin', user_roles()) || $assignSubTaskPermission == 'all';
+
+        if ($canAssignToAll) {
+            // Admins/ALL see all people who are added in the project
+            if ($this->subTask->task->project_id) {
+                // Return all project members
+                $this->assignees = $this->subTask->task->project->projectMembers;
+            } else {
+                // Fallback for global tasks without a project
+                $this->assignees = $this->subTask->task->users;
+            }
         } else {
-            // All non-admin users see employees from the sub-task's original department
+            // All non-admin users see employees from the sub-task's original department BUT only those in the project
             $targetDeptId = $this->subTask->department_id;
             if ($targetDeptId) {
-                $this->assignees = User::join('employee_details', 'employee_details.user_id', '=', 'users.id')
+                $query = User::join('employee_details', 'employee_details.user_id', '=', 'users.id')
                     ->where('employee_details.department_id', $targetDeptId)
-                    ->where('users.status', 'active')
-                    ->select('users.id', 'users.name', 'users.image', 'users.email')
-                    ->get();
+                    ->where('users.status', 'active');
+                
+                // Restrict to project-related people only
+                if ($this->subTask->task->project_id) {
+                    $query->join('project_members', 'project_members.user_id', '=', 'users.id')
+                          ->where('project_members.project_id', $this->subTask->task->project_id);
+                }
+
+                $this->assignees = $query->select('users.*')->distinct()->get();
             } else {
-                // Sub-task has no department (Global) - only admin/ALL can assign
+                // Sub-task has no department (Global) - empty list
                 $this->assignees = collect([]);
             }
         }
@@ -200,8 +215,8 @@ class SubTaskController extends AccountBaseController
             abort_403(true);
         }
 
-        // Admin bypasses all department restrictions (system-native admin check)
-        if ($isAdmin) {
+        // Admin or users with 'all' permission bypass department restrictions
+        if ($canAssignToOthers) {
             return;
         }
 

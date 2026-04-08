@@ -281,7 +281,12 @@ class TaskObserver
         }
 
         // Call for Pusher
-        event(new EventsTaskUpdated());
+        try {
+            event(new EventsTaskUpdated());
+        } catch (\Exception $e) {
+            // Log pusher failure silently without crashing the app update lifecycle
+            \Illuminate\Support\Facades\Log::error('Pusher event failed: ' . $e->getMessage());
+        }
 
         if (\user()) {
             if (($movingTaskId != '' && $task->id == $movingTaskId) || $movingTaskId == '') {

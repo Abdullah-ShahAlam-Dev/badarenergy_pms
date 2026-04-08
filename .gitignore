@@ -4,7 +4,6 @@
 /public/user-uploads/*
 !public/user-uploads/.htaccess
 /storage/*.key
-/vendor
 .env
 .env.backup
 .phpunit.result.cache
@@ -26,3 +25,4 @@ grumphp.yml
 /bootstrap/cache/*
 storage/reviewed
 storage/fonts/installed-fonts.json
+/db backup/

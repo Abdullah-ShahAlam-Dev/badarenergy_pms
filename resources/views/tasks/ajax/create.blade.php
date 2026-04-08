@@ -89,9 +89,19 @@
                     {{-- Custom Task Fields Row --}}
                     <div class="col-md-12">
                         <div class="row">
-                            <div class="col-md-2 col-sm-4">
+                            <div class="col-md-12">
                                 <x-forms.text :fieldLabel="__('Doc SNo#')" fieldName="doc_sno" fieldId="doc_sno" />
                             </div>
+
+                            <div class="col-md-12">
+                                <div class="form-group my-3">
+                                    <x-forms.label fieldId="description" :fieldLabel="__('app.description')">
+                                    </x-forms.label>
+                                    <div id="description">{!! $task ? $task->description : '' !!}</div>
+                                    <textarea name="description" id="description-text" class="d-none"></textarea>
+                                </div>
+                            </div>
+
                             <div class="col-md-2 col-sm-4">
                                 <x-forms.text :fieldLabel="__('Annex A')" fieldName="annex_a" fieldId="annex_a" />
                             </div>
@@ -101,10 +111,10 @@
                             <div class="col-md-2 col-sm-4">
                                 <x-forms.number :fieldLabel="__('Days')" fieldName="days" fieldId="days" />
                             </div>
-                            <div class="col-md-2 col-sm-4">
+                            <div class="col-md-3 col-sm-6">
                                 <x-forms.text :fieldLabel="__('UOM')" fieldName="uom" fieldId="uom" />
                             </div>
-                            <div class="col-md-2 col-sm-4">
+                            <div class="col-md-3 col-sm-6">
                                 <x-forms.number :fieldLabel="__('Qty')" fieldName="qty" fieldId="qty" />
                             </div>
                         </div>
@@ -171,13 +181,7 @@
                     <div class="col-md-6 show-leave"></div>
 
                     <div class="col-md-12">
-                        <div class="form-group my-3">
-                            <x-forms.label fieldId="description" :fieldLabel="__('app.description')">
-                            </x-forms.label>
-                            <div id="description">{!! $task ? $task->description : '' !!}</div>
-                            <textarea name="description" id="description-text" class="d-none"></textarea>
-                        </div>
-                    </div>
+
 
                 </div>
 

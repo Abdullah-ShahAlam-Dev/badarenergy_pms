@@ -86,6 +86,15 @@
         <link href="{{ asset('css/app-custom.css') }}" rel="stylesheet">
     @endif
 
+    <style>
+        /* Hide preloader when turbo handles the page */
+        html[data-turbo-preview] .preloader-container {
+            display: none !important;
+        }
+    </style>
+
+    <script src="https://unpkg.com/@hotwired/turbo@8.0.4/dist/turbo.es2017-umd.js"></script>
+
     <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
     <script src="{{ asset('vendor/jquery/modernizr.min.js') }}"></script>
 
@@ -128,13 +137,11 @@
             <div class="spinner-border" role="status" aria-hidden="true"></div>
         </div>
 
-
         @yield('filter-section')
 
         <x-app-title class="d-block d-lg-none" :pageTitle="__($pageTitle)"></x-app-title>
 
         @yield('content')
-
 
     </section>
     <!-- MAIN CONTAINER END -->
@@ -257,11 +264,22 @@
 
 <script>
     $(window).on('load', function () {
-        // Animate loader off screen
+        // Fallback for direct loads without Turbo
         init();
         $(".preloader-container").fadeOut("slow", function () {
             $(this).removeClass("d-flex");
         });
+    });
+
+    document.addEventListener("turbo:load", function() {
+        init();
+        $(".preloader-container").fadeOut("fast", function () {
+            $(this).removeClass("d-flex");
+        });
+    });
+
+    document.addEventListener("turbo:click", function() {
+        $(".preloader-container").addClass("d-flex").show();
     });
 
     $('body').on('click', '.view-notification', function (event) {

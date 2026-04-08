@@ -11,7 +11,7 @@ $memberIds = $project->members->pluck('user_id')->toArray();
 
 <div class="d-lg-flex">
     <div class="w-100 py-0 py-lg-3 py-md-0 ">
-        <div class="d-flex align-content-center flex-lg-row-reverse mb-4">
+        <div class="d-flex align-items-center flex-lg-row-reverse mb-4">
             @if (!$project->trashed())
                 <div class="ml-lg-3 ml-md-0 ml-0 mr-3 mr-lg-0 mr-md-3">
                     @if ($editProjectPermission == 'all' || ($editProjectPermission == 'added' && $project->added_by == user()->id) || ($project->project_admin == user()->id))
@@ -101,6 +101,46 @@ $memberIds = $project->members->pluck('user_id')->toArray();
                 <div class="ml-3">
                     <x-forms.button-primary class="restore-project" icon="undo">@lang('app.unarchive')
                     </x-forms.button-primary>
+                </div>
+            @endif
+
+            @if(in_array('admin', user_roles()) && isset($widgets))
+                <div class="ml-lg-3 ml-md-0 ml-0 mr-3 mr-lg-0 mr-md-3 d-flex align-self-center">
+                    <x-form id="projectDashboardWidgetForm" method="POST">
+                        <div class="dropdown keep-open">
+                            <a class="d-flex align-items-center justify-content-center dropdown-toggle px-4 text-dark"
+                                type="link" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true"
+                                aria-expanded="false">
+                                <i class="fa fa-cog" data-original-title="{{__('modules.dashboard.dashboardWidgetsSettings')}}" data-toggle="tooltip"></i>
+                            </a>
+                            <!-- Dropdown - User Information -->
+                            <ul class="dropdown-menu dropdown-menu-right p-20" style="width: 300px;"
+                                aria-labelledby="dropdownMenuLink" tabindex="0">
+                                <li class="border-bottom mb-3">
+                                    <h4 class="heading-h3">@lang('modules.dashboard.dashboardWidgets')</h4>
+                                </li>
+                                @foreach ($widgets as $widget)
+                                    @php
+                                        $wname = \Illuminate\Support\Str::camel($widget->widget_name);
+                                    @endphp
+                                    <li class="mb-2 float-left w-50" style="list-style: none;">
+                                        <div class="checkbox checkbox-info ">
+                                            <input id="{{ $widget->widget_name }}" name="{{ $widget->widget_name }}"
+                                                value="true" @if ($widget->status) checked @endif type="checkbox">
+                                            <label for="{{ $widget->widget_name }}">@lang('modules.dashboard.' . $wname)</label>
+                                        </div>
+                                    </li>
+                                @endforeach
+                                @if (count($widgets) % 2 != 0)
+                                    <li class="mb-2 float-left w-50 height-35" style="list-style: none;"></li>
+                                @endif
+                                <li class="float-none w-100" style="list-style: none;">
+                                    <x-forms.button-primary id="save-dashboard-widget" icon="check">@lang('app.save')
+                                    </x-forms.button-primary>
+                                </li>
+                            </ul>
+                        </div>
+                    </x-form>
                 </div>
             @endif
         </div>
@@ -205,71 +245,25 @@ $memberIds = $project->members->pluck('user_id')->toArray();
                 </x-cards.data>
             </div>
             <!-- TASK STATUS END -->
-            <!-- BUDGET VS SPENT START -->
-            <div class="col-lg-6 col-md-12">
-                <div class="row mb-4">
-                    <div class="col-sm-12">
-                        <h4 class="f-18 f-w-500 mb-4">@lang('app.statistics')</h4>
-                    </div>
-                    @if ($projectBudgetPermission == 'all')
-                        <div class="col">
-                            <x-cards.widget :title="__('modules.projects.projectBudget')"
-                                :value="((!is_null($project->project_budget) && $project->currency) ? currency_format($project->project_budget, $project->currency->id) : '0')"
-                                icon="coins" />
-                        </div>
-                    @endif
-
-                    @if ($viewPaymentPermission == 'all')
-                        <div class="col">
-                            <x-cards.widget :title="__('app.earnings')"
-                                :value="(!is_null($project->currency) ? currency_format($earnings, $project->currency->id) : currency_format($earnings))"
-                                icon="coins" />
-                        </div>
-                    @endif
-                </div>
-                <div class="row">
-                    @if ($viewProjectTimelogPermission == 'all')
-                        <div class="col">
-                            <x-cards.widget :title="__('modules.projects.hoursLogged')" :value="$hoursLogged"
-                                icon="clock" />
-                        </div>
-                    @endif
-
-                    @if ($viewExpensePermission == 'all')
-                        <div class="col">
-                            <x-cards.widget :title="__('modules.projects.expenses_total')"
-                                :value="(!is_null($project->currency) ? currency_format($expenses, $project->currency->id) : currency_format($expenses))"
-                                icon="coins" />
-                        </div>
-                    @endif
-                </div>
+            <!-- PLACEHOLDER 1 START -->
+            <div class="col-lg-6 col-md-12" id="custom-widget-placeholder-1">
+                @if(isset($activeWidgets) && in_array('project_statistics', $activeWidgets))
+                    @include('projects.widgets.project_statistics')
+                @endif
             </div>
-            <!-- BUDGET VS SPENT END -->
+            <!-- PLACEHOLDER 1 END -->
         </div>
         <!-- TASK STATUS AND BUDGET END -->
 
         <!-- TASK STATUS AND BUDGET START -->
         <div class="row mb-4">
-            <!-- BUDGET VS SPENT START -->
-            <div class="col-md-12">
-                <x-cards.data>
-                    <div class="row {{ $projectBudgetPermission == 'all' ? 'row-cols-lg-2' : '' }}">
-                        @if ($viewProjectTimelogPermission == 'all')
-                            <div class="col">
-                                <h4 class="f-18 f-w-500 mb-0">@lang('modules.projects.hoursLogged')</h4>
-                                <x-stacked-chart id="task-chart2" :chartData="$hoursBudgetChart" height="250" />
-                            </div>
-                        @endif
-                        @if ($projectBudgetPermission == 'all')
-                            <div class="col">
-                                <h4 class="f-18 f-w-500 mb-0">@lang('modules.projects.projectBudget')</h4>
-                                <x-stacked-chart id="task-chart3" :chartData="$amountBudgetChart" height="250" />
-                            </div>
-                        @endif
-                    </div>
-                </x-cards.data>
+            <!-- PLACEHOLDER 2 START -->
+            <div class="col-md-12" id="custom-widget-placeholder-2">
+                @if(isset($activeWidgets) && in_array('project_hours_chart', $activeWidgets))
+                    @include('projects.widgets.project_hours_chart')
+                @endif
             </div>
-            <!-- BUDGET VS SPENT END -->
+            <!-- PLACEHOLDER 2 END -->
         </div>
         <!-- TASK STATUS AND BUDGET END -->
 
@@ -305,6 +299,25 @@ $memberIds = $project->members->pluck('user_id')->toArray();
 
 <script>
     $(document).ready(function() {
+        $('#save-dashboard-widget').click(function() {
+            $.easyAjax({
+                url: "{{ route('dashboard.widget', 'project-overview-dashboard') }}",
+                container: '#projectDashboardWidgetForm',
+                blockUI: true,
+                type: "POST",
+                redirect: true,
+                data: $('#projectDashboardWidgetForm').serialize(),
+                success: function() {
+                    window.location.reload();
+                }
+            })
+        });
+
+        $('.keep-open .dropdown-menu').on({
+            "click": function(e) {
+                e.stopPropagation();
+            }
+        });
         $('.change-status').change(function() {
             var status = $(this).val();
             var url = "{{ route('projects.update_status', $project->id) }}";

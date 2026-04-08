@@ -40,6 +40,8 @@ return array (
         'totalArchiveProjects' => 'Archived Projects',
         'freeEmployees' => 'Not working on project',
         'dashboardWidgets' => 'Dashboard Widgets',
+        'projectStatistics' => 'Project Statistics',
+        'projectHoursChart' => 'Project Hours Chart',
         'totalResolvedTickets' => 'Resolved Tickets',
         'totalUnresolvedTickets' => 'Unresolved Tickets',
         'clientFeedback' => 'Client Feedback',

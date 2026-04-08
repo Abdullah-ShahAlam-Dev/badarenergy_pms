@@ -407,6 +407,11 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
         Route::resource('taskboards', TaskBoardController::class);
 
         Route::resource('task-calendar', TaskCalendarController::class);
+        
+        // Task format export and import
+        Route::get('task-format-export/{project}', [TaskController::class, 'exportTaskFormat'])->name('task_format_export');
+        Route::post('task-format-import', [TaskController::class, 'importTaskFormat'])->name('task_format_import');
+
     });
 
     Route::resource('tasks', TaskController::class);

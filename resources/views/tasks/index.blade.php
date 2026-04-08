@@ -235,6 +235,25 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                     </x-forms.button-primary>
                 @endif
 
+                @if ($addTaskPermission == 'all' || $addTaskPermission == 'added')
+                    {{-- Task Format Export Button --}}
+                    <button type="button" id="task-format-export-btn"
+                            class="btn btn-outline-success mr-3 float-left f-14"
+                            data-toggle="modal" data-target="#taskFormatExportModal"
+                            data-toggle-tooltip="tooltip"
+                            title="Download blank CSV template to fill and import tasks">
+                        <i class="fa fa-file-download mr-1"></i> Task Format Export
+                    </button>
+
+                    {{-- Import CSV Button --}}
+                    <button type="button" id="task-csv-import-btn"
+                            class="btn btn-outline-info mr-3 float-left f-14"
+                            data-toggle="modal" data-target="#taskCsvImportModal"
+                            title="Import tasks from a filled CSV template">
+                        <i class="fa fa-file-upload mr-1"></i> Import CSV
+                    </button>
+                @endif
+
             </div>
 
             <x-datatable.actions>
@@ -279,6 +298,113 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
         <!-- Task Box End -->
     </div>
     <!-- CONTENT WRAPPER END -->
+
+    {{-- ============================================================ --}}
+    {{-- TASK FORMAT EXPORT MODAL --}}
+    {{-- ============================================================ --}}
+    <div class="modal fade" id="taskFormatExportModal" tabindex="-1" role="dialog"
+         aria-labelledby="taskFormatExportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskFormatExportModalLabel">
+                        <i class="fa fa-file-download text-success mr-2"></i> Task Format Export
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted f-13 mb-3">
+                        Select a project to download a blank CSV import template.<br>
+                        Fill in the template and re-upload it using the <strong>Import CSV</strong> button.
+                    </p>
+                    <div class="form-group">
+                        <label for="export_project_id" class="f-14 text-dark-grey">
+                            Project <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-control select-picker" id="export_project_id"
+                                data-live-search="true" data-size="8">
+                            <option value="">-- Select Project --</option>
+                            @foreach ($projects as $proj)
+                                <option value="{{ $proj->id }}">{{ $proj->project_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <a href="#" id="download-task-template-btn" class="btn btn-success">
+                        <i class="fa fa-download mr-1"></i> Download Template
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ============================================================ --}}
+    {{-- IMPORT CSV MODAL --}}
+    {{-- ============================================================ --}}
+    <div class="modal fade" id="taskCsvImportModal" tabindex="-1" role="dialog"
+         aria-labelledby="taskCsvImportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskCsvImportModalLabel">
+                        <i class="fa fa-file-upload text-info mr-2"></i> Import Tasks from CSV
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="task-csv-import-form" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <p class="text-muted f-13 mb-3">
+                            Select the target project and upload your filled task template CSV.
+                            Tasks will be inserted into the selected project immediately.
+                        </p>
+
+                        <div class="form-group">
+                            <label for="import_project_id" class="f-14 text-dark-grey">
+                                Project <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-control select-picker" name="project_id"
+                                    id="import_project_id" data-live-search="true" data-size="8" required>
+                                <option value="">-- Select Project --</option>
+                                @foreach ($projects as $proj)
+                                    <option value="{{ $proj->id }}">{{ $proj->project_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="import_csv_file" class="f-14 text-dark-grey">
+                                CSV File <span class="text-danger">*</span>
+                            </label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="import_csv_file"
+                                       name="import_file" accept=".csv,.txt" required>
+                                <label class="custom-file-label" for="import_csv_file">Choose CSV file...</label>
+                            </div>
+                            <small class="text-muted mt-1 d-block">Only .csv files accepted. Use the Task Format Export template.</small>
+                        </div>
+
+                        <div id="import-result" class="d-none mt-3">
+                            <div id="import-success-msg" class="alert alert-success d-none"></div>
+                            <div id="import-error-msg" class="alert alert-warning d-none"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" id="import-csv-submit-btn" class="btn btn-info">
+                            <i class="fa fa-upload mr-1"></i> Import Tasks
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
 @endsection
 
@@ -694,6 +820,126 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
             })
         });
 
+
+        // ----------------------------------------------------------------
+        // TASK FORMAT EXPORT
+        // ----------------------------------------------------------------
+        $('#taskFormatExportModal').on('show.bs.modal', function () {
+            $('#export_project_id').selectpicker('refresh');
+        });
+
+        $('#export_project_id').on('change', function () {
+            var pid = $(this).val();
+            if (pid) {
+                var url = '{{ route('task_format_export', ':pid') }}'.replace(':pid', pid);
+                $('#download-task-template-btn').attr('href', url);
+            } else {
+                $('#download-task-template-btn').attr('href', '#');
+            }
+        });
+
+        $('#download-task-template-btn').on('click', function (e) {
+            var pid = $('#export_project_id').val();
+            if (!pid) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Project Required',
+                    text: 'Please select a project before downloading the template.',
+                    timer: 2500,
+                    showConfirmButton: false
+                });
+                return;
+            }
+            // href is already set — let the browser follow it as a normal download
+            $('#taskFormatExportModal').modal('hide');
+        });
+
+        // ----------------------------------------------------------------
+        // IMPORT CSV
+        // ----------------------------------------------------------------
+        $('#taskCsvImportModal').on('show.bs.modal', function () {
+            $('#import_project_id').selectpicker('refresh');
+            // Reset result area each time the modal opens
+            $('#import-result').addClass('d-none');
+            $('#import-success-msg, #import-error-msg').addClass('d-none').html('');
+            $('#task-csv-import-form')[0].reset();
+            $('.custom-file-label').text('Choose CSV file...');
+            $('#import-csv-submit-btn').prop('disabled', false)
+                .html('<i class="fa fa-upload mr-1"></i> Import Tasks');
+        });
+
+        // Update custom-file label with selected filename
+        $('#import_csv_file').on('change', function () {
+            var fileName = $(this).val().split('\\').pop();
+            $(this).siblings('.custom-file-label').text(fileName || 'Choose CSV file...');
+        });
+
+        $('#task-csv-import-form').on('submit', function (e) {
+            e.preventDefault();
+
+            var pid = $('#import_project_id').val();
+            if (!pid) {
+                Swal.fire({ icon: 'warning', title: 'Project Required',
+                    text: 'Please select a project before importing.', timer: 2500, showConfirmButton: false });
+                return;
+            }
+
+            var fileInput = document.getElementById('import_csv_file');
+            if (!fileInput.files.length) {
+                Swal.fire({ icon: 'warning', title: 'File Required',
+                    text: 'Please choose a CSV file to upload.', timer: 2500, showConfirmButton: false });
+                return;
+            }
+
+            var formData = new FormData(this);
+            var submitBtn = $('#import-csv-submit-btn');
+            submitBtn.prop('disabled', true)
+                .html('<i class="fa fa-spinner fa-spin mr-1"></i> Importing...');
+
+            $('#import-result').addClass('d-none');
+            $('#import-success-msg, #import-error-msg').addClass('d-none').html('');
+
+            $.ajax({
+                url: '{{ route('task_format_import') }}',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    submitBtn.prop('disabled', false)
+                        .html('<i class="fa fa-upload mr-1"></i> Import Tasks');
+                    $('#import-result').removeClass('d-none');
+
+                    if (response.status === 'success') {
+                        var msg = '<strong>' + response.successCount + ' task(s) imported successfully into the project!</strong>';
+                        $('#import-success-msg').removeClass('d-none').html(msg);
+
+                        if (response.errorRows && response.errorRows.length > 0) {
+                            var errHtml = '<strong>Some rows were skipped:</strong><ul class="mb-0 mt-1">';
+                            $.each(response.errorRows, function (i, err) {
+                                errHtml += '<li class="f-13">' + err + '</li>';
+                            });
+                            errHtml += '</ul>';
+                            $('#import-error-msg').removeClass('d-none').html(errHtml);
+                        }
+
+                        // Refresh the tasks DataTable so imported tasks appear immediately
+                        if (typeof showTable === 'function') {
+                            showTable();
+                        }
+                    }
+                },
+                error: function (xhr) {
+                    submitBtn.prop('disabled', false)
+                        .html('<i class="fa fa-upload mr-1"></i> Import Tasks');
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message)
+                        ? xhr.responseJSON.message
+                        : 'Import failed. Please check your CSV file and try again.';
+                    Swal.fire({ icon: 'error', title: 'Import Failed', text: msg });
+                }
+            });
+        });
 
     </script>
 @endpush

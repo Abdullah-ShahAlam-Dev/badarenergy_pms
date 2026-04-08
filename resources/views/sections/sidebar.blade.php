@@ -1,5 +1,5 @@
 <!-- SIDEBAR START -->
-<aside class="{{ !user()->dark_theme ? 'sidebar-' . $appTheme->sidebar_theme : '' }}">
+<aside data-turbo-permanent id="main-sidebar-aside" class="{{ !user()->dark_theme ? 'sidebar-' . $appTheme->sidebar_theme : '' }}">
     <!-- MOBILE CLOSE SIDEBAR PANEL START -->
     <div class="mobile-close-sidebar-panel w-100 h-100" onclick="closeMobileMenu()" id="mobile_close_panel"></div>
     <!-- MOBILE CLOSE SIDEBAR PANEL END -->

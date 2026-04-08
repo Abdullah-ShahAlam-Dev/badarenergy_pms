@@ -519,7 +519,14 @@ class Task extends BaseModel
 
     public static function projectTaskCount($projectID)
     {
-        $task = Task::where('project_id', $projectID)->orderBy('id', 'desc')->first();
+        // ORDER by id desc so we get the highest-numbered task, but skip
+        // any rows whose task_short_code is NULL (e.g. tasks mid-import or
+        // tasks that were created without a project) — explode(null) is a
+        // TypeError in PHP 8 and would cause a 500 on every update().
+        $task = Task::where('project_id', $projectID)
+            ->whereNotNull('task_short_code')
+            ->orderBy('id', 'desc')
+            ->first();
 
         if ($task) {
             $taskID = explode('-', $task->task_short_code);
@@ -527,7 +534,6 @@ class Task extends BaseModel
         }
 
         return 0;
-
     }
 
 }

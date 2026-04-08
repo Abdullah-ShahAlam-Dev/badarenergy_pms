@@ -71,9 +71,19 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
                     {{-- Custom Task Fields Row --}}
                     <div class="col-md-12">
                         <div class="row">
-                            <div class="col-md-2 col-sm-4">
+                            <div class="col-md-12">
                                 <x-forms.text :fieldLabel="__('Doc SNo#')" fieldName="doc_sno" fieldId="doc_sno" :fieldValue="$task->doc_sno" />
                             </div>
+
+                            <div class="col-md-12">
+                                <div class="form-group my-3">
+                                    <x-forms.label fieldId="description" :fieldLabel="__('app.description')">
+                                    </x-forms.label>
+                                    <div id="description">{!! $task->description !!}</div>
+                                    <textarea name="description" id="description-text" class="d-none"></textarea>
+                                </div>
+                            </div>
+
                             <div class="col-md-2 col-sm-4">
                                 <x-forms.text :fieldLabel="__('Annex A')" fieldName="annex_a" fieldId="annex_a" :fieldValue="$task->annex_a" />
                             </div>
@@ -83,10 +93,10 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
                             <div class="col-md-2 col-sm-4">
                                 <x-forms.number :fieldLabel="__('Days')" fieldName="days" fieldId="days" :fieldValue="$task->days" />
                             </div>
-                            <div class="col-md-2 col-sm-4">
+                            <div class="col-md-3 col-sm-6">
                                 <x-forms.text :fieldLabel="__('UOM')" fieldName="uom" fieldId="uom" :fieldValue="$task->uom" />
                             </div>
-                            <div class="col-md-2 col-sm-4">
+                            <div class="col-md-3 col-sm-6">
                                 <x-forms.number :fieldLabel="__('Qty')" fieldName="qty" fieldId="qty" :fieldValue="$task->qty" />
                             </div>
                         </div>
@@ -155,13 +165,7 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
                     </div>
 
                     <div class="col-md-12">
-                        <div class="form-group my-3">
-                            <x-forms.label fieldId="description" :fieldLabel="__('app.description')">
-                            </x-forms.label>
-                            <div id="description">{!! $task->description !!}</div>
-                            <textarea name="description" id="description-text" class="d-none"></textarea>
-                        </div>
-                    </div>
+
 
                 </div>
 

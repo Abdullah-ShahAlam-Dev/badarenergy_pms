@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use App\Models\Role;
 use App\Models\Task;
+use App\Models\DashboardWidget;
 use App\Models\Team;
 use App\Models\User;
 use App\Helper\Files;
@@ -754,6 +755,12 @@ class ProjectController extends AccountBaseController
 
             $this->hoursLogged = intdiv($hoursLogged - $breakMinutes, 60);
             $this->expenses = Expense::where(['project_id' => $id, 'status' => 'approved'])->sum('price');
+            
+            $this->widgets = DashboardWidget::where('dashboard_type', 'project-overview-dashboard')->get();
+            $this->activeWidgets = $this->widgets->filter(function ($value, $key) {
+                return $value->status == '1';
+            })->pluck('widget_name')->toArray();
+
             $this->view = 'projects.ajax.overview';
             break;
         }

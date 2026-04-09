@@ -271,51 +271,62 @@
         });
     });
 
-    document.addEventListener("turbo:load", function() {
-        console.log("Turbo Load: Resetting mobile menus and overlays");
-        init();
-        $(".preloader-container").fadeOut("fast", function () {
-            $(this).removeClass("d-flex");
+    if (!window.turboListenersAttached) {
+        document.addEventListener("turbo:load", function() {
+            console.log("Turbo Load: Resetting mobile menus and overlays");
+            init();
+            $(".preloader-container").fadeOut("fast", function () {
+                $(this).removeClass("d-flex");
+            });
+
+            // Fix stuck sidebar hover/active states
+            $('.main-sidebar .nav-item').removeClass('hover');
+            $('.main-sidebar .accordionItemHeading').removeClass('hover');
+
+            // Close mobile sidebar and other mobile overlays on navigation
+            if (typeof closeMobileMenu === 'function') {
+                closeMobileMenu();
+            }
+            if (typeof closeMoreFilter === 'function') {
+                closeMoreFilter();
+            }
+            if (typeof closeAdminDashboard === 'function') {
+                closeAdminDashboard();
+            }
+            if (typeof closeSettingsSidebar === 'function') {
+                closeSettingsSidebar();
+            }
+            if (typeof closeTicketsSidebar === 'function') {
+                closeTicketsSidebar();
+            }
+            if (typeof closeClientDetail === 'function') {
+                closeClientDetail();
+            }
+            if (typeof closeProjectSidebar === 'function') {
+                closeProjectSidebar();
+            }
+
+            // Re-apply desktop mini-sidebar state if it was toggled
+            if (typeof checkMiniSidebar !== 'undefined' && (checkMiniSidebar == "yes" || checkMiniSidebar == "")) {
+                if (!$('body').hasClass('sidebar-toggled')) {
+                    $('body').addClass('sidebar-toggled');
+                }
+            }
         });
 
-        // Fix stuck sidebar hover/active states
-        $('.main-sidebar .nav-item').removeClass('hover');
-        $('.main-sidebar .accordionItemHeading').removeClass('hover');
-
-        // Close mobile sidebar and other mobile overlays on navigation
-        if (typeof closeMobileMenu === 'function') {
-            closeMobileMenu();
-        }
-        if (typeof closeMoreFilter === 'function') {
-            closeMoreFilter();
-        }
-        if (typeof closeAdminDashboard === 'function') {
-            closeAdminDashboard();
-        }
-        if (typeof closeSettingsSidebar === 'function') {
-            closeSettingsSidebar();
-        }
-        if (typeof closeTicketsSidebar === 'function') {
-            closeTicketsSidebar();
-        }
-        if (typeof closeClientDetail === 'function') {
-            closeClientDetail();
-        }
-        if (typeof closeProjectSidebar === 'function') {
-            closeProjectSidebar();
-        }
-
-        // Re-apply desktop mini-sidebar state if it was toggled
-        if (typeof checkMiniSidebar !== 'undefined' && (checkMiniSidebar == "yes" || checkMiniSidebar == "")) {
-            if (!$('body').hasClass('sidebar-toggled')) {
-                $('body').addClass('sidebar-toggled');
+        document.addEventListener("turbo:visit", function() {
+            $(".preloader-container").addClass("d-flex").show();
+            // Close menu immediately on visit start for better mobile UX
+            if (typeof closeMobileMenu === 'function') {
+                closeMobileMenu();
             }
-        }
-    });
+        });
 
-    document.addEventListener("turbo:visit", function() {
-        $(".preloader-container").addClass("d-flex").show();
-        // Close menu immediately on visit start for better mobile UX
+        window.turboListenersAttached = true;
+    }
+
+    // Force close mobile menu immediately when any link inside it is clicked
+    $(document).on('click', '.sidebar-menu a', function() {
         if (typeof closeMobileMenu === 'function') {
             closeMobileMenu();
         }

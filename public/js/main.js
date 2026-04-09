@@ -36911,7 +36911,7 @@ const resetActionButtons = () => {
 
 var el = document.getElementById("close-task-detail");
 
-$("body").on("click", ".openRightModal", openTaskDetail);
+
 
 var el = document.querySelector(".closeRightModal");
 if (el) {
@@ -36928,6 +36928,7 @@ $("body").on("click", ".toggle-password", function () {
 
 $("body").on("click", ".openRightModal", function (event) {
     event.preventDefault();
+    openTaskDetail();
 
     const requestUrl = this.href;
     const inModal = $(this).hasClass("inModal");

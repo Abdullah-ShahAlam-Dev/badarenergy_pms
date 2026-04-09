@@ -39,3 +39,4 @@ mix.js('resources/js/bootstrap.js', 'public/js')
 .sass('resources/scss/main.scss', 'public/css')
 .options({processCssUrls: false})
 .sourceMaps(true, 'source-map')
+.version();

@@ -29,7 +29,7 @@
     @stack('datatable-styles')
 
     <!-- Template CSS -->
-    <link type="text/css" rel="stylesheet" media="all" href="{{ asset('css/main.css') }}">
+    <link type="text/css" rel="stylesheet" media="all" href="{{ mix('css/main.css') }}">
 
     <title>@lang($pageTitle)</title>
     <meta name="msapplication-TileColor" content="#ffffff">
@@ -150,7 +150,7 @@
 @include('sections.modals')
 
 <!-- Global Required Javascript -->
-<script src="{{ asset('js/main.js') }}"></script>
+<script src="{{ mix('js/main.js') }}"></script>
 <script>
     // Translation of default values for the select picker box.
     $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "@lang('placeholders.noneSelectedText')";

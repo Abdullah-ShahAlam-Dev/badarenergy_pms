@@ -16,7 +16,7 @@
 
     <!-- Template CSS -->
     <link href="{{ asset('vendor/froiden-helper/helper.css') }}" rel="stylesheet">
-    <link type="text/css" rel="stylesheet" media="all" href="{{ asset('css/main.css') }}">
+    <link type="text/css" rel="stylesheet" media="all" href="{{ mix('css/main.css') }}">
 
     <title>{{ $globalSetting->global_app_name }}</title>
 
@@ -97,7 +97,7 @@
 <script src="{{ asset('vendor/jquery/all.min.js') }}"></script>
 
 <!-- Template JS -->
-<script src="{{ asset('js/main.js') }}"></script>
+<script src="{{ mix('js/main.js') }}"></script>
 <script>
 
     const MODAL_DEFAULT = '#myModalDefault';

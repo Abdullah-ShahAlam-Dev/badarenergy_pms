@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="{{ asset('vendor/css/simple-line-icons.css') }}">
 
     <!-- Template CSS -->
-    <link type="text/css" rel="stylesheet" media="all" href="{{ asset('css/main.css') }}">
+    <link type="text/css" rel="stylesheet" media="all" href="{{ mix('css/main.css') }}">
     <link rel='stylesheet' href="{{ asset('vendor/css/dragula.css') }}" type='text/css' />
     <link rel='stylesheet' href="{{ asset('vendor/css/drag.css') }}" type='text/css' />
 
@@ -149,7 +149,7 @@
 </div>
 
 <!-- Global Required Javascript -->
-<script src="{{ asset('js/main.js') }}"></script>
+<script src="{{ mix('js/main.js') }}"></script>
 
 <script>
     const MODAL_DEFAULT = '#myModalDefault';

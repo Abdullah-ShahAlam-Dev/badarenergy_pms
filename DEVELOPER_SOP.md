@@ -16,7 +16,31 @@ This document outlines the standard workflow for developing, building, and deplo
 
 ---
 
-## 💻 2. Local Development Workflow
+## 🌿 2. Branching Strategy & Beta Environments (GitFlow Lite)
+
+As the project scales, we follow a standard industry branching model to separate stable code from experimental features. This ensures production never breaks.
+
+### The Branches
+1.  **`main` (Production)**
+    *   **Purpose**: Holds the highly stable, live code currently running on `pms.badarexposolutions.cloud`.
+    *   **Rules**: Never commit directly to `main`. Only merge code into `main` after it has been fully tested on staging.
+2.  **`staging` (Beta / Develop)**
+    *   **Purpose**: The central integration branch for active development. This branch powers the Beta subdomain (e.g., `beta.pms.badarexposolutions.cloud`).
+    *   **Rules**: All daily commits and feature developments are pushed here first.
+3.  **`feature/*` (Local Branches - Optional)**
+    *   **Purpose**: For massive features, developers create a local branch (e.g., `feature/multi-department`), build the code, and merge into `staging`.
+
+### The Beta Subdomain Setup (Future Roadmap)
+Big companies use a secondary deployment pipeline:
+1.  Create a subdomain on Hostinger (e.g., `beta.pms.badarexposolutions.cloud`).
+2.  Clone the repository into a separate VPS directory (e.g., `/var/www/beta-pms`).
+3.  Checkout the `staging` branch instead of `main`.
+4.  Point the beta site to a separate `beta_pms_db` database so testing doesn't corrupt client data.
+5.  When a feature in Beta is approved by the client, run `git checkout main && git merge staging` to deploy to Production.
+
+---
+
+## 💻 3. Local Development Workflow
 
 When you want to make a code change (e.g., UI tweaks or logic changes):
 
@@ -38,12 +62,13 @@ Stage your changes, including the compiled assets and the manifest.
 ```bash
 git add .
 git commit -m "Brief description of change"
-git push origin main
+git push origin staging
 ```
+*Note: We push to `staging` now. Once tested, create a Pull Request on Github or merge directly into `main`.*
 
 ---
 
-## 🚢 3. Live Deployment (VPS Sync)
+## 🚢 4. Live Deployment (VPS Sync)
 
 Once you push to GitHub, the **GitHub Action** triggers. However, if the VPS goes out of sync (manifest 404s or CSS doesn't update), run this **"Master Sync"** command in your VPS Terminal:
 
@@ -53,13 +78,14 @@ cd /var/www/pms && \
 git fetch origin main && \
 git reset --hard origin/main && \
 docker-compose up -d --build && \
+docker exec pms_app php artisan migrate --force && \
 docker exec pms_app php artisan optimize:clear && \
 docker exec pms_app php artisan view:cache
 ```
 
 ---
 
-## 🧹 4. VPS Maintenance (The 30GB Cleanup)
+## 🧹 5. VPS Maintenance (The 30GB Cleanup)
 
 To prevent the **34GB disk usage** we saw earlier (caused by old Docker images), run this command once a month:
 
@@ -70,11 +96,11 @@ docker system prune -af --volumes
 
 ---
 
-## 🛠️ 5. Troubleshooting Common Issues
+## 🛠️ 6. Troubleshooting Common Issues
 
 ### Issue: "Changes not showing on live site"
 - **Reason**: Either the `git pull` failed on the VPS or the browser is caching old files.
-- **Fix**: Run the "Master Sync" command in Section 3 and check if `public/mix-manifest.json` exists on the VPS.
+- **Fix**: Run the "Master Sync" command in Section 4 and check if `public/mix-manifest.json` exists on the VPS.
 
 ### Issue: "500 Server Error"
 - **Reason**: Permissions or stale Laravel cache.
@@ -85,11 +111,11 @@ docker system prune -af --volumes
   ```
 
 ### Issue: "Disk usage is high (30GB+)"
-- **Fix**: Run the cleanup command in Section 4.
+- **Fix**: Run the cleanup command in Section 5.
 
 ---
 
-## 📂 6. Key File Locations
+## 📂 7. Key File Locations
 
 - **App Layout**: `resources/views/layouts/app.blade.php` (Contains Turbo listeners)
 - **Sidebar Menu**: `resources/views/sections/sidebar.blade.php`

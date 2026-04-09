@@ -38,9 +38,9 @@ RUN apk add --no-cache \
 
 # Hijack the mysql command to force-disable SSL during migrations
 RUN mkdir -p /etc/mysql/conf.d \
-    && echo -e "[client]\nssl-mode=DISABLED" > /etc/my.cnf.d/client.cnf \
+    && echo -e "[client]\nssl=0" > /etc/my.cnf.d/client.cnf \
     && mv /usr/bin/mysql /usr/bin/mysql.real \
-    && echo -e '#!/bin/sh\n/usr/bin/mysql.real --ssl-mode=DISABLED "$@"' > /usr/bin/mysql \
+    && echo -e '#!/bin/sh\n/usr/bin/mysql.real --ssl=0 "$@"' > /usr/bin/mysql \
     && chmod +x /usr/bin/mysql
 
 # Install PHP extensions

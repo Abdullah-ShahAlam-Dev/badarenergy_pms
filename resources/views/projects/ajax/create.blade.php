@@ -88,11 +88,17 @@
                             <x-forms.label class="my-3" fieldId="department" :fieldLabel="__('app.department')">
                             </x-forms.label>
                             <x-forms.input-group>
-                                <select class="form-control select-picker" name="team_id" id="employee_department"
-                                        data-live-search="true">
-                                    <option value="">--</option>
+                                <select class="form-control select-picker" name="team_ids[]" id="employee_department"
+                                        data-live-search="true"
+                                        multiple
+                                        data-actions-box="true"
+                                        data-selected-text-format="count > 1"
+                                        data-count-selected-text="{0} {{ __('app.department') }}s">
                                     @foreach ($teams as $team)
-                                        <option @if ($project && $project->team_id === $team->id) selected @endif value="{{ $team->id }}">{{ mb_ucfirst($team->team_name) }}</option>
+                                        <option value="{{ $team->id }}"
+                                            @if($project && $project->departments->contains($team->id)) selected @endif>
+                                            {{ mb_ucfirst($team->team_name) }}
+                                        </option>
                                     @endforeach
                                 </select>
                             </x-forms.input-group>
@@ -539,27 +545,67 @@
     }
 
     $('#save-project-data-form').on('change', '#employee_department', function () {
-        let id = $(this).val();
-        if (id === '') {
-            id = 0;
-        }
-        let url = "{{ route('departments.members', ':id') }}";
-        url = url.replace(':id', id);
+        var selectedIds = $(this).val(); // array of selected department IDs
 
-        $.easyAjax({
-            url: url,
-            type: "GET",
-            container: '#save-project-data-form',
-            blockUI: true,
-            redirect: true,
-            success: function (data) {
-                var atValues = data.userData;
-                destory_editor('#project_summary');
-                quillMention(atValues, '#project_summary');
-                $('#selectEmployee').html(data.data);
-                $('#selectEmployee').selectpicker('refresh');
-            }
-        })
+        if (!selectedIds || selectedIds.length === 0) {
+            // No department selected — load all employees
+            var url = "{{ route('departments.members', 0) }}";
+            $.easyAjax({
+                url: url,
+                type: "GET",
+                container: '#save-project-data-form',
+                blockUI: true,
+                success: function (data) {
+                    var atValues = data.userData;
+                    destory_editor('#project_summary');
+                    quillMention(atValues, '#project_summary');
+                    $('#selectEmployee').html(data.data);
+                    $('#selectEmployee').selectpicker('refresh');
+                }
+            });
+            return;
+        }
+
+        // Fetch members for each selected department in parallel and merge results
+        var requests = selectedIds.map(function (id) {
+            var url = "{{ route('departments.members', ':id') }}".replace(':id', id);
+            return $.ajax({ url: url, type: 'GET' });
+        });
+
+        $.when.apply($, requests).done(function () {
+            // Normalize: single request returns the object directly; multiple returns arguments
+            var results = (selectedIds.length === 1) ? [arguments[0]] : $.map(arguments, function (a) { return a[0]; });
+
+            var seen = {};
+            var mergedOptions = '';
+            var mergedUserData = [];
+
+            results.forEach(function (data) {
+                if (data && data.userData) {
+                    data.userData.forEach(function (user) {
+                        if (!seen[user.id]) {
+                            seen[user.id] = true;
+                            mergedUserData.push(user);
+                        }
+                    });
+                }
+                if (data && data.data) {
+                    // Parse options HTML and skip duplicates by value
+                    $($.parseHTML('<select>' + data.data + '</select>')).find('option').each(function () {
+                        var val = $(this).val();
+                        if (!seen['opt_' + val]) {
+                            seen['opt_' + val] = true;
+                            mergedOptions += this.outerHTML;
+                        }
+                    });
+                }
+            });
+
+            destory_editor('#project_summary');
+            quillMention(mergedUserData, '#project_summary');
+            $('#selectEmployee').html(mergedOptions);
+            $('#selectEmployee').selectpicker('refresh');
+        });
     });
 
 </script>

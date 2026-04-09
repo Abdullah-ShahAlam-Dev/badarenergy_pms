@@ -333,7 +333,9 @@ class ProjectController extends AccountBaseController
                 $project->allow_client_notification = ($request->client_view_task) && ($request->client_task_notification) ? 'enable' : 'disable';
                 $request->manual_timelog = $request->manual_timelog ? 'enable' : 'disable';
 
-                if ($request->team_id > 0) {
+                if ($request->team_ids) {
+                    $project->team_id = is_array($request->team_ids) ? $request->team_ids[0] : null;
+                } else if ($request->team_id > 0) {
                     $project->team_id = $request->team_id;
                 }
 
@@ -359,6 +361,12 @@ class ProjectController extends AccountBaseController
             }
 
             $project->save();
+
+            if ($request->team_ids && is_array($request->team_ids)) {
+                $project->departments()->sync($request->team_ids);
+            } else if ($request->team_id) {
+                $project->departments()->sync([$request->team_id]);
+            }
 
             if (trim_editor($request->notes) != '') {
                 $project->notes()->create([
@@ -561,7 +569,9 @@ class ProjectController extends AccountBaseController
 
         $project->team_id = null;
 
-        if ($request->team_id > 0) {
+        if ($request->team_ids) {
+            $project->team_id = is_array($request->team_ids) ? $request->team_ids[0] : null;
+        } else if ($request->team_id > 0) {
             $project->team_id = $request->team_id;
         }
 
@@ -606,6 +616,14 @@ class ProjectController extends AccountBaseController
         }
 
         $project->save();
+
+        if ($request->team_ids && is_array($request->team_ids)) {
+            $project->departments()->sync($request->team_ids);
+        } else if ($request->team_id) {
+            $project->departments()->sync([$request->team_id]);
+        } else {
+             $project->departments()->sync([]);
+        }
 
 
         // To add custom fields data

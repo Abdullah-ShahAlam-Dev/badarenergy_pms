@@ -81,11 +81,15 @@ $createPublicProjectPermission = user()->permission('create_public_project');
                             <x-forms.label class="my-3" fieldId="department" :fieldLabel="__('app.department')">
                             </x-forms.label>
                             <x-forms.input-group>
-                                <select class="form-control select-picker" name="team_id" id="employee_department"
-                                    data-live-search="true">
-                                    <option value="">--</option>
+                                <select class="form-control select-picker" name="team_ids[]" id="employee_department"
+                                    data-live-search="true"
+                                    multiple
+                                    data-actions-box="true"
+                                    data-selected-text-format="count > 1"
+                                    data-count-selected-text="{0} {{ __('app.department') }}s">
                                     @foreach ($teams as $team)
-                                        <option @if ($project->team_id === $team->id) selected @endif value="{{ $team->id }}">
+                                        <option value="{{ $team->id }}"
+                                            @if($project->departments->contains($team->id)) selected @endif>
                                             {{ mb_ucfirst($team->team_name) }}
                                         </option>
                                     @endforeach
@@ -547,24 +551,49 @@ $createPublicProjectPermission = user()->permission('create_public_project');
     }
 
     $('#save-project-data-form').on('change', '#employee_department', function () {
-            let id = $(this).val();
-            if (id === '') {
-                id = 0;
-            }
-            let url = "{{ route('departments.members', ':id') }}";
-            url = url.replace(':id', id);
+        var selectedIds = $(this).val();
 
+        if (!selectedIds || selectedIds.length === 0) {
+            var url = "{{ route('departments.members', 0) }}";
             $.easyAjax({
                 url: url,
                 type: "GET",
                 container: '#save-project-data-form',
                 blockUI: true,
-                redirect: true,
                 success: function (data) {
                     $('#selectEmployee').html(data.data);
                     $('#selectEmployee').selectpicker('refresh');
                 }
-            })
+            });
+            return;
+        }
+
+        var requests = selectedIds.map(function (id) {
+            var url = "{{ route('departments.members', ':id') }}".replace(':id', id);
+            return $.ajax({ url: url, type: 'GET' });
         });
+
+        $.when.apply($, requests).done(function () {
+            var results = (selectedIds.length === 1) ? [arguments[0]] : $.map(arguments, function (a) { return a[0]; });
+
+            var seen = {};
+            var mergedOptions = '';
+
+            results.forEach(function (data) {
+                if (data && data.data) {
+                    $($.parseHTML('<select>' + data.data + '</select>')).find('option').each(function () {
+                        var val = $(this).val();
+                        if (!seen['opt_' + val]) {
+                            seen['opt_' + val] = true;
+                            mergedOptions += this.outerHTML;
+                        }
+                    });
+                }
+            });
+
+            $('#selectEmployee').html(mergedOptions);
+            $('#selectEmployee').selectpicker('refresh');
+        });
+    });
 
 </script>

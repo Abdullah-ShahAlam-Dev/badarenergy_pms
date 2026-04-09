@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Team;
 
 /**
  * App\Models\Project
@@ -413,6 +414,11 @@ class Project extends BaseModel
     public function mentionProject(): HasMany
     {
         return $this->hasMany(MentionUser::class, 'project_id');
+    }
+
+    public function departments(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class, 'project_teams', 'project_id', 'team_id');
     }
 
 }

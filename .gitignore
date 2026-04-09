@@ -32,7 +32,5 @@ storage/fonts/installed-fonts.json
 # Temporary scripts
 replace_mix.js
 
-# Manifest files (Generated on server via Docker)
-mix-manifest.json
-/public/mix-manifest.json
+# Vendor-generated manifest files only (main manifest must be tracked for VPS deploy)
 /public/vendor/translations/mix-manifest.json

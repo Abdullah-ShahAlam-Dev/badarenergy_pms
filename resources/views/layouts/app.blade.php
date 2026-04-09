@@ -27,6 +27,9 @@
     <link rel="stylesheet" href="{{ asset('vendor/css/bootstrap-icons.css') }}">
 
     @stack('datatable-styles')
+    <link rel="stylesheet" href="{{ asset('vendor/css/daterangepicker.css') }}">
+    <link rel="stylesheet" href="{{ asset('vendor/datatables/dataTables.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('vendor/datatables/buttons.bootstrap4.min.css') }}">
 
     <!-- Template CSS -->
     <link type="text/css" rel="stylesheet" media="all" href="{{ mix('css/main.css') }}">
@@ -259,6 +262,14 @@
     'user' => user(),
 ]) !!};
 </script>
+
+<!-- Core Vendor JS (Moved to layout for Turbo stability) -->
+<script src="{{ asset('vendor/jquery/daterangepicker.min.js') }}"></script>
+<script src="{{ asset('vendor/datatables/jquery.dataTables.min.js') }}"></script>
+<script src="{{ asset('vendor/datatables/dataTables.bootstrap4.min.js') }}"></script>
+<script src="{{ asset('vendor/datatables/dataTables.buttons.min.js') }}"></script>
+<script src="{{ asset('vendor/datatables/buttons.bootstrap4.min.js') }}"></script>
+<script src="{{ asset('vendor/datatables/buttons.server-side.js') }}"></script>
 
 @stack('scripts')
 

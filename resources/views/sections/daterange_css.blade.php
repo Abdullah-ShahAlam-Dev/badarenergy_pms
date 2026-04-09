@@ -1,1 +1,2 @@
-<link rel="stylesheet" href="{{ asset('vendor/css/daterangepicker.css') }}">
+<!-- DaterangePicker CSS handled by app.blade.php -->
+

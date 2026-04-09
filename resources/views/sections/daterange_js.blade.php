@@ -1,4 +1,5 @@
-<script src="{{ asset('vendor/jquery/daterangepicker.min.js') }}"></script>
+<!-- DaterangePicker Library handled by app.blade.php -->
+
 
 <script type="text/javascript">
     $(function() {

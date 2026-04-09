@@ -24,3 +24,15 @@ grumphp.yml
 /bootstrap/cache/*
 storage/reviewed
 storage/fonts/installed-fonts.json
+
+# Database backups
+/db backup/
+*.sql
+
+# Temporary scripts
+replace_mix.js
+
+# Manifest files (Generated on server via Docker)
+mix-manifest.json
+/public/mix-manifest.json
+/public/vendor/translations/mix-manifest.json

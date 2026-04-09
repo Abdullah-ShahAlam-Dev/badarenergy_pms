@@ -273,7 +273,7 @@
 
     if (!window.turboListenersAttached) {
         document.addEventListener("turbo:load", function() {
-            console.log("Turbo Load: Resetting mobile menus and overlays");
+            // console.log("Turbo Load: Resetting mobile menus and overlays");
             init();
             $(".preloader-container").fadeOut("fast", function () {
                 $(this).removeClass("d-flex");
@@ -283,30 +283,23 @@
             $('.main-sidebar .nav-item').removeClass('hover');
             $('.main-sidebar .accordionItemHeading').removeClass('hover');
 
-            // Close mobile sidebar and other mobile overlays on navigation
-            if (typeof closeMobileMenu === 'function') {
-                closeMobileMenu();
-            }
-            if (typeof closeMoreFilter === 'function') {
-                closeMoreFilter();
-            }
-            if (typeof closeAdminDashboard === 'function') {
-                closeAdminDashboard();
-            }
-            if (typeof closeSettingsSidebar === 'function') {
-                closeSettingsSidebar();
-            }
-            if (typeof closeTicketsSidebar === 'function') {
-                closeTicketsSidebar();
-            }
-            if (typeof closeClientDetail === 'function') {
-                closeClientDetail();
-            }
-            if (typeof closeProjectSidebar === 'function') {
-                closeProjectSidebar();
-            }
+            // Robust closing of all mobile overlays
+            const closeOverlays = () => {
+                $("#mobile_menu_collapse, #mobile_close_panel").removeClass("toggled");
+                $("#mob-admin-dash, #close-admin-overlay, #mob-settings-sidebar, #close-settings-overlay, #ticket-detail-contact, #close-tickets-overlay, #mob-client-detail, #close-client-overlay, #hide-project-menues, #mob-project-menu, #close-project-overlay, #more_filter").removeClass("in toggled");
+                
+                if (typeof closeMobileMenu === 'function') closeMobileMenu();
+                if (typeof closeMoreFilter === 'function') closeMoreFilter();
+                if (typeof closeAdminDashboard === 'function') closeAdminDashboard();
+                if (typeof closeSettingsSidebar === 'function') closeSettingsSidebar();
+                if (typeof closeTicketsSidebar === 'function') closeTicketsSidebar();
+                if (typeof closeClientDetail === 'function') closeClientDetail();
+                if (typeof closeProjectSidebar === 'function') closeProjectSidebar();
+            };
 
-            // Re-apply desktop mini-sidebar state if it was toggled
+            closeOverlays();
+
+            // Re-apply desktop mini-sidebar state
             if (typeof checkMiniSidebar !== 'undefined' && (checkMiniSidebar == "yes" || checkMiniSidebar == "")) {
                 if (!$('body').hasClass('sidebar-toggled')) {
                     $('body').addClass('sidebar-toggled');
@@ -316,10 +309,16 @@
 
         document.addEventListener("turbo:visit", function() {
             $(".preloader-container").addClass("d-flex").show();
-            // Close menu immediately on visit start for better mobile UX
-            if (typeof closeMobileMenu === 'function') {
-                closeMobileMenu();
-            }
+            // Close immediately on visit to prevent ghosting
+            $("#mobile_menu_collapse, #mobile_close_panel").removeClass("toggled");
+            if (typeof closeMobileMenu === 'function') closeMobileMenu();
+        });
+
+        document.addEventListener("turbo:before-cache", function() {
+            // CRITICAL: Close all menus before Turbo snapshots the page
+            // This prevents the menu from appearing "open" when navigating back/forward
+            $("#mobile_menu_collapse, #mobile_close_panel").removeClass("toggled");
+            $("#mob-admin-dash, #close-admin-overlay, #mob-settings-sidebar, #close-settings-overlay, #ticket-detail-contact, #close-tickets-overlay, #mob-client-detail, #close-client-overlay, #hide-project-menues, #mob-project-menu, #close-project-overlay, #more_filter").removeClass("in toggled");
         });
 
         window.turboListenersAttached = true;

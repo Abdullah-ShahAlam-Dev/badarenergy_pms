@@ -66,6 +66,7 @@
         }
 
     </style>
+    </style>
     <style>
         #logo {
             height: 50px;
@@ -73,6 +74,14 @@
 
     </style>
 
+    <style>
+        /* Hide preloader when turbo handles the page */
+        html[data-turbo-preview] .preloader-container {
+            display: none !important;
+        }
+    </style>
+
+    <script src="https://unpkg.com/@hotwired/turbo@8.0.4/dist/turbo.es2017-umd.js"></script>
 
     <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
     <script src="{{ asset('vendor/jquery/modernizr.min.js') }}"></script>
@@ -190,12 +199,27 @@
 
 <script>
     $(window).on('load', function() {
-        // Animate loader off screen
+        // Fallback for direct loads without Turbo
         init();
         $(".preloader-container").fadeOut("slow", function() {
             $(this).removeClass("d-flex");
         });
     });
+
+    if (!window.turboListenersAttached) {
+        document.addEventListener("turbo:load", function() {
+            init();
+            $(".preloader-container").fadeOut("fast", function () {
+                $(this).removeClass("d-flex");
+            });
+        });
+
+        document.addEventListener("turbo:visit", function() {
+            $(".preloader-container").addClass("d-flex").show();
+        });
+
+        window.turboListenersAttached = true;
+    }
 </script>
 
 </body>

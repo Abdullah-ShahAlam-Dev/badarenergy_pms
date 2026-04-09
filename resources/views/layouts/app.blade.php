@@ -272,6 +272,7 @@
     });
 
     document.addEventListener("turbo:load", function() {
+        console.log("Turbo Load: Resetting mobile menus and overlays");
         init();
         $(".preloader-container").fadeOut("fast", function () {
             $(this).removeClass("d-flex");

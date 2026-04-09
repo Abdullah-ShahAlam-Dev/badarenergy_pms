@@ -22,10 +22,12 @@ class TasksDataTable extends BaseDataTable
     private $changeStatusPermission;
     private $viewUnassignedTasksPermission;
     private $hasTimelogModule;
+    private $projectId;
 
-    public function __construct()
+    public function __construct($projectId = null)
     {
         parent::__construct();
+        $this->projectId = $projectId;
 
         $this->editTaskPermission = user()->permission('edit_tasks');
         $this->deleteTaskPermission = user()->permission('delete_tasks');
@@ -411,7 +413,7 @@ class TasksDataTable extends BaseDataTable
             $endDate = Carbon::createFromFormat($this->company->date_format, $request->endDate)->toDateString();
         }
 
-        $projectId = $request->projectId;
+        $projectId = $this->projectId ?: $request->projectId;
         $taskBoardColumn = TaskboardColumn::completeColumn();
 
         $model = $model->leftJoin('projects', 'projects.id', '=', 'tasks.project_id')

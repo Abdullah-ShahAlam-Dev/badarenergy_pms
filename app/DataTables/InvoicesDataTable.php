@@ -22,10 +22,12 @@ class InvoicesDataTable extends BaseDataTable
     private $addPaymentPermission;
     private $addInvoicesPermission;
     private $viewProjectInvoicePermission;
+    private $projectId;
 
-    public function __construct()
+    public function __construct($projectId = null)
     {
         parent::__construct();
+        $this->projectId = $projectId;
         $this->viewInvoicePermission = user()->permission('view_invoices');
         $this->deleteInvoicePermission = user()->permission('delete_invoices');
         $this->editInvoicePermission = user()->permission('edit_invoices');
@@ -419,8 +421,10 @@ class InvoicesDataTable extends BaseDataTable
             });
         }
 
-        if ($request->projectID != 'all' && !is_null($request->projectID)) {
-            $model = $model->where('invoices.project_id', '=', $request->projectID);
+        $projectId = $this->projectId ?: $request->projectID;
+
+        if ($projectId != 'all' && !is_null($projectId)) {
+            $model = $model->where('invoices.project_id', '=', $projectId);
         }
 
         if ($request->clientID != 'all' && !is_null($request->clientID)) {

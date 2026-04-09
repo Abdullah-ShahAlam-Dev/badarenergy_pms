@@ -903,7 +903,7 @@ class ProjectController extends AccountBaseController
 
     public function tasks($projectAdmin = false)
     {
-        $dataTable = new TasksDataTable();
+        $dataTable = new TasksDataTable($this->project->id);
 
         if (!$projectAdmin) {
             $viewPermission = user()->permission('view_project_tasks');
@@ -924,7 +924,7 @@ class ProjectController extends AccountBaseController
 
     public function archivedTasks($projectAdmin = false)
     {
-        $dataTable = new ArchiveTasksDataTable();
+        $dataTable = new ArchiveTasksDataTable($this->project->id);
 
         if (!$projectAdmin) {
             $viewPermission = user()->permission('view_project_tasks');
@@ -999,7 +999,7 @@ class ProjectController extends AccountBaseController
 
     public function invoices()
     {
-        $dataTable = new InvoicesDataTable;
+        $dataTable = new InvoicesDataTable($this->project->id);
         $viewPermission = user()->permission('view_project_invoices');
         abort_403(!in_array($viewPermission, ['all', 'added', 'owned']));
 

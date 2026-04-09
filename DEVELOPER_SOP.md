@@ -7,6 +7,7 @@ This document outlines the standard workflow for developing, building, and deplo
 ## 🏗️ 1. Project Architecture Overview
 
 - **Frontend**: Laravel Blade + Laravel Mix (Webpack)
+- **Stable JS**: Core Libraries (DataTables, DateRangePicker) are loaded via `app.blade.php` to ensure SPA/Turbo Drive stability.
 - **Backend**: Laravel 8+ (PHP 8.2)
 - **Deployment**: GitHub Actions -> Hostinger VPS (Ubuntu 24.04 + CloudPanel)
 - **Infrastructure**: Docker-compose (App, Nginx, MySQL, Redis)

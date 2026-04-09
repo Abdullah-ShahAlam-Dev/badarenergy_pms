@@ -158,13 +158,13 @@
     $.fn.selectpicker.Constructor.DEFAULTS.selectAllText = "@lang('placeholders.selectAllText')";
     $.fn.selectpicker.Constructor.DEFAULTS.deselectAllText = "@lang('placeholders.deselectAllText')";
 
-    const MODAL_DEFAULT = '#myModalDefault';
-    const MODAL_LG = '#myModal';
-    const MODAL_XL = '#myModalXl';
-    const MODAL_HEADING = '#modelHeading';
-    const RIGHT_MODAL = '#task-detail-1';
-    const RIGHT_MODAL_CONTENT = '#right-modal-content';
-    const RIGHT_MODAL_TITLE = '#right-modal-title';
+    var MODAL_DEFAULT = '#myModalDefault';
+    var MODAL_LG = '#myModal';
+    var MODAL_XL = '#myModalXl';
+    var MODAL_HEADING = '#modelHeading';
+    var RIGHT_MODAL = '#task-detail-1';
+    var RIGHT_MODAL_CONTENT = '#right-modal-content';
+    var RIGHT_MODAL_TITLE = '#right-modal-title';
     const company = @json(companyOrGlobalSetting());
     const pusher_setting = @json(pusher_settings());
     const message_setting = @json(message_setting());
@@ -276,6 +276,10 @@
         $(".preloader-container").fadeOut("fast", function () {
             $(this).removeClass("d-flex");
         });
+
+        // Fix stuck sidebar hover/active states
+        $('.main-sidebar .nav-item').removeClass('hover');
+        $('.main-sidebar .accordionItemHeading').removeClass('hover');
     });
 
     document.addEventListener("turbo:click", function() {

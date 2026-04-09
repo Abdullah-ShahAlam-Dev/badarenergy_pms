@@ -36,12 +36,12 @@ RUN apk add --no-cache \
     supervisor \
     mysql-client
 
-# Disable SSL for the MySQL client to prevent connection errors
+# Hijack the mysql command to force-disable SSL during migrations
 RUN mkdir -p /etc/mysql/conf.d \
-    && echo "[client]\nssl-mode=DISABLED" > /etc/mysql/conf.d/client.cnf \
-    && echo "[client]\nssl-mode=DISABLED" > /etc/my.cnf.d/client.cnf || true \
-    && echo -e '#!/bin/sh\n/usr/bin/mysql --ssl-mode=DISABLED "$@"' > /usr/local/bin/mysql \
-    && chmod +x /usr/local/bin/mysql
+    && echo -e "[client]\nssl-mode=DISABLED" > /etc/my.cnf.d/client.cnf \
+    && mv /usr/bin/mysql /usr/bin/mysql.real \
+    && echo -e '#!/bin/sh\n/usr/bin/mysql.real --ssl-mode=DISABLED "$@"' > /usr/bin/mysql \
+    && chmod +x /usr/bin/mysql
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \

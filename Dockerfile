@@ -36,6 +36,11 @@ RUN apk add --no-cache \
     supervisor \
     mysql-client
 
+# Disable SSL for the MySQL client to prevent connection errors
+RUN mkdir -p /etc/mysql/conf.d \
+    && echo "[client]\nssl-mode=DISABLED" > /etc/mysql/conf.d/client.cnf \
+    && echo "[client]\nssl-mode=DISABLED" > /etc/my.cnf.d/client.cnf || true
+
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \

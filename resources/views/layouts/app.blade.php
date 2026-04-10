@@ -39,6 +39,8 @@
     <meta name="msapplication-TileImage" content="{{ companyOrGlobalSetting()->favicon_url }}">
     <meta name="theme-color" content="#ffffff">
     <meta name="csrf-token" content="{{ csrf_token() }}"/>
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
     @isset($activeSettingMenu)
         <style>
             .preloader-container {
@@ -724,6 +726,18 @@
     </script>
 @endif
 
+<!-- PWA Service Worker Registration -->
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('{{ asset("sw.js") }}').then(function(registration) {
+                console.log('PWA ServiceWorker registration successful with scope: ', registration.scope);
+            }, function(err) {
+                console.log('PWA ServiceWorker registration failed: ', err);
+            });
+        });
+    }
+</script>
 </body>
 
 </html>

@@ -1,5 +1,5 @@
 // Minimal Service Worker for PWA Installation Requirements
-const CACHE_NAME = 'worksuite-pwa-cache-v1';
+const CACHE_NAME = 'badar-pms-v1';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -43,7 +43,7 @@ self.addEventListener('fetch', event => {
           return response;
         }
         return fetch(event.request).catch(() => {
-            // Optional: return offline page if network fails
+          // Optional: return offline page if network fails
         });
       })
   );

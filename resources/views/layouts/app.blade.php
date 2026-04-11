@@ -111,7 +111,7 @@
 
 
     <script>
-        const checkMiniSidebar = localStorage.getItem("mini-sidebar");
+        var checkMiniSidebar = localStorage.getItem("mini-sidebar");
     </script>
 
 </head>
@@ -168,13 +168,13 @@
     var RIGHT_MODAL = '#task-detail-1';
     var RIGHT_MODAL_CONTENT = '#right-modal-content';
     var RIGHT_MODAL_TITLE = '#right-modal-title';
-    const company = @json(companyOrGlobalSetting());
-    const pusher_setting = @json(pusher_settings());
-    const message_setting = @json(message_setting());
-    const SEARCH_KEYWORD = "{{ request('search_keyword') }}";
-    const MOMENTJS_TIME_FORMAT = "{{ (companyOrGlobalSetting()->time_format == 'h:i A') ? 'hh:mm A' : ( (companyOrGlobalSetting()->time_format == 'h:i a') ? 'hh:mm a' : 'H:mm') }}";
+    var company = @json(companyOrGlobalSetting());
+    var pusher_setting = @json(pusher_settings());
+    var message_setting = @json(message_setting());
+    var SEARCH_KEYWORD = "{{ request('search_keyword') }}";
+    var MOMENTJS_TIME_FORMAT = "{{ (companyOrGlobalSetting()->time_format == 'h:i A') ? 'hh:mm A' : ( (companyOrGlobalSetting()->time_format == 'h:i a') ? 'hh:mm a' : 'H:mm') }}";
 
-    const datepickerConfig = {
+    var datepickerConfig = {
         formatter: (input, date, instance) => {
             input.value = moment(date).format('{{ companyOrGlobalSetting()->moment_date_format }}')
         },
@@ -187,7 +187,7 @@
         startDay: parseInt("{{ attendance_setting()?->week_start_from }}")
     };
 
-    const daterangeConfig = {
+    var daterangeConfig = {
         "@lang('app.today')": [moment(), moment()],
         "@lang('app.last30Days')": [moment().subtract(29, 'days'), moment()],
         "@lang('app.thisMonth')": [moment().startOf('month'), moment().endOf('month')],
@@ -197,7 +197,7 @@
         "@lang('app.last1Year')": [moment().subtract(1, 'years'), moment()]
     };
 
-    const daterangeLocale = {
+    var daterangeLocale = {
         "format": "{{ companyOrGlobalSetting()->moment_date_format }}",
         "customRangeLabel": "@lang('app.customRange')",
         "separator": " @lang('app.to') ",
@@ -208,16 +208,16 @@
         "firstDay": parseInt("{{ attendance_setting()?->week_start_from }}")
     };
 
-    const dropifyMessages = {
+    var dropifyMessages = {
         default: "@lang('app.dragDrop')",
         replace: "@lang('app.dragDropReplace')",
         remove: "@lang('app.remove')",
         error: "@lang('messages.errorOccured')",
     };
 
-    const DROPZONE_FILE_ALLOW = "{{ global_setting()->allowed_file_types }}";
-    const DROPZONE_MAX_FILESIZE = "{{ global_setting()->allowed_file_size }}";
-    const DROPZONE_MAX_FILES = "{{ global_setting()->allow_max_no_of_files }}";
+    var DROPZONE_FILE_ALLOW = "{{ global_setting()->allowed_file_types }}";
+    var DROPZONE_MAX_FILESIZE = "{{ global_setting()->allowed_file_size }}";
+    var DROPZONE_MAX_FILES = "{{ global_setting()->allow_max_no_of_files }}";
 
     Dropzone.prototype.defaultOptions.dictFallbackMessage = "{{ __('modules.projectTemplate.dropFallbackMessage') }}";
     Dropzone.prototype.defaultOptions.dictFallbackText = "{{ __('modules.projectTemplate.dropFallbackText') }}";
@@ -330,13 +330,46 @@
             // This prevents the menu from appearing "open" when navigating back/forward
             $("#mobile_menu_collapse, #mobile_close_panel").removeClass("toggled");
             $("#mob-admin-dash, #close-admin-overlay, #mob-settings-sidebar, #close-settings-overlay, #ticket-detail-contact, #close-tickets-overlay, #mob-client-detail, #close-client-overlay, #hide-project-menues, #mob-project-menu, #close-project-overlay, #more_filter").removeClass("in toggled");
+
+            // DESTROY Select2 & Selectpicker to prevent double DOM wrapping
+            if ($.fn.selectpicker) {
+                $('.selectpicker').selectpicker('destroy');
+            }
+            if ($.fn.select2) {
+                $('.select2, .f-select2').select2('destroy');
+            }
+
+            // DESTROY DataTables memory leaks and DOM corruption
+            if ($.fn.dataTable) {
+                $('.dataTable').DataTable().destroy();
+            }
+
+            // DESTROY Dropzone instances
+            if (typeof Dropzone !== 'undefined' && Dropzone.instances && Dropzone.instances.length > 0) {
+                Dropzone.instances.forEach(function(dz) {
+                    dz.destroy();
+                });
+            }
+
+            // DESTROY Quill editors & reset global array tracker
+            if (typeof window.quillArray === 'object') {
+                $.each(window.quillArray, function(id, instance) {
+                    if (typeof destory_editor === 'function') {
+                        destory_editor(id);
+                    }
+                });
+                window.quillArray = {}; 
+            }
+
+            // Force detach any ghost DOM elements attached globally
+            $('.daterangepicker, .modal-backdrop, .dz-hidden-input, .select2-container').remove();
         });
 
         window.turboListenersAttached = true;
     }
 
     // Force close mobile menu immediately when any link inside it is clicked
-    $(document).on('click', '.sidebar-menu a', function() {
+    $('body').on('click', '.sidebar-menu a', function() {
         if (typeof closeMobileMenu === 'function') {
             closeMobileMenu();
         }
@@ -393,7 +426,8 @@
 </script>
 
 <script>
-    let quillArray = {};
+    window.quillArray = window.quillArray || {};
+    var quillArray = window.quillArray;
 
     function quillImageLoad(ID) {
         const quillContainer = document.querySelector(ID);

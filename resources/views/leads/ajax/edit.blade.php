@@ -265,7 +265,8 @@ $addProductPermission = user()->permission('add_product');
 
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script>
-    $(document).ready(function() {
+    (function() {
+        var $body = $('body');
 
         $('.custom-date-picker').each(function(ind, el) {
             datepicker(el, {
@@ -274,8 +275,10 @@ $addProductPermission = user()->permission('add_product');
             });
         });
 
-        $('#save-lead-form').click(function() {
-            const url = "{{ route('leads.update', [$lead->id]) }}";
+        $body.off('.leadsEdit');
+
+        $body.on('click.leadsEdit', '#save-lead-form', function() {
+            var url = "{{ route('leads.update', [$lead->id]) }}";
             $.easyAjax({
                 url: url,
                 container: '#save-lead-data-form',
@@ -291,66 +294,60 @@ $addProductPermission = user()->permission('add_product');
             });
         });
 
-        $('body').on('click', '.add-lead-agent', function() {
-            const url = '{{ route('lead-agent-settings.create') }}';
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+        $body.on('click.leadsEdit', '.add-lead-agent', function() {
+            var url = '{{ route('lead-agent-settings.create') }}';
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('body').on('click', '.add-lead-source', function() {
-            const url = '{{ route('lead-source-settings.create') }}';
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+        $body.on('click.leadsEdit', '.add-lead-source', function() {
+            var url = '{{ route('lead-source-settings.create') }}';
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('body').on('click', '.add-lead-category', function() {
+        $body.on('click.leadsEdit', '.add-lead-category', function() {
             var url = '{{ route('leadCategory.create') }}';
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('#create_task_category').click(function() {
-            const url = "{{ route('taskCategory.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+        $body.on('click.leadsEdit', '#create_task_category', function() {
+            var url = "{{ route('taskCategory.create') }}";
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('#department-setting').click(function() {
-            const url = "{{ route('departments.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+        $body.on('click.leadsEdit', '#department-setting', function() {
+            var url = "{{ route('departments.create') }}";
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('#client_view_task').change(function() {
+        $body.on('change.leadsEdit', '#client_view_task', function() {
             $('#clientNotification').toggleClass('d-none');
         });
 
-        $('#set_time_estimate').change(function() {
+        $body.on('change.leadsEdit', '#set_time_estimate', function() {
             $('#set-time-estimate-fields').toggleClass('d-none');
         });
 
-        $('#repeat-task').change(function() {
+        $body.on('change.leadsEdit', '#repeat-task', function() {
             $('#repeat-fields').toggleClass('d-none');
         });
 
-        $('#dependent-task').change(function() {
+        $body.on('change.leadsEdit', '#dependent-task', function() {
             $('#dependent-fields').toggleClass('d-none');
         });
 
-        $('.toggle-other-details').click(function() {
+        $body.on('click.leadsEdit', '.toggle-other-details', function() {
             $(this).find('svg').toggleClass('fa-chevron-down fa-chevron-up');
             $('#other-details').toggleClass('d-none');
         });
 
-        $('#createTaskLabel').click(function() {
-            const url = "{{ route('task-label.create') }}";
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+        $body.on('click.leadsEdit', '#createTaskLabel', function() {
+            var url = "{{ route('task-label.create') }}";
             $.ajaxModal(MODAL_XL, url);
         });
 
-        $('#add-project').click(function() {
+        $body.on('click.leadsEdit', '#add-project', function() {
             $(MODAL_XL).modal('show');
-            const url = "{{ route('projects.create') }}";
+            var url = "{{ route('projects.create') }}";
             $.easyAjax({
                 url: url,
                 blockUI: true,
@@ -365,11 +362,9 @@ $addProductPermission = user()->permission('add_product');
             });
         });
 
-        $('#add-employee').click(function() {
+        $body.on('click.leadsEdit', '#add-employee', function() {
             $(MODAL_XL).modal('show');
-
-            const url = "{{ route('employees.create') }}";
-
+            var url = "{{ route('employees.create') }}";
             $.easyAjax({
                 url: url,
                 blockUI: true,
@@ -383,17 +378,20 @@ $addProductPermission = user()->permission('add_product');
                 }
             });
         });
+
+        var checkboxChange = function(parentClass, id) {
+            var checkedData = '';
+            $('.' + parentClass).find("input[type= 'checkbox']:checked").each(function() {
+                checkedData = (checkedData !== '') ? checkedData + ', ' + $(this).val() : $(this).val();
+            });
+            $('#' + id).val(checkedData);
+        };
 
         <x-forms.custom-field-filejs/>
-
         init(RIGHT_MODAL);
-    });
 
-    function checkboxChange(parentClass, id){
-        let checkedData = '';
-        $('.'+parentClass).find("input[type= 'checkbox']:checked").each(function () {
-            checkedData = (checkedData !== '') ? checkedData+', '+$(this).val() : $(this).val();
-        });
-        $('#'+id).val(checkedData);
-    }
+        document.addEventListener("turbo:before-cache", function() {
+            $body.off('.leadsEdit');
+        }, { once: true });
+    })();
 </script>

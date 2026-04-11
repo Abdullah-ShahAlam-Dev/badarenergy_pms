@@ -29,16 +29,17 @@
 </div>
 
 <script>
-
-    $(document).ready(function() {
+    (function() {
+        var $body = $('body');
 
         $("#client_import").dropify({
             messages: dropifyMessages
         });
 
-        $('body').on('click', '#import-client-form', function() {
-            const url = "{{ route('clients.import.store') }}";
+        $body.off('.clientsImport');
 
+        $body.on('click.clientsImport', '#import-client-form', function() {
+            var url = "{{ route('clients.import.store') }}";
             $.easyAjax({
                 url: url,
                 container: '#import-client-data-form',
@@ -55,5 +56,11 @@
                 }
             });
         });
-    });
+
+        document.addEventListener("turbo:before-cache", function() {
+            $body.off('.clientsImport');
+            var dropify = $("#client_import").data('dropify');
+            if (dropify) dropify.destroy();
+        }, { once: true });
+    })();
 </script>

@@ -216,7 +216,6 @@
 
 <script>
     $(document).ready(function () {
-        var runTimeClock = true;
 
         @if(isset($activeTimerCount))
         const activeTimerCount = parseInt("{{ $activeTimerCount }}");

@@ -288,157 +288,140 @@ $addTicketPermission = user()->permission('add_tickets');
     @include('sections.datatable_js')
 
     <script>
+        (function() {
+            var $body = $('body');
+            var namespace = '.ticketsIndex';
+            var $table = $('#ticket-table');
+            var ticketFilterStatus = "{{ request('dashboard-ticket-status') }}";
 
-        var ticketFilterStatus = "{{ request('dashboard-ticket-status') }}";
+            // Cleanup before re-binding
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
 
-        $('#ticket-table').on('preXhr.dt', function(e, settings, data) {
+            $table.on('preXhr.dt' + namespace, function(e, settings, data) {
+                var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                var startDate = $('#datatableRange').val();
+                var endDate = null;
 
-            var dateRangePicker = $('#datatableRange').data('daterangepicker');
-            var startDate = $('#datatableRange').val();
+                if (startDate == '') {
+                    startDate = null;
+                } else if (dateRangePicker) {
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                }
 
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
-            }
+                @if (request('startDate') != '' && request('endDate') != '')
+                    startDate = '{{ request('startDate') }}';
+                    endDate = '{{ request('endDate') }}';
+                @endif
 
-            @if (request('startDate') != '' && request('endDate') != '')
-                startDate = '{{ request('startDate') }}';
-                endDate = '{{ request('endDate') }}';
-            @endif
+                var agentId = $('#agent_id').val() || 0;
+                var groupId = $('#group_id').val() || 0;
+                var status = $('#ticket-status').val() || 0;
+                var priority = $('#priority').val() || 0;
+                var channelId = $('#channel_id').val() || 0;
+                var typeId = $('#type_id').val() || 0;
+                var tagId = $('#tag_id').val() || 0;
+                var searchText = $('#search-text-field').val();
 
-            var agentId = $('#agent_id').val();
-            if (agentId == "") {
-                agentId = 0;
-            }
+                data['startDate'] = startDate;
+                data['endDate'] = endDate;
+                data['groupId'] = groupId;
+                data['agentId'] = agentId;
+                data['priority'] = priority;
+                data['channelId'] = channelId;
+                data['typeId'] = typeId;
+                data['tagId'] = tagId;
+                data['ticketStatus'] = status;
+                data['searchText'] = searchText;
 
-            var groupId = $('#group_id').val();
-            if (groupId == "") {
-                groupId = 0;
-            }
+                if (ticketFilterStatus != '') {
+                    data['ticketFilterStatus'] = ticketFilterStatus;
+                }
+            });
 
-            var status = $('#ticket-status').val();
-            if (status == "") {
-                status = 0;
-            }
+            window.showTable = function() {
+                if (window.LaravelDataTables["ticket-table"]) {
+                    window.LaravelDataTables["ticket-table"].draw(false);
+                    refreshCount();
+                }
+            };
 
-            var priority = $('#priority').val();
-            if (priority == "") {
-                priority = 0;
-            }
+            $body.on('change' + namespace + ' keyup' + namespace, '#agent_id, #ticket-status, #priority, #channel_id, #type_id, #tag_id, #group_id', function() {
+                var hasFilters = ($('#ticket-status').val() != "not finished") ||
+                                 ($('#agent_id').val() != "all") ||
+                                 ($('#priority').val() != "all") ||
+                                 ($('#channel_id').val() != "all") ||
+                                 ($('#type_id').val() != "all") ||
+                                 ($('#tag_id').val() != "all") ||
+                                 ($('#group_id').val() != "all");
 
-            var channelId = $('#channel_id').val();
-            if (channelId == "") {
-                channelId = 0;
-            }
-
-            var typeId = $('#type_id').val();
-            if (typeId == "") {
-                typeId = 0;
-            }
-
-            var tagId = $('#tag_id').val();
-            if (tagId == "") {
-                tagId = 0;
-            }
-            var searchText = $('#search-text-field').val();
-
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['groupId'] = groupId;
-            data['agentId'] = agentId;
-            data['priority'] = priority;
-            data['channelId'] = channelId;
-            data['typeId'] = typeId;
-            data['tagId'] = tagId;
-            data['ticketStatus'] = status;
-            data['searchText'] = searchText;
-            if (ticketFilterStatus != '') {
-                data['ticketFilterStatus'] = ticketFilterStatus;
-            }
-
-
-        });
-        const showTable = () => {
-            window.LaravelDataTables["ticket-table"].draw(false);
-            refreshCount();
-        }
-
-        $('#agent_id, #ticket-status, #priority, #channel_id, #type_id, #tag_id, #group_id')
-            .on('change keyup',
-                function() {
-                    if ($('#ticket-status').val() != "not finished") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#agent_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#priority').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#channel_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#type_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#tag_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#group_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else {
-                        $('#reset-filters').addClass('d-none');
-                        showTable();
-                    }
-                });
-
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
+                $('#reset-filters').toggleClass('d-none', !hasFilters);
                 showTable();
-            }
-        });
+            });
 
-        $('.widget-filter-status').click(function() {
-            var status = $(this).data('status');
-            $('#ticket-status').val(status);
-            $('#ticket-status').selectpicker('refresh');
-            ticketFilterStatus = '';
-            showTable();
-        });
+            $body.on('keyup' + namespace, '#search-text-field', function() {
+                if ($(this).val() != "") {
+                    $('#reset-filters').removeClass('d-none');
+                }
+                showTable();
+            });
 
-        $('#reset-filters,#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
+            $body.on('click' + namespace, '.widget-filter-status', function() {
+                var status = $(this).data('status');
+                $('#ticket-status').val(status);
+                $('#ticket-status').selectpicker('refresh');
+                ticketFilterStatus = '';
+                showTable();
+            });
 
+            $body.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
+                $('#filter-form')[0].reset();
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            });
 
-        $('#quick-action-type').change(function() {
-            const actionValue = $(this).val();
-            if (actionValue != '') {
-                $('#quick-action-apply').removeAttr('disabled');
-
-                if (actionValue == 'change-status') {
+            $body.on('change' + namespace, '#quick-action-type', function() {
+                var actionValue = $(this).val();
+                if (actionValue != '') {
+                    $('#quick-action-apply').removeAttr('disabled');
                     $('.quick-action-field').addClass('d-none');
-                    $('#change-status-action').removeClass('d-none');
+                    if (actionValue == 'change-status') {
+                        $('#change-status-action').removeClass('d-none');
+                    }
                 } else {
+                    $('#quick-action-apply').attr('disabled', true);
                     $('.quick-action-field').addClass('d-none');
                 }
-            } else {
-                $('#quick-action-apply').attr('disabled', true);
-                $('.quick-action-field').addClass('d-none');
-            }
-        });
+            });
 
-        $('#quick-action-apply').click(function() {
-            const actionValue = $('#quick-action-type').val();
-            if (actionValue == 'delete') {
+            $body.on('click' + namespace, '#quick-action-apply', function() {
+                var actionValue = $('#quick-action-type').val();
+                if (actionValue == 'delete') {
+                    Swal.fire({
+                        title: "@lang('messages.sweetAlertTitle')",
+                        text: "@lang('messages.recoverRecord')",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        focusConfirm: false,
+                        confirmButtonText: "@lang('messages.confirmDelete')",
+                        cancelButtonText: "@lang('app.cancel')",
+                        customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                        showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            applyQuickAction();
+                        }
+                    });
+                } else {
+                    applyQuickAction();
+                }
+            });
+
+            $body.on('click' + namespace, '.delete-table-row', function() {
+                var id = $(this).data('ticket-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
                     text: "@lang('messages.recoverRecord')",
@@ -447,213 +430,143 @@ $addTicketPermission = user()->permission('add_tickets');
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        applyQuickAction();
+                        var url = "{{ route('tickets.destroy', ':id') }}".replace(':id', id);
+                        var token = "{{ csrf_token() }}";
+                        $.easyAjax({
+                            type: 'POST',
+                            url: url,
+                            data: { '_token': token, '_method': 'DELETE' },
+                            success: function(response) {
+                                if (response.status == "success") { showTable(); }
+                            }
+                        });
                     }
                 });
+            });
 
-            } else {
-                applyQuickAction();
-            }
-        });
+            $body.on('change' + namespace, '#ticket-table .change-status', function() {
+                var url = "{{ route('tickets.change-status') }}";
+                var token = "{{ csrf_token() }}";
+                var id = $(this).data('ticket-id');
+                var status = $(this).val();
 
-        $('body').on('click', '.delete-table-row', function() {
-            var id = $(this).data('ticket-id');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.recoverRecord')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmDelete')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('tickets.destroy', ':id') }}";
-                    url = url.replace(':id', id);
-
-                    var token = "{{ csrf_token() }}";
-
+                if (id != "" && status != "") {
                     $.easyAjax({
-                        type: 'POST',
                         url: url,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
-                        success: function(response) {
-                            if (response.status == "success") {
-                                showTable();
+                        type: "POST",
+                        container: '.content-wrapper',
+                        blockUI: true,
+                        data: { '_token': token, ticketId: id, status: status },
+                        success: function(data) {
+                            if(data.status == 'success') { refreshCount(); }
+                            if (window.LaravelDataTables["ticket-table"]) {
+                                window.LaravelDataTables["ticket-table"].draw(false);
                             }
                         }
                     });
                 }
             });
-        });
 
-        $('#ticket-table').on('change', '.change-status', function() {
-            var url = "{{ route('tickets.change-status') }}";
-            var token = "{{ csrf_token() }}";
-            var id = $(this).data('ticket-id');
-            var status = $(this).val();
+            window.applyQuickAction = function() {
+                var rowdIds = $("#ticket-table input:checkbox:checked").map(function() {
+                    return $(this).val();
+                }).get();
 
-            if (id != "" && status != "") {
+                var url = "{{ route('tickets.apply_quick_action') }}?row_ids=" + rowdIds;
+
                 $.easyAjax({
                     url: url,
+                    container: '#quick-action-form',
                     type: "POST",
-                    container: '.content-wrapper',
-                    blockUI: true,
-                    data: {
-                        '_token': token,
-                        ticketId: id,
-                        status: status,
-                    },
-                    success: function(data) {
-                        if(data.status == 'success') {
-                            refreshCount();
+                    disableButton: true,
+                    buttonSelector: "#quick-action-apply",
+                    data: $('#quick-action-form').serialize(),
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                            $('#quick-action-form').hide();
                         }
-                        window.LaravelDataTables["ticket-table"].draw(false);
+                    }
+                })
+            };
+
+            window.refreshCount = function() {
+                var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                var startDate = $('#datatableRange').val();
+                var endDate = null;
+
+                if (startDate == '') {
+                    startDate = null;
+                } else if (dateRangePicker) {
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                }
+
+                var groupId = $('#group_id').val() || 0;
+                var agentId = $('#agent_id').val() || 0;
+                var status = $('#ticket-status').val() || 0;
+                var priority = $('#priority').val() || 0;
+                var channelId = $('#channel_id').val() || 0;
+                var typeId = $('#type_id').val() || 0;
+
+                var url = "{{ route('tickets.refresh_count') }}";
+                $.easyAjax({
+                    type: 'POST',
+                    url: url,
+                    data: {
+                        'startDate': startDate,
+                        'endDate': endDate,
+                        'agentId': agentId,
+                        'ticketStatus': status,
+                        'priority': priority,
+                        'channelId': channelId,
+                        'typeId': typeId,
+                        'groupId': groupId,
+                        '_token': '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        $('#totalTickets').html(response.totalTickets);
+                        $('#closedTickets').html(response.closedTickets);
+                        $('#openTickets').html(response.openTickets);
+                        $('#pendingTickets').html(response.pendingTickets);
+                        $('#resolvedTickets').html(response.resolvedTickets);
                     }
                 });
-
-            }
-        });
-
-        const applyQuickAction = () => {
-            var rowdIds = $("#ticket-table input:checkbox:checked").map(function() {
-                return $(this).val();
-            }).get();
-
-            var url = "{{ route('tickets.apply_quick_action') }}?row_ids=" + rowdIds;
-
-            $.easyAjax({
-                url: url,
-                container: '#quick-action-form',
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#quick-action-apply",
-                data: $('#quick-action-form').serialize(),
-                success: function(response) {
-                    if (response.status == 'success') {
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
-                        $('#quick-action-form').hide();
-                    }
-                }
-            })
-        };
-
-        function refreshCount() {
-            var dateRangePicker = $('#datatableRange').data('daterangepicker');
-            var startDate = $('#datatableRange').val();
-
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
             }
 
-            // @if (!is_null(request('status')) && !is_null(request('startDate')) && !is_null(request('endDate')))
-            //     startDate = '{{ request('startDate') }}';
-            //     endDate = '{{ request('endDate') }}';
-            // @endif
-
-            if (endDate == '') {
-                endDate = null;
-            }
-
-            var groupId = $('#group_id').val();
-            if (groupId == "") {
-                groupId = 0;
-            }
-
-            var agentId = $('#agent_id').val();
-            if (agentId == "") {
-                agentId = 0;
-            }
-
-            var status = $('#ticket-status').val();
-            if (status == "") {
-                status = 0;
-            }
-
-
-            var priority = $('#priority').val();
-            if (priority == "") {
-                priority = 0;
-            }
-
-            var channelId = $('#channel_id').val();
-            if (channelId == "") {
-                channelId = 0;
-            }
-
-            var typeId = $('#type_id').val();
-            if (typeId == "") {
-                typeId = 0;
-            }
-
-            var url = "{{ route('tickets.refresh_count') }}";
-            $.easyAjax({
-                type: 'POST',
-                url: url,
-                data: {
-                    'startDate': startDate,
-                    'endDate': endDate,
-                    'agentId': agentId,
-                    'ticketStatus': status,
-                    'priority': priority,
-                    'channelId': channelId,
-                    'typeId': typeId,
-                    'groupId': groupId,
-                    '_token': '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    $('#totalTickets').html(response.totalTickets);
-                    $('#closedTickets').html(response.closedTickets);
-                    $('#openTickets').html(response.openTickets);
-                    $('#pendingTickets').html(response.pendingTickets);
-                    $('#resolvedTickets').html(response.resolvedTickets);
-                }
+            $body.on('click' + namespace, '#add-ticket', function() {
+                window.location.href = "{{ route('ticket-form.index') }}";
             });
-        }
 
-        $('body').on('click', '#add-ticket', function() {
-            window.location.href = "{{ route('ticket-form.index') }}";
-        });
-
-        $( document ).ready(function() {
             @if (!is_null(request('startDate')) && !is_null(request('endDate')))
-            $('#datatableRange').val('{{ request('startDate') }}' +
-            ' @lang("app.to") ' + '{{ request('endDate') }}');
-            $('#datatableRange').data('daterangepicker').setStartDate("{{ request('startDate') }}");
-            $('#datatableRange').data('daterangepicker').setEndDate("{{ request('endDate') }}");
-                refreshCount();
-            @else
-            refreshCount();
+                $('#datatableRange').val('{{ request('startDate') }}' + ' @lang("app.to") ' + '{{ request('endDate') }}');
+                var drp = $('#datatableRange').data('daterangepicker');
+                if (drp) {
+                    drp.setStartDate("{{ request('startDate') }}");
+                    drp.setEndDate("{{ request('endDate') }}");
+                }
             @endif
-        });
+
+            refreshCount();
+
+            window.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                $table.off(namespace);
+                if (window.LaravelDataTables["ticket-table"]) {
+                    window.LaravelDataTables["ticket-table"].destroy();
+                }
+                window.showTable = undefined;
+                window.applyQuickAction = undefined;
+                window.refreshCount = undefined;
+                window.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
     </script>
 @endpush

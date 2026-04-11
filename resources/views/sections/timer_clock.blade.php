@@ -26,51 +26,68 @@
 @endif
 
 <script>
-    var $worked = $("#active-timer");
-    var activeBreak = "{{ (!is_null($selfActiveTimer) && !is_null($selfActiveTimer->activeBreak)) }}";
+    if (typeof window.TaskTimerManager === 'undefined') {
+        window.TaskTimerManager = (function() {
+            var activeTimerInterval = null;
 
-    function updateTimerTask() {
-        var myTime = $worked.html();
-        var ss = myTime.split(":");
+            var tickClock = function() {
+                var $worked = $("#active-timer");
+                if ($worked.length === 0) return; // Halt if DOM is missing
 
-        var hours = ss[0];
-        var mins = ss[1];
-        var secs = ss[2];
-        secs = parseInt(secs) + 1;
+                var myTime = $worked.html();
+                if (!myTime) return;
+                
+                var ss = myTime.split(":");
+                var hours = ss[0];
+                var mins = ss[1];
+                var secs = parseInt(ss[2]) + 1;
 
-        if (secs > 59) {
-            secs = '00';
-            mins = parseInt(mins) + 1;
-        }
+                if (secs > 59) {
+                    secs = '00';
+                    mins = parseInt(mins) + 1;
+                }
 
-        if (mins > 59) {
-            secs = '00';
-            mins = '00';
-            hours = parseInt(hours) + 1;
-        }
+                if (mins > 59) {
+                    secs = '00';
+                    mins = '00';
+                    hours = parseInt(hours) + 1;
+                }
 
-        if (hours.toString().length < 2) {
-            hours = '0' + hours;
-        }
-        if (mins.toString().length < 2) {
-            mins = '0' + mins;
-        }
-        if (secs.toString().length < 2) {
-            secs = '0' + secs;
-        }
-        var ts = hours + ':' + mins + ':' + secs;
+                if (hours.toString().length < 2) hours = '0' + hours;
+                if (mins.toString().length < 2) mins = '0' + mins;
+                if (secs.toString().length < 2) secs = '0' + secs;
 
-        $worked.html(ts);
+                $worked.html(hours + ':' + mins + ':' + secs);
+            };
 
-        if (runTimeClock) {
-            return setTimeout(updateTimerTask, 1000);
-        }
+            var start = function() {
+                stop();
+                activeTimerInterval = setInterval(tickClock, 1000);
+            };
+
+            var stop = function() {
+                if (activeTimerInterval) {
+                    clearInterval(activeTimerInterval);
+                    activeTimerInterval = null;
+                }
+            };
+
+            var restartCheck = function(isBreak) {
+                if ($('#active-timer').length && isBreak != '1') {
+                    start();
+                } else {
+                    stop();
+                }
+            };
+
+            // Cleanup on Turbo transitions to prevent ghost CPU draining timers
+            document.addEventListener("turbo:before-cache", stop);
+            document.addEventListener("turbo:before-visit", stop);
+
+            return { start, stop, restartCheck };
+        })();
     }
 
-    if ($('#active-timer').length && activeBreak != '1') {
-        runTimeClock = true;
-        setTimeout(updateTimerTask, 1000);
-    } else {
-        runTimeClock = false;
-    }
+    // Boot or sync the timer based on server state
+    window.TaskTimerManager.restartCheck("{{ (!is_null($selfActiveTimer) && !is_null($selfActiveTimer->activeBreak)) ? '1' : '0' }}");
 </script>

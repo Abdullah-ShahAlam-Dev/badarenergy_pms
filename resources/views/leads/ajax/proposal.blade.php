@@ -32,80 +32,72 @@
 @include('sections.datatable_js')
 
 <script>
-    $('#invoices-table').on('preXhr.dt', function(e, settings, data) {
+    (function() {
+        var $body = $('body');
+        var $table = $('#invoices-table');
 
-        var leadId = "{{ $lead->id }}";
-        data['leadId'] = leadId;
-    });
-    const showTable = () => {
-        window.LaravelDataTables["invoices-table"].draw(false);
-    }
+        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+            var leadId = "{{ $lead->id }}";
+            data['leadId'] = leadId;
+        });
 
+        var showTable = function() {
+            if (window.LaravelDataTables["invoices-table"]) {
+                window.LaravelDataTables["invoices-table"].draw(false);
+            }
+        };
 
-    $('body').on('click', '.delete-table-row', function() {
-        var id = $(this).data('proposal-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('proposals.destroy', ':id') }}";
-                url = url.replace(':id', id);
+        $body.off('.leadsProposal');
 
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            showTable();
+        $body.on('click.leadsProposal', '.delete-table-row', function() {
+            var id = $(this).data('proposal-id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('proposals.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { showTable(); }
                         }
-                    }
-                });
-            }
-        });
-    });
-
-    $('body').on('click', '.sendButton', function() {
-        var id = $(this).data('proposal-id');
-        var url = "{{ route('proposals.send_proposal', ':id') }}";
-        url = url.replace(':id', id);
-
-        var token = "{{ csrf_token() }}";
-
-        $.easyAjax({
-            type: 'POST',
-            url: url,
-            container: '#invoices-table',
-            blockUI: true,
-            data: {
-                '_token': token
-            },
-            success: function(response) {
-                if (response.status == "success") {
-                    window.LaravelDataTables["invoices-table"].draw(false);
+                    });
                 }
-            }
+            });
         });
-    });
 
+        $body.on('click.leadsProposal', '.sendButton', function() {
+            var id = $(this).data('proposal-id');
+            var url = "{{ route('proposals.send_proposal', ':id') }}".replace(':id', id);
+            var token = "{{ csrf_token() }}";
+
+            $.easyAjax({
+                type: 'POST',
+                url: url,
+                container: '#invoices-table',
+                blockUI: true,
+                data: { '_token': token },
+                success: function(response) {
+                    if (response.status == "success") { showTable(); }
+                }
+            });
+        });
+
+        document.addEventListener("turbo:before-cache", function() {
+            $body.off('.leadsProposal');
+            $table.off('.leadsProposal');
+        }, { once: true });
+    })();
 </script>

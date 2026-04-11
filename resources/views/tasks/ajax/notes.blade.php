@@ -94,47 +94,45 @@
 <!-- TAB CONTENT END -->
 
 <script>
-    var add_task_notes = "{{ $addTaskNotePermission }}";
+    (function() {
+        var $body = $('body');
+        var namespace = '.taskNote';
 
-    $('#add-notes').click(function () {
-        $(this).closest('.row').addClass('d-none');
-        $('#save-note-data-form').removeClass('d-none');
-    });
+        // Clean up any existing listeners in this namespace before re-binding
+        $body.off(namespace);
 
-    $('#cancel-note').click(function () {
-        $('#save-note-data-form').addClass('d-none');
-        $('#add-notes').closest('.row').removeClass('d-none');
-    });
+        $body.on('click' + namespace, '#add-notes', function () {
+            $(this).closest('.row').addClass('d-none');
+            var $form = $('#save-note-data-form');
+            if ($form.length) $form.removeClass('d-none');
+        });
 
-    var atValues = @json($taskuserData);
+        $body.on('click' + namespace, '#cancel-note', function () {
+            var $form = $('#save-note-data-form');
+            if ($form.length) $form.addClass('d-none');
+            $('#add-notes').closest('.row').removeClass('d-none');
+        });
 
-    $(document).ready(function () {
-
-        if (add_task_notes == "all" || add_task_notes == "added") {
-            quillMention(atValues, '#task-note');
+        if ("{{ $addTaskNotePermission }}" == "all" || "{{ $addTaskNotePermission }}" == "added") {
+            quillMention(@json($taskuserData), '#task-note');
         }
 
-
-        $('#submit-note').click(function () {
+        $body.on('click' + namespace, '#submit-note', function () {
             var note = document.getElementById('task-note').children[0].innerHTML;
             document.getElementById('task-note-text').value = note;
             var mention_user_id = $('#task-note span[data-id]').map(function(){
-                return $(this).attr('data-id')
-
+                return $(this).attr('data-id');
             }).get();
-            var token = '{{ csrf_token() }}';
-
-            const url = "{{ route('task-note.store') }}";
 
             $.easyAjax({
-                url: url,
+                url: "{{ route('task-note.store') }}",
                 container: '#save-note-data-form',
                 type: "POST",
                 disableButton: true,
                 blockUI: true,
                 buttonSelector: "#submit-note",
                 data: {
-                    '_token': token,
+                    '_token': '{{ csrf_token() }}',
                     note: note,
                     mention_user_id : mention_user_id,
                     taskId: '{{ $task->id }}'
@@ -145,10 +143,14 @@
                         document.getElementById('task-note').children[0].innerHTML = "";
                         $('#task-note-text').val('');
                     }
-
                 }
             });
         });
 
-    });
+        window.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            destory_editor('#task-note');
+            window.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

@@ -36,32 +36,14 @@
 
 <script src="{{ asset('vendor/jquery/Chart.min.js') }}"></script>
 <script>
-    $(document).ready(function() {
-
-        datepicker('#start_date', {
-            position: 'bl',
-            dateSelected: new Date("{{ str_replace('-', '/', $fromDate) }}"),
-            onSelect: (instance, date) => {
-                loadChart();
-            },
-            ...datepickerConfig
-        });
-
-        datepicker('#end_date', {
-            position: 'bl',
-            dateSelected: new Date("{{ str_replace('-', '/', $toDate) }}"),
-            onSelect: (instance, date) => {
-                loadChart();
-            },
-            ...datepickerConfig
-        });
-
+    (function() {
         var lineChart = null;
 
-        function showBurnDown(elementId, burndownData, scopeChange = [], dates) {
+        var showBurnDown = function(elementId, burndownData, scopeChange = [], dates) {
             var speedCanvas = document.getElementById(elementId);
+            if (!speedCanvas) return;
 
-            if(lineChart){
+            if (lineChart) {
                 lineChart.destroy();
             }
 
@@ -116,30 +98,53 @@
                 data: speedData,
                 options: chartOptions
             });
+        };
 
-        }
-
-        function loadChart() {
+        var loadChart = function() {
             var startDate = $('#start_date').val();
-            if (startDate == '') { startDate = null; }
-
             var endDate = $('#end_date').val();
-            if (endDate == '') { endDate = null; }
-
             var token = "{{ csrf_token() }}";
+
             $.easyAjax({
                 url: "{{route('projects.burndown', [$project->id])}}",
                 container: '#burndown',
                 type: "GET",
                 redirect: false,
-                data: {'_token': token, startDate: startDate, endDate: endDate},
+                data: {'_token': token, startDate: startDate || null, endDate: endDate || null},
                 success: function (data) {
                     showBurnDown("burndown", JSON.parse(data.deadlineTasks), JSON.parse(data.uncompletedTasks), data.datesArray);
                 }
             });
-        }
+        };
+
+        var startPicker = datepicker('#start_date', {
+            position: 'bl',
+            dateSelected: new Date("{{ str_replace('-', '/', $fromDate) }}"),
+            onSelect: (instance, date) => {
+                loadChart();
+            },
+            ...datepickerConfig
+        });
+
+        var endPicker = datepicker('#end_date', {
+            position: 'bl',
+            dateSelected: new Date("{{ str_replace('-', '/', $toDate) }}"),
+            onSelect: (instance, date) => {
+                loadChart();
+            },
+            ...datepickerConfig
+        });
 
         loadChart();
 
-    }); // end of document.ready()
+        document.addEventListener("turbo:before-cache", function() {
+            if (lineChart) {
+                lineChart.destroy();
+                lineChart = null;
+            }
+            if (startPicker) startPicker.remove();
+            if (endPicker) endPicker.remove();
+        }, { once: true });
+
+    })();
 </script>

@@ -378,13 +378,15 @@ $createPublicProjectPermission = user()->permission('create_public_project');
 
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script>
-    $(document).ready(function() {
+    (function() {
+        var $body = $('body');
+        var namespace = '.projectEdit';
+
+        // Cleanup before re-binding
+        $body.off(namespace);
 
         $('.custom-date-picker').each(function(ind, el) {
-            datepicker(el, {
-                position: 'bl',
-                ...datepickerConfig
-            });
+            datepicker(el, { position: 'bl', ...datepickerConfig });
         });
 
         $(".multiple-users").selectpicker({
@@ -402,7 +404,7 @@ $createPublicProjectPermission = user()->permission('create_public_project');
             position: 'bl',
             dateSelected: new Date("{{ str_replace('-', '/', $project->start_date) }}"),
             onSelect: (instance, date) => {
-                dp2.setMin(date);
+                if (typeof dp2 !== 'undefined') dp2.setMin(date);
             },
             ...datepickerConfig
         });
@@ -411,46 +413,43 @@ $createPublicProjectPermission = user()->permission('create_public_project');
             position: 'bl',
             dateSelected: new Date("{{ $project->deadline ? str_replace('-', '/', $project->deadline) : str_replace('-', '/', now(company()->timezone)) }}"),
             onSelect: (instance, date) => {
-                dp1.setMax(date);
+                if (typeof dp1 !== 'undefined') dp1.setMax(date);
             },
             ...datepickerConfig
         });
 
-        @if ($project->deadline == null)
+        if ($('#without_deadline').is(":checked")) {
             $('#deadlineBox').hide();
-        @endif
+        }
 
-        $('#without_deadline').click(function() {
-            var check = $('#without_deadline').is(":checked") ? true : false;
-            if (check == true) {
-                $('#deadlineBox').hide();
-            } else {
-                $('#deadlineBox').show();
-            }
-        });
         const atValues = @json($userData);
-
         quillMention(atValues, '#project_summary');
 
-        $('#save-project-form').click(function() {
-            var note = document.getElementById('project_summary').children[0].innerHTML;
-            document.getElementById('project_summary-text').value = note;
+        // Events
+        $body.on('click' + namespace, '#without_deadline', function() {
+            var check = $(this).is(":checked");
+            $('#deadlineBox').toggle(!check);
+        });
 
-            var user = $('#project_summary span[data-id]').map(function(){
-                            return $(this).attr('data-id')
-                        }).get();
+        $body.on('click' + namespace, '#save-project-form', function() {
+            var $summary = $('#project_summary');
+            if ($summary.length) {
+                let note = $summary[0].children[0].innerHTML;
+                document.getElementById('project_summary-text').value = note;
+                var mention_user_id = $summary.find('span[data-id]').map(function(){
+                    return $(this).attr('data-id');
+                }).get();
+                $('#mentionUserId').val(mention_user_id.join(','));
+            }
 
-            var mention_user_id  =  $.makeArray(user);
-            $('#mentionUserId').val(mention_user_id.join(','));
             const url = "{{ route('projects.update', $project->id) }}";
-
             $.easyAjax({
                 url: url,
                 container: '#save-project-data-form',
                 type: "POST",
                 disableButton: true,
                 blockUI: true,
-                file:true,
+                file: true,
                 buttonSelector: "#save-project-form",
                 data: $('#save-project-data-form').serialize(),
                 success: function(response) {
@@ -461,41 +460,39 @@ $createPublicProjectPermission = user()->permission('create_public_project');
             });
         });
 
-        $('#addProjectCategory').click(function() {
+        $body.on('click' + namespace, '#addProjectCategory', function() {
             const url = "{{ route('projectCategory.create') }}";
             $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('#department-setting').click(function() {
+        $body.on('click' + namespace, '#department-setting', function() {
             const url = "{{ route('departments.create') }}";
             $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('#client_view_task').change(function() {
+        $body.on('change' + namespace, '#client_view_task', function() {
             $('#clientNotification').toggleClass('d-none');
         });
 
-        $('#is_private').change(function() {
+        $body.on('change' + namespace, '#is_private', function() {
             $('#add_members').toggleClass('d-none');
             $('#edit_members').addClass('d-none');
         });
 
-        $('#is_public').change(function() {
+        $body.on('change' + namespace, '#is_public', function() {
             $('#edit_members').toggleClass('d-none');
             $('#add_members').addClass('d-none');
         });
 
-        $('#miroboard_checkbox').change(function() {
+        $body.on('change' + namespace, '#miroboard_checkbox', function() {
             $('#miroboard_detail').toggleClass('d-none');
         });
 
-        $('#add-client').click(function() {
+        $body.on('click' + namespace, '#add-client', function() {
             $(MODAL_XL).modal('show');
-
             const url = "{{ route('clients.create') }}";
-
             $.easyAjax({
                 url: url,
                 blockUI: true,
@@ -510,11 +507,9 @@ $createPublicProjectPermission = user()->permission('create_public_project');
             });
         });
 
-        $('#add-employee').click(function() {
+        $body.on('click' + namespace, '#add-employee', function() {
             $(MODAL_XL).modal('show');
-
             const url = "{{ route('employees.create') }}";
-
             $.easyAjax({
                 url: url,
                 blockUI: true,
@@ -529,18 +524,77 @@ $createPublicProjectPermission = user()->permission('create_public_project');
             });
         });
 
-        $('#calculate-task-progress').change(function() {
-            if ($(this).is(':checked')) {
-                $('#completion_percent').attr('disabled', 'true');
-            } else {
-                $('#completion_percent').removeAttr('disabled');
+        $body.on('change' + namespace, '#calculate-task-progress', function() {
+            $('#completion_percent').attr('disabled', $(this).is(':checked'));
+        });
+
+        $body.on('change' + namespace, '#employee_department', function () {
+            var selectedIds = $(this).val();
+            if (!selectedIds || selectedIds.length === 0) {
+                var url = "{{ route('departments.members', 0) }}";
+                $.easyAjax({
+                    url: url,
+                    type: "GET",
+                    container: '#save-project-data-form',
+                    blockUI: true,
+                    success: function (data) {
+                        if (typeof destory_editor === 'function') destory_editor('#project_summary');
+                        else if (typeof destroy_editor === 'function') destroy_editor('#project_summary');
+                        quillMention(data.userData, '#project_summary');
+                        $('#selectEmployee').html(data.data).selectpicker('refresh');
+                    }
+                });
+                return;
             }
+
+            var requests = selectedIds.map(function (id) {
+                var url = "{{ route('departments.members', ':id') }}".replace(':id', id);
+                return $.ajax({ url: url, type: 'GET' });
+            });
+
+            $.when.apply($, requests).done(function () {
+                var results = (selectedIds.length === 1) ? [arguments[0]] : $.map(arguments, function (a) { return a[0]; });
+                var seen = {};
+                var mergedOptions = '';
+                var mergedUserData = [];
+
+                results.forEach(function (data) {
+                    if (data && data.userData) {
+                        data.userData.forEach(function (user) {
+                            if (!seen[user.id]) {
+                                seen[user.id] = true;
+                                mergedUserData.push(user);
+                            }
+                        });
+                    }
+                    if (data && data.data) {
+                        $($.parseHTML('<select>' + data.data + '</select>')).find('option').each(function () {
+                            var val = $(this).val();
+                            if (!seen['opt_' + val]) {
+                                seen['opt_' + val] = true;
+                                mergedOptions += this.outerHTML;
+                            }
+                        });
+                    }
+                });
+
+                if (typeof destory_editor === 'function') destory_editor('#project_summary');
+                else if (typeof destroy_editor === 'function') destroy_editor('#project_summary');
+                quillMention(mergedUserData, '#project_summary');
+                $('#selectEmployee').html(mergedOptions).selectpicker('refresh');
+            });
         });
 
         <x-forms.custom-field-filejs/>
-
         init(RIGHT_MODAL);
-    });
+
+        window.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            if (typeof destory_editor === 'function') destory_editor('#project_summary');
+            else if (typeof destroy_editor === 'function') destroy_editor('#project_summary');
+            window.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 
     function checkboxChange(parentClass, id){
         var checkedData = '';
@@ -549,51 +603,6 @@ $createPublicProjectPermission = user()->permission('create_public_project');
         });
         $('#'+id).val(checkedData);
     }
-
-    $('#save-project-data-form').on('change', '#employee_department', function () {
-        var selectedIds = $(this).val();
-
-        if (!selectedIds || selectedIds.length === 0) {
-            var url = "{{ route('departments.members', 0) }}";
-            $.easyAjax({
-                url: url,
-                type: "GET",
-                container: '#save-project-data-form',
-                blockUI: true,
-                success: function (data) {
-                    $('#selectEmployee').html(data.data);
-                    $('#selectEmployee').selectpicker('refresh');
-                }
-            });
-            return;
-        }
-
-        var requests = selectedIds.map(function (id) {
-            var url = "{{ route('departments.members', ':id') }}".replace(':id', id);
-            return $.ajax({ url: url, type: 'GET' });
-        });
-
-        $.when.apply($, requests).done(function () {
-            var results = (selectedIds.length === 1) ? [arguments[0]] : $.map(arguments, function (a) { return a[0]; });
-
-            var seen = {};
-            var mergedOptions = '';
-
-            results.forEach(function (data) {
-                if (data && data.data) {
-                    $($.parseHTML('<select>' + data.data + '</select>')).find('option').each(function () {
-                        var val = $(this).val();
-                        if (!seen['opt_' + val]) {
-                            seen['opt_' + val] = true;
-                            mergedOptions += this.outerHTML;
-                        }
-                    });
-                }
-            });
-
-            $('#selectEmployee').html(mergedOptions);
-            $('#selectEmployee').selectpicker('refresh');
-        });
-    });
+</script>
 
 </script>

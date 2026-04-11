@@ -145,7 +145,7 @@
 @push('scripts')
     <script src="{{ asset('vendor/jquery/daterangepicker.min.js') }}"></script>
     <script type="text/javascript">
-        $(function () {
+        (function() {
             var format = '{{ company()->moment_date_format }}';
             var startDate = "{{ $startDate->format(company()->date_format) }}";
             var endDate = "{{ $endDate->format(company()->date_format) }}";
@@ -162,95 +162,98 @@
                 parentEl: '.dashboard-header'
             }, cb);
 
-
-            $('#datatableRange2').on('apply.daterangepicker', function (ev, picker) {
+            $('#datatableRange2').off('apply.daterangepicker').on('apply.daterangepicker', function (ev, picker) {
                 showTable();
             });
-
-        });
+        })();
     </script>
 
 
     <script>
-        $(".dashboard-header").on("click", ".ajax-tab", function (event) {
-            event.preventDefault();
+        (function() {
+            var $header = $(".dashboard-header");
+            $header.off("click.adminDashboard").on("click.adminDashboard", ".ajax-tab", function (event) {
+                event.preventDefault();
 
-            $('.project-menu .p-sub-menu').removeClass('active');
-            $(this).addClass('active');
+                $('.project-menu .p-sub-menu').removeClass('active');
+                $(this).addClass('active');
 
-            const dateRangePicker = $('#datatableRange2').data('daterangepicker');
-            let startDate = $('#datatableRange').val();
+                var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+                var startDate = $('#datatableRange').val();
+                var endDate;
 
-            let endDate;
-
-            if (startDate === '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
-            }
-
-            const requestUrl = this.href;
-
-            $.easyAjax({
-                url: requestUrl,
-                blockUI: true,
-                container: ".admin-dashboard",
-                historyPush: true,
-                data: {
-                    startDate: startDate,
-                    endDate: endDate
-                },
-                success: function (response) {
-                    if (response.status === "success") {
-                        $('.admin-dashboard').html(response.html);
-                        init('.admin-dashboard');
-                    }
+                if (startDate === '') {
+                    startDate = null;
+                    endDate = null;
+                } else {
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
                 }
-            });
-        });
 
-        $('.keep-open .dropdown-menu').on({
-            "click": function (e) {
+                var requestUrl = this.href;
+
+                $.easyAjax({
+                    url: requestUrl,
+                    blockUI: true,
+                    container: ".admin-dashboard",
+                    historyPush: true,
+                    data: {
+                        startDate: startDate,
+                        endDate: endDate
+                    },
+                    success: function (response) {
+                        if (response.status === "success") {
+                            $('.admin-dashboard').html(response.html);
+                            if (typeof init === 'function') init('.admin-dashboard');
+                        }
+                    }
+                });
+            });
+
+            $('.keep-open .dropdown-menu').off('click.adminDashboard').on('click.adminDashboard', function (e) {
                 e.stopPropagation();
-            }
-        });
-
-        function showTable() {
-            const dateRangePicker = $('#datatableRange2').data('daterangepicker');
-            let startDate = $('#datatableRange').val();
-
-            let endDate;
-            if (startDate === '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
-            }
-
-            const requestUrl = this.href;
-
-            $.easyAjax({
-                url: requestUrl,
-                blockUI: true,
-                container: ".admin-dashboard",
-                data: {
-                    startDate: startDate,
-                    endDate: endDate
-                },
-                success: function (response) {
-                    if (response.status === "success") {
-                        $('.admin-dashboard').html(response.html);
-                        init('.admin-dashboard');
-                    }
-                }
             });
-        }
-    </script>
-    <script>
-        const activeTab = "{{ $activeTab }}";
-        $('.project-menu .' + activeTab).addClass('active');
+
+            window.showTable = function() {
+                var picker = $('#datatableRange2').data('daterangepicker');
+                var startDate = $('#datatableRange2').val();
+                var endDate;
+
+                if (!startDate || startDate === '') {
+                    startDate = null;
+                    endDate = null;
+                } else {
+                    startDate = picker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate = picker.endDate.format('{{ company()->moment_date_format }}');
+                }
+
+                $.easyAjax({
+                    url: window.location.href,
+                    blockUI: true,
+                    container: ".admin-dashboard",
+                    data: {
+                        startDate: startDate,
+                        endDate: endDate
+                    },
+                    success: function (response) {
+                        if (response.status === "success") {
+                            $('.admin-dashboard').html(response.html);
+                            if (typeof init === 'function') init('.admin-dashboard');
+                        }
+                    }
+                });
+            };
+
+            var activeTab = "{{ $activeTab }}";
+            $('.project-menu .' + activeTab).addClass('active');
+
+            document.addEventListener("turbo:before-cache", function() {
+                $header.off(".adminDashboard");
+                $('.keep-open .dropdown-menu').off('.adminDashboard');
+                if ($('#datatableRange2').data('daterangepicker')) {
+                    $('#datatableRange2').data('daterangepicker').remove();
+                }
+            }, { once: true });
+        })();
     </script>
 @endpush

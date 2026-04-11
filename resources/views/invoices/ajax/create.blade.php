@@ -885,18 +885,27 @@ $addProductPermission = user()->permission('add_product');
 <!-- CREATE INVOICE END -->
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script>
-    $(document).ready(function() {
-        let defaultImage = '';
-        let lastIndex = 0;
+    (function() {
+        var $body = $('body');
+        var namespace = '.invoicesCreate';
+        var invoiceDropzone = null;
+        var dp1 = null;
+        var dp2 = null;
+        var defaultImage = '';
+        var lastIndex = 0;
 
+        // ── Dropzone ─────────────────────────────────────────────────────
         Dropzone.autoDiscover = false;
-        //Dropzone class
+
+        // Destroy any existing instance to prevent "Dropzone already attached" error
+        var existingDz = Dropzone.forElement ? null : null;
+        try { existingDz = Dropzone.forElement('div#file-upload-dropzone'); } catch(e) {}
+        if (existingDz) { existingDz.destroy(); }
+
         invoiceDropzone = new Dropzone("div#file-upload-dropzone", {
             dictDefaultMessage: "{{ __('app.dragDrop') }}",
             url: "{{ route('invoice-files.store') }}",
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
             paramName: "file",
             maxFilesize: DROPZONE_MAX_FILESIZE,
             maxFiles: DROPZONE_MAX_FILES,
@@ -905,47 +914,38 @@ $addProductPermission = user()->permission('add_product');
             addRemoveLinks: true,
             parallelUploads: DROPZONE_MAX_FILES,
             acceptedFiles: DROPZONE_FILE_ALLOW,
-            init: function () {
-                invoiceDropzone = this;
-            }
+            init: function() { invoiceDropzone = this; }
         });
-        invoiceDropzone.on('sending', function (file, xhr, formData) {
+
+        invoiceDropzone.on('sending', function(file, xhr, formData) {
             const invoiceID = $('#invoiceID').val();
             formData.append('invoice_id', invoiceID);
             formData.append('default_image', defaultImage);
             $.easyBlockUI();
         });
-        invoiceDropzone.on('uploadprogress', function () {
-            $.easyBlockUI();
-        });
-        invoiceDropzone.on('queuecomplete', function () {
+        invoiceDropzone.on('uploadprogress', function() { $.easyBlockUI(); });
+        invoiceDropzone.on('queuecomplete', function() {
             window.location.href = '{{ route("invoices.index") }}';
         });
-        invoiceDropzone.on('removedfile', function () {
+        invoiceDropzone.on('removedfile', function() {
             var grp = $('div#file-upload-dropzone').closest(".form-group");
             var label = $('div#file-upload-box').siblings("label");
             $(grp).removeClass("has-error");
             $(label).removeClass("is-invalid");
         });
-        invoiceDropzone.on('error', function (file, message) {
+        invoiceDropzone.on('error', function(file, message) {
             invoiceDropzone.removeFile(file);
             var grp = $('div#file-upload-dropzone').closest(".form-group");
             var label = $('div#file-upload-box').siblings("label");
             $(grp).find(".help-block").remove();
             var helpBlockContainer = $(grp);
-
-            if (helpBlockContainer.length == 0) {
-                helpBlockContainer = $(grp);
-            }
-
+            if (helpBlockContainer.length == 0) { helpBlockContainer = $(grp); }
             helpBlockContainer.append('<div class="help-block invalid-feedback">' + message + '</div>');
             $(grp).addClass("has-error");
             $(label).addClass("is-invalid");
-
         });
-        invoiceDropzone.on('addedfile', function (file) {
+        invoiceDropzone.on('addedfile', function(file) {
             lastIndex++;
-
             const div = document.createElement('div');
             div.className = 'form-check-inline custom-control custom-radio mt-2 mr-3';
             const input = document.createElement('input');
@@ -954,43 +954,46 @@ $addProductPermission = user()->permission('add_product');
             input.name = 'default_image';
             input.id = 'default-image-' + lastIndex;
             input.value = file.name;
-            if (lastIndex == 1) {
-                input.checked = true;
-            }
+            if (lastIndex == 1) { input.checked = true; }
             div.appendChild(input);
-
             var label = document.createElement('label');
             label.className = 'custom-control-label pt-1 cursor-pointer';
             label.innerHTML = "@lang('modules.makeDefaultImage')";
             label.htmlFor = 'default-image-' + lastIndex;
             div.appendChild(label);
-
             file.previewTemplate.appendChild(div);
         });
 
-        $('.toggle-product-category').click(function() {
+        // ── Datepickers ──────────────────────────────────────────────────
+        $('.custom-date-picker').each(function(ind, el) {
+            datepicker(el, { position: 'bl', ...datepickerConfig });
+        });
+
+        dp1 = datepicker('#invoice_date', { position: 'bl', ...datepickerConfig });
+        dp2 = datepicker('#due_date',     { position: 'bl', ...datepickerConfig });
+
+        // ── Product category filter ──────────────────────────────────────
+        $body.off(namespace);
+
+        $body.on('click' + namespace, '.toggle-product-category', function() {
             $('.product-category-filter').toggleClass('d-none');
         });
 
-        $('#product_category_id').on('change', function(){
+        $body.on('change' + namespace, '#product_category_id', function() {
             var categoryId = $(this).val();
-            var url = "{{route('invoices.product_category', ':id')}}",
+            var url = "{{route('invoices.product_category', ':id')}}";
             url = (categoryId) ? url.replace(':id', categoryId) : url.replace(':id', null);
             $.easyAjax({
-                url : url,
-                type : "GET",
+                url: url,
+                type: "GET",
                 container: '#saveInvoiceForm',
                 blockUI: true,
-                success: function (response) {
+                success: function(response) {
                     if (response.status == 'success') {
                         var options = [];
-                        var rData = [];
-                        rData = response.data;
+                        var rData = response.data;
                         $.each(rData, function(index, value) {
-                            var selectData = '';
-                            selectData = '<option value="' + value.id + '">' + value.name +
-                                '</option>';
-                            options.push(selectData);
+                            options.push('<option value="' + value.id + '">' + value.name + '</option>');
                         });
                         $('#add-products').html(
                             '<option value="" class="form-control" >{{ __('app.select') . ' ' . __('app.product') }}</option>' +
@@ -1001,49 +1004,25 @@ $addProductPermission = user()->permission('add_product');
             });
         });
 
+        // ── Constants (UNCHANGED) ─────────────────────────────────────────
         const hsn_status = {{ $invoiceSetting->hsn_sac_code_show }};
         const defaultClient = "{{ request('client_id') }}";
 
-        $('.custom-date-picker').each(function(ind, el) {
-            datepicker(el, {
-                position: 'bl',
-                ...datepickerConfig
-            });
-        });
-
-        const dp1 = datepicker('#invoice_date', {
-            position: 'bl',
-            ...datepickerConfig
-        });
-
-        const dp2 = datepicker('#due_date', {
-            position: 'bl',
-            ...datepickerConfig
-        });
-
-        $('#client_list_id').change(function() {
-            var id = $(this).val();
-            changeClient(id);
+        // ── Client change ─────────────────────────────────────────────────
+        $body.on('change' + namespace, '#client_list_id', function() {
+            changeClient($(this).val());
         });
 
         function changeClient(id) {
-
-            if (id == '') {
-                id = 0;
-            }
-
-            var url = "{{ route('clients.project_list', ':id') }}";
-            url = url.replace(':id', id);
+            if (id == '') { id = 0; }
             var token = "{{ csrf_token() }}";
 
             $.easyAjax({
-                url: url,
+                url: "{{ route('clients.project_list', ':id') }}".replace(':id', id),
                 container: '#saveInvoiceForm',
                 type: "POST",
                 blockUI: true,
-                data: {
-                    _token: token
-                },
+                data: { _token: token },
                 success: function(response) {
                     if (response.status == 'success') {
                         $('#project_id').html(response.data);
@@ -1052,35 +1031,25 @@ $addProductPermission = user()->permission('add_product');
                 }
             });
 
-            var url = "{{ route('clients.ajax_details', ':id') }}";
-            url = url.replace(':id', id);
-
             $.easyAjax({
-                url: url,
+                url: "{{ route('clients.ajax_details', ':id') }}".replace(':id', id),
                 container: '#saveInvoiceForm',
                 type: "POST",
                 blockUI: true,
-                data: {
-                    _token: token
-                },
+                data: { _token: token },
                 success: function(response) {
                     if (response.status == 'success') {
                         if (response.data !== null) {
-                            $('#client_billing_address').html(nl2br(response.data.client_details
-                                .address));
+                            $('#client_billing_address').html(nl2br(response.data.client_details.address));
                             $('#add-shipping-field').addClass('d-none');
                             $('#client_shipping_address').removeClass('d-none');
-
                             if (response.data.client_details.shipping_address === null) {
                                 var addShippingLink =
                                     '<a href="javascript:;" class="text-capitalize" id="show-shipping-field"><i class="f-12 mr-2 fa fa-plus"></i>@lang("app.addShippingAddress")</a>';
                                 $('#client_shipping_address').html(addShippingLink);
                             } else {
-                                $('#client_shipping_address').html(nl2br(response.data
-                                    .client_details
-                                    .shipping_address));
+                                $('#client_shipping_address').html(nl2br(response.data.client_details.shipping_address));
                             }
-
                         } else {
                             $('#client_billing_address').html(
                                 '<span class="text-lightest">@lang("messages.selectCustomerForBillingAddress")</span>'
@@ -1093,20 +1062,20 @@ $addProductPermission = user()->permission('add_product');
                     }
                 }
             });
-
         }
 
-        $('body').on('click', '#show-shipping-field', function() {
+        $body.on('click' + namespace, '#show-shipping-field', function() {
             $('#add-shipping-field').removeClass('d-none');
             $('#client_shipping_address').addClass('d-none');
         });
 
+        // ── Add products ─────────────────────────────────────────────────
         const resetAddProductButton = () => {
             $("#add-products").val('').selectpicker("refresh");
         };
 
-        $('#add-products').on('changed.bs.select', function(e, clickedIndex, isSelected, previousValue) {
-            e.stopImmediatePropagation()
+        $body.on('changed.bs.select' + namespace, '#add-products', function(e, clickedIndex, isSelected, previousValue) {
+            e.stopImmediatePropagation();
             var id = $(this).val();
             if (previousValue != id && id != '') {
                 addProduct(id);
@@ -1114,43 +1083,33 @@ $addProductPermission = user()->permission('add_product');
             }
         });
 
+        // ── Dropify ───────────────────────────────────────────────────────
         $(".itemOldImage").next(".dropify-clear").trigger("click");
 
-        var file = $('#sortable .dropify').dropify({
-            messages: dropifyMessages
-        });
+        var file = $('#sortable .dropify').dropify({ messages: dropifyMessages });
 
         file.on("dropify.afterClear", function(event, element) {
-            var elementID = element.element.id;
-            var elementName = element.element.name;
+            var elementID    = element.element.id;
+            var elementName  = element.element.name;
             var elementIndex = element.element.dataset.index;
-            if (elementName.indexOf("[]") > -1) {
-                elementName = elementName.replace("[]", "");
-            }
+            if (elementName.indexOf("[]") > -1) { elementName = elementName.replace("[]", ""); }
             if ($("#" + elementID + "_delete").length == 0) {
                 $("#" + elementID).after(
-                    '<input type="hidden" name="' +
-                    elementName +
-                    '_delete[' + elementIndex + ']" id="' +
-                    elementID +
-                    '_delete" value="yes">'
+                    '<input type="hidden" name="' + elementName +
+                    '_delete[' + elementIndex + ']" id="' + elementID + '_delete" value="yes">'
                 );
             }
         });
 
         function addProduct(id) {
             var currencyId = $('#currency_id').val();
-
             $.easyAjax({
                 url: "{{ route('invoices.add_item') }}",
                 type: "GET",
-                data: {
-                    id: id,
-                    currencyId: currencyId
-                },
+                data: { id: id, currencyId: currencyId },
                 blockUI: true,
                 success: function(response) {
-                    if($('input[name="item_name[]"]').val() == ''){
+                    if ($('input[name="item_name[]"]').val() == '') {
                         $("#sortable .item-row").remove();
                     }
                     $(response.view).hide().appendTo("#sortable").fadeIn(500);
@@ -1158,21 +1117,17 @@ $addProductPermission = user()->permission('add_product');
 
                     var noOfRows = $(document).find('#sortable .item-row').length;
                     var i = $(document).find('.item_name').length - 1;
-                    var itemRow = $(document).find('#sortable .item-row:nth-child(' + noOfRows +
-                        ') select.type');
+                    var itemRow = $(document).find('#sortable .item-row:nth-child(' + noOfRows + ') select.type');
                     itemRow.attr('id', 'multiselect' + i);
                     itemRow.attr('name', 'taxes[' + i + '][]');
                     $(document).find('#multiselect' + i).selectpicker();
-
-                    $(document).find('#dropify' + i).dropify({
-                        messages: dropifyMessages
-                    });
+                    $(document).find('#dropify' + i).dropify({ messages: dropifyMessages });
                 }
             });
         }
 
-        $(document).on('click', '#add-item', function() {
-
+        // ── Add item row ──────────────────────────────────────────────────
+        $body.on('click' + namespace, '#add-item', function() {
             var i = $(document).find('.item_name').length;
             var item =
                 ` <div class="d-flex px-4 py-3 c-inv-desc item-row">
@@ -1252,14 +1207,11 @@ $addProductPermission = user()->permission('add_product');
                 </div>`;
             $(item).hide().appendTo("#sortable").fadeIn(500);
             $('#multiselect' + i).selectpicker();
-
-            $('#dropify' + i).dropify({
-                messages: dropifyMessages
-            });
-
+            $('#dropify' + i).dropify({ messages: dropifyMessages });
         });
 
-        $('#saveInvoiceForm').on('click', '.remove-item', function() {
+        // ── Remove item row ───────────────────────────────────────────────
+        $body.on('click' + namespace, '#saveInvoiceForm .remove-item', function() {
             $(this).closest('.item-row').fadeOut(300, function() {
                 $(this).remove();
                 $('select.customSequence').each(function(index) {
@@ -1270,7 +1222,8 @@ $addProductPermission = user()->permission('add_product');
             });
         });
 
-        $('.save-form').click(function() {
+        // ── Save form ─────────────────────────────────────────────────────
+        $body.on('click' + namespace, '.save-form', function() {
             var type = $(this).data('type');
 
             if (KTUtil.isMobileDevice()) {
@@ -1288,14 +1241,8 @@ $addProductPermission = user()->permission('add_product');
                 Swal.fire({
                     icon: 'error',
                     text: "{{ __('messages.discountExceed') }}",
-
-                    customClass: {
-                        confirmButton: 'btn btn-primary',
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 });
                 return false;
@@ -1307,172 +1254,154 @@ $addProductPermission = user()->permission('add_product');
                 type: "POST",
                 blockUI: true,
                 redirect: true,
-                file: true,  // Commented so that we dot get error of Input variables exceeded 1000
+                file: true,
                 data: $('#saveInvoiceForm').serialize(),
                 success: function(response) {
-
                     if (response.status === 'success') {
-                        if (typeof invoiceDropzone !== 'undefined' && invoiceDropzone.getQueuedFiles().length > 0) {
-                            invoiceID = response.invoiceID;
+                        if (typeof invoiceDropzone !== 'undefined' && invoiceDropzone && invoiceDropzone.getQueuedFiles().length > 0) {
                             $('#invoiceID').val(response.invoiceID);
-                            (response.add_more == true) ? localStorage.setItem("redirect_invoice", window.location.href) : localStorage.setItem("redirect_invoice", response.redirectUrl);
+                            (response.add_more == true)
+                                ? localStorage.setItem("redirect_invoice", window.location.href)
+                                : localStorage.setItem("redirect_invoice", response.redirectUrl);
                             invoiceDropzone.processQueue();
-                        }
-                        else {
+                        } else {
                             window.location.href = response.redirectUrl;
                         }
                     }
                 }
-            })
-        });
-
-        $('#saveInvoiceForm').on('click', '.remove-item', function() {
-            $(this).closest('.item-row').fadeOut(300, function() {
-                $(this).remove();
-                $('select.customSequence').each(function(index) {
-                    $(this).attr('name', 'taxes[' + index + '][]');
-                    $(this).attr('id', 'multiselect' + index + '');
-                });
-                calculateTotal();
             });
         });
 
-        $('#saveInvoiceForm').on('keyup', '.quantity,.cost_per_item,.item_name, .discount_value', function() {
-            var quantity = $(this).closest('.item-row').find('.quantity').val();
+        // ── Item calculation events (UNCHANGED LOGIC) ─────────────────────
+        $body.on('keyup' + namespace, '#saveInvoiceForm .quantity,.cost_per_item,.item_name,.discount_value', function() {
+            var quantity    = $(this).closest('.item-row').find('.quantity').val();
             var perItemCost = $(this).closest('.item-row').find('.cost_per_item').val();
             var amount = (quantity * perItemCost);
-
             $(this).closest('.item-row').find('.amount').val(decimalupto2(amount));
             $(this).closest('.item-row').find('.amount-html').html(decimalupto2(amount));
-
             calculateTotal();
         });
 
-        $('#saveInvoiceForm').on('change', '.type, #discount_type, #calculate_tax', function() {
-            var quantity = $(this).closest('.item-row').find('.quantity').val();
+        $body.on('change' + namespace, '#saveInvoiceForm .type, #saveInvoiceForm #discount_type, #saveInvoiceForm #calculate_tax', function() {
+            var quantity    = $(this).closest('.item-row').find('.quantity').val();
             var perItemCost = $(this).closest('.item-row').find('.cost_per_item').val();
             var amount = (quantity * perItemCost);
-
             $(this).closest('.item-row').find('.amount').val(decimalupto2(amount));
             $(this).closest('.item-row').find('.amount-html').html(decimalupto2(amount));
-
             calculateTotal();
         });
 
-        $('#saveInvoiceForm').on('input', '.quantity', function() {
-            var quantity = $(this).closest('.item-row').find('.quantity').val();
+        $body.on('input' + namespace, '#saveInvoiceForm .quantity', function() {
+            var quantity    = $(this).closest('.item-row').find('.quantity').val();
             var perItemCost = $(this).closest('.item-row').find('.cost_per_item').val();
             var amount = (quantity * perItemCost);
-
             $(this).closest('.item-row').find('.amount').val(decimalupto2(amount));
             $(this).closest('.item-row').find('.amount-html').html(decimalupto2(amount));
-
             calculateTotal();
         });
 
         calculateTotal();
-
         init(RIGHT_MODAL);
 
-        if (defaultClient != "") {
-            changeClient(defaultClient);
-        }
-    });
+        if (defaultClient != "") { changeClient(defaultClient); }
 
-    function ucWord(str){
+        // ── Currency change ───────────────────────────────────────────────
+        $body.on('change' + namespace, '#currency_id', function() {
+            var curId = $(this).val();
+            var companyCurrencyName = "{{$companyCurrency->currency_code}}";
+            var currentCurrencyName = $('#currency_id option:selected').attr('data-currency-code');
+            var companyCurrency = '{{ $companyCurrency->id }}';
+
+            if (curId == companyCurrency) {
+                $('#exchange_rate').prop('readonly', true);
+            } else {
+                $('#exchange_rate').prop('readonly', false);
+            }
+
+            $.easyAjax({
+                url: "{{ route('payments.account_list') }}",
+                container: '#saveInvoiceForm',
+                type: "GET",
+                blockUI: true,
+                data: { 'curId': curId, _token: "{{ csrf_token() }}" },
+                success: function(response) {
+                    if (response.status == 'success') {
+                        $('#bank_account_id').html(response.data);
+                        $('#bank_account_id').selectpicker('refresh');
+                        $('#exchange_rate').val(response.exchangeRate);
+                        $('#currency_exchange').html('( ' + companyCurrencyName + ' @lang('app.to') ' + currentCurrencyName + ' )');
+                    }
+                }
+            });
+        });
+
+        // ── Payment status ────────────────────────────────────────────────
+        $body.on('change' + namespace, 'input[type=checkbox][name=payment_status]', function() {
+            if ($(this).is(":checked")) {
+                $(this).val(1);
+                $('#add_offline').addClass('d-none');
+                $('.payment-types').removeClass('d-none');
+            } else {
+                $(this).val(0);
+                $('#transaction_id').val('');
+                $('#add_offline').addClass('d-none');
+                $('.payment-types').addClass('d-none');
+                $('#payment_gateway_id').val('');
+                $('#payment_gateway_id').selectpicker('refresh');
+            }
+        });
+
+        $body.on('change' + namespace, '#payment_gateway_id', function() {
+            var val = $(this).val();
+            if (val == 'Offline') {
+                $.easyAjax({
+                    url: "{{ route('offline.methods') }}",
+                    type: "GET",
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            $('#add_offline').removeClass('d-none');
+                            var options = [];
+                            var rData = response.data;
+                            $.each(rData, function(index, value) {
+                                if (value.status == 'yes') {
+                                    options.push('<option value="' + value.id + '">' + value.name + '</option>');
+                                }
+                            });
+                            $('#add_offline_methods').html(options);
+                            $('#add_offline_methods').selectpicker('refresh');
+                        }
+                    }
+                });
+            } else {
+                $('#add_offline').addClass('d-none');
+            }
+        });
+
+        // ── Helper functions (UNCHANGED) ──────────────────────────────────
+        function ucWord(str) {
             str = str.toLowerCase().replace(/\b[a-z]/g, function(letter) {
                 return letter.toUpperCase();
             });
             return str;
         }
 
-    function checkboxChange(parentClass, id) {
-        var checkedData = '';
-        $('.' + parentClass).find("input[type= 'checkbox']:checked").each(function() {
-            checkedData = (checkedData !== '') ? checkedData + ', ' + $(this).val() : $(this).val();
-        });
-        $('#' + id).val(checkedData);
-    }
-
-    $('#currency_id').change(function() {
-        var curId = $(this).val();
-        var companyCurrencyName = "{{$companyCurrency->currency_code}}";
-        var currentCurrencyName = $('#currency_id option:selected').attr('data-currency-code');
-        var companyCurrency = '{{ $companyCurrency->id }}';
-
-        if(curId == companyCurrency){
-            $('#exchange_rate').prop('readonly', true);
-        } else{
-            $('#exchange_rate').prop('readonly', false);
-        }
-        var token = "{{ csrf_token() }}";
-
-        $.easyAjax({
-            url: "{{ route('payments.account_list') }}",
-            container: '#saveInvoiceForm',
-            type: "GET",
-            blockUI: true,
-            data: { 'curId' : curId , _token: token},
-            success: function(response) {
-                if (response.status == 'success') {
-                    $('#bank_account_id').html(response.data);
-                    $('#bank_account_id').selectpicker('refresh');
-                    $('#exchange_rate').val(response.exchangeRate);
-                    $('#currency_exchange').html('( '+companyCurrencyName+' @lang('app.to') '+currentCurrencyName+' )');
-                }
-            }
-        });
-    });
-
-    $('input[type=checkbox][name=payment_status]').change(function() {
-        if ($(this).is(":checked")) {
-            $(this).val(1);
-            $('#add_offline').addClass('d-none');
-            $('.payment-types').removeClass('d-none');
-        } else {
-            $(this).val(0);
-            $('#transaction_id').val('');
-            $('#add_offline').addClass('d-none');
-            $('.payment-types').addClass('d-none');
-            $('#payment_gateway_id').val('');
-            $('#payment_gateway_id').selectpicker('refresh');
-        }
-    });
-
-    $('#payment_gateway_id').on('change', function(){
-        let val = $(this).val();
-
-        if (val == 'Offline'){
-            let url = "{{ route('offline.methods') }}";
-
-            $.easyAjax({
-                url : url,
-                type : "GET",
-                success: function (response) {
-                    if (response.status == 'success') {
-                        $('#add_offline').removeClass('d-none');
-                        var options = [];
-                        var rData = [];
-                        rData = response.data;
-                            $.each(rData, function (index, value) {
-                            var selectData = '';
-                            if(value.status=='yes'){
-                            selectData = '<option value="' + value.id + '">' + value.name + '</option>';
-                            }
-                            options.push(selectData);
-                        });
-                        $('#add_offline_methods').html(
-                            options);
-                        $('#add_offline_methods').selectpicker('refresh');
-                    }
-                }
+        function checkboxChange(parentClass, id) {
+            var checkedData = '';
+            $('.' + parentClass).find("input[type= 'checkbox']:checked").each(function() {
+                checkedData = (checkedData !== '') ? checkedData + ', ' + $(this).val() : $(this).val();
             });
+            $('#' + id).val(checkedData);
         }
-        else
-        {
-            $('#add_offline').addClass('d-none');
-        }
-    });
 
+        // ── Turbo cleanup ─────────────────────────────────────────────────
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            if (invoiceDropzone) { invoiceDropzone.destroy(); invoiceDropzone = null; }
+            if (dp1 && dp1.remove) { try { dp1.remove(); } catch(e) {} dp1 = null; }
+            if (dp2 && dp2.remove) { try { dp2.remove(); } catch(e) {} dp2 = null; }
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+
+    })();
 </script>
 @endif

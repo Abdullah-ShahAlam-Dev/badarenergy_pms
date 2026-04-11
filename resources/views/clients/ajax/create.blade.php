@@ -318,34 +318,33 @@ $addPermission = user()->permission('add_clients');
 
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script>
-    var add_client_note_permission = "{{  $addClientNotePermission }}";
+    (function() {
+        var $body = $('body');
+        var add_client_note_permission = "{{ $addClientNotePermission }}";
+        var namespace = '.clientsCreate';
 
-    $(document).ready(function() {
         $('.custom-date-picker').each(function(ind, el) {
-            datepicker(el, {
-                position: 'bl',
-                ...datepickerConfig
-            });
+            datepicker(el, { position: 'bl', ...datepickerConfig });
         });
 
-
-        $('#country').change(function(){
-            var phonecode = $(this).find(':selected').data('phonecode');
-            $('#country_phonecode').val(phonecode);
-            $('.select-picker').selectpicker('refresh');
-        });
-
-        if(add_client_note_permission == 'all' || add_client_note_permission == 'added' || add_client_note_permission == 'both')
-        {
-            quillImageLoad('#note');
+        if (add_client_note_permission == 'all' || add_client_note_permission == 'added' || add_client_note_permission == 'both') {
+            if (typeof quillImageLoad === 'function') {
+                quillImageLoad('#note');
+            }
         }
 
-        $('#category_id').change(function(e) {
+        init(RIGHT_MODAL);
 
-            let categoryId = $(this).val();
+        $body.off(namespace);
 
-            var url = "{{ route('get_client_sub_categories', ':id') }}";
-            url = url.replace(':id', categoryId);
+        $body.on('change' + namespace, '#country', function() {
+            var phonecode = $(this).find(':selected').data('phonecode');
+            $('#country_phonecode').val(phonecode).selectpicker('refresh');
+        });
+
+        $body.on('change' + namespace, '#category_id', function() {
+            var categoryId = $(this).val();
+            var url = "{{ route('get_client_sub_categories', ':id') }}".replace(':id', categoryId);
 
             $.easyAjax({
                 url: url,
@@ -353,58 +352,23 @@ $addPermission = user()->permission('add_clients');
                 success: function(response) {
                     if (response.status == 'success') {
                         var options = [];
-                        var rData = [];
-                        rData = response.data;
-                        $.each(rData, function(index, value) {
-                            var selectData = '';
-                            selectData = '<option value="' + value.id + '">' + value
-                                .category_name + '</option>';
-                            options.push(selectData);
+                        $.each(response.data, function(index, value) {
+                            options.push('<option value="' + value.id + '">' + value.category_name + '</option>');
                         });
-
-                        $('#sub_category_id').html('<option value="">--</option>' +
-                            options);
-                        $('#sub_category_id').selectpicker('refresh');
+                        $('#sub_category_id').html('<option value="">--</option>' + options.join('')).selectpicker('refresh');
                     }
                 }
-            })
-
-        });
-
-        $('#save-more-client-form').click(function () {
-
-            $('#add_more').val(true);
-
-            if(add_client_note_permission == 'all' || add_client_note_permission == 'added' || add_client_note_permission == 'both')
-            {
-                var note = document.getElementById('note').children[0].innerHTML;
-                document.getElementById('note-text').value = note;
-            }
-
-            const url = "{{ route('clients.store') }}";
-            // var data = $('#save-client-data-form').serialize() + '&add_more=true';
-            var data = $('#save-client-data-form').serialize();
-
-            // console.log(data);
-            saveClient(data, url, "#save-more-client-form");
-
-        });
-
-        $('#save-client-form').click(function() {
-            if(add_client_note_permission == 'all' || add_client_note_permission == 'added' || add_client_note_permission == 'both')
-            {
-                var note = document.getElementById('note').children[0].innerHTML;
-                document.getElementById('note-text').value = note;
-            }
-
-            const url = "{{ route('clients.store') }}";
-            var data = $('#save-client-data-form').serialize();
-
-            saveClient(data, url, "#save-client-form");
-
+            });
         });
 
         function saveClient(data, url, buttonSelector) {
+            if (add_client_note_permission == 'all' || add_client_note_permission == 'added' || add_client_note_permission == 'both') {
+                var noteElement = document.getElementById('note');
+                if (noteElement && noteElement.children[0]) {
+                    document.getElementById('note-text').value = noteElement.children[0].innerHTML;
+                }
+            }
+
             $.easyAjax({
                 url: url,
                 container: '#save-client-data-form',
@@ -417,29 +381,23 @@ $addPermission = user()->permission('add_clients');
                 success: function(response) {
                     if (response.status == 'success') {
                         if ($(MODAL_XL).hasClass('show')) {
-
                             $(MODAL_XL).modal('hide');
                             window.location.reload();
-                        } else if(typeof response.redirectUrl !== 'undefined'){
+                        } else if (typeof response.redirectUrl !== 'undefined') {
                             window.location.href = response.redirectUrl;
-                        }
-                        else if(response.add_more == true) {
-
-                            var right_modal_content = $.trim($(RIGHT_MODAL_CONTENT).html());
-                            if(right_modal_content.length) {
-
-                                $(RIGHT_MODAL_CONTENT).html(response.html.html);
+                        } else if (response.add_more == true) {
+                            var $rightModalContent = $(RIGHT_MODAL_CONTENT);
+                            if ($rightModalContent.length && $.trim($rightModalContent.html()).length) {
+                                $rightModalContent.html(response.html.html);
                                 $('#add_more').val(false);
-                            }
-                            else {
-
+                            } else {
                                 $('.content-wrapper').html(response.html.html);
                                 init('.content-wrapper');
                                 $('#add_more').val(false);
                             }
                         }
 
-                        if (typeof showTable !== 'undefined' && typeof showTable === 'function') {
+                        if (typeof showTable === 'function') {
                             showTable();
                         }
                     }
@@ -447,31 +405,41 @@ $addPermission = user()->permission('add_clients');
             });
         }
 
-        $('#random_password').click(function() {
-            const randPassword = Math.random().toString(36).substr(2, 8);
-
-            $('#password').val(randPassword);
+        $body.on('click' + namespace, '#save-more-client-form', function() {
+            $('#add_more').val(true);
+            saveClient($('#save-client-data-form').serialize(), "{{ route('clients.store') }}", "#save-more-client-form");
         });
 
-        $('#addClientCategory').click(function() {
-            const url = "{{ route('clientCategory.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        })
-        $('#addClientSubCategory').click(function() {
-            const url = "{{ route('clientSubCategory.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
+        $body.on('click' + namespace, '#save-client-form', function() {
+            saveClient($('#save-client-data-form').serialize(), "{{ route('clients.store') }}", "#save-client-form");
         });
 
-        init(RIGHT_MODAL);
-    });
-
-    function checkboxChange(parentClass, id) {
-        var checkedData = '';
-        $('.' + parentClass).find("input[type= 'checkbox']:checked").each(function() {
-            checkedData = (checkedData !== '') ? checkedData + ', ' + $(this).val() : $(this).val();
+        $body.on('click' + namespace, '#random_password', function() {
+            $('#password').val(Math.random().toString(36).substr(2, 8));
         });
-        $('#' + id).val(checkedData);
-    }
+
+        $body.on('click' + namespace, '#addClientCategory', function() {
+            $.ajaxModal(MODAL_LG, "{{ route('clientCategory.create') }}");
+        });
+
+        $body.on('click' + namespace, '#addClientSubCategory', function() {
+            $.ajaxModal(MODAL_LG, "{{ route('clientSubCategory.create') }}");
+        });
+
+        window.checkboxChange = function(parentClass, id) {
+            var checkedData = '';
+            $('.' + parentClass).find("input[type='checkbox']:checked").each(function() {
+                checkedData = (checkedData !== '') ? checkedData + ', ' + $(this).val() : $(this).val();
+            });
+            $('#' + id).val(checkedData);
+        };
+
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            if (typeof destroy_editor === 'function') {
+                destroy_editor('#note');
+            }
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

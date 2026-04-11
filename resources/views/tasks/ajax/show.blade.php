@@ -420,80 +420,103 @@ $changeStatusPermission = user()->permission('change_status');
 
     <script src="{{ asset('vendor/jquery/clipboard.min.js') }}"></script>
     <script>
-        var clipboard = new ClipboardJS('.btn-copy');
+        (function() {
+            var $body = $('body');
+            var namespace = '.taskShow';
+            var timerTimeout;
 
-        clipboard.on('success', function(e) {
-            Swal.fire({
-                icon: 'success',
-                text: '@lang("app.copied")',
-                toast: true,
-                position: 'top-end',
-                timer: 3000,
-                timerProgressBar: true,
-                showConfirmButton: false,
-                customClass: {
-                    confirmButton: 'btn btn-primary',
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-            })
-        });
-    </script>
+            var clipboard = new ClipboardJS('.btn-copy');
 
-    <script>
-        $(document).ready(function() {
-
-            var $worked = $("#active-task-timer");
+            clipboard.on('success', function(e) {
+                Swal.fire({
+                    icon: 'success',
+                    text: '@lang("app.copied")',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                    customClass: { confirmButton: 'btn btn-primary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                });
+            });
 
             function updateTimer() {
+                var $worked = $("#active-task-timer");
+                if (!$worked.length) return;
+
                 var myTime = $worked.html();
                 var ss = myTime.split(":");
-
-                var hours = ss[0];
-                var mins = ss[1];
-                var secs = ss[2];
-                secs = parseInt(secs) + 1;
+                var hours = parseInt(ss[0]);
+                var mins = parseInt(ss[1]);
+                var secs = parseInt(ss[2]);
+                secs++;
 
                 if (secs > 59) {
-                    secs = '00';
-                    mins = parseInt(mins) + 1;
+                    secs = 0;
+                    mins++;
                 }
 
                 if (mins > 59) {
-                    secs = '00';
-                    mins = '00';
-                    hours = parseInt(hours) + 1;
+                    secs = 0;
+                    mins = 0;
+                    hours++;
                 }
 
-                if (hours.toString().length < 2) {
-                    hours = '0' + hours;
-                }
-                if (mins.toString().length < 2) {
-                    mins = '0' + mins;
-                }
-                if (secs.toString().length < 2) {
-                    secs = '0' + secs;
-                }
+                hours = hours.toString().padStart(2, '0');
+                mins = mins.toString().padStart(2, '0');
+                secs = secs.toString().padStart(2, '0');
+                
                 var ts = hours + ':' + mins + ':' + secs;
-
                 $worked.html(ts);
-                setTimeout(updateTimer, 1000);
+                timerTimeout = setTimeout(updateTimer, 1000);
             }
+
             if ($('#stop-task-timer').length) {
-                setTimeout(updateTimer, 1000);
+                timerTimeout = setTimeout(updateTimer, 1000);
             }
 
-            //    change task status
-            $('body').on('click', '.change-task-status', function() {
-                var status = $(this).data('status');
+            $body.on('click' + namespace, '.ajax-tab', function(event) {
+                event.preventDefault();
+                $('.task-tabs .ajax-tab').removeClass('active');
+                $(this).addClass('active');
 
+                const requestUrl = this.href;
+
+                $.easyAjax({
+                    url: requestUrl,
+                    blockUI: true,
+                    container: "#nav-tabContent",
+                    historyPush: ($(RIGHT_MODAL).hasClass('in') ? false : true),
+                    data: { 'json': true },
+                    success: function(response) {
+                        if (response.status == "success") {
+                            $('#nav-tabContent').html(response.html);
+                        }
+                    }
+                });
+            });
+
+            function updateTask(id, status) {
+                var url = "{{ route('tasks.change_status') }}";
+                var token = "{{ csrf_token() }}";
+                $.easyAjax({
+                    url: url,
+                    type: "POST",
+                    async: false,
+                    data: { '_token': token, taskId: id, status: status, sortBy: 'id' },
+                    success: function(data) {
+                        window.location.reload();
+                    }
+                });
+            }
+
+            $body.on('click' + namespace, '.change-task-status', function() {
+                var status = $(this).data('status');
                 var id = '{{ $task->id }}';
 
                 if (status == 'completed') {
-                    var checkUrl = "{{ route('tasks.check_task', ':id') }}";
-                    checkUrl = checkUrl.replace(':id', id);
+                    var checkUrl = "{{ route('tasks.check_task', ':id') }}".replace(':id', id);
                     var token = "{{ csrf_token() }}";
 
                     $.easyAjax({
@@ -501,9 +524,7 @@ $changeStatusPermission = user()->permission('change_status');
                         type: "POST",
                         blockUI: true,
                         container: '#task-detail-section',
-                        data: {
-                            '_token': token
-                        },
+                        data: { '_token': token },
                         success: function(data) {
                             if (data.taskCount > 0) {
                                 Swal.fire({
@@ -514,41 +535,30 @@ $changeStatusPermission = user()->permission('change_status');
                                     focusConfirm: false,
                                     confirmButtonText: "@lang('messages.completeIt')",
                                     cancelButtonText: "@lang('app.cancel')",
-                                    customClass: {
-                                        confirmButton: 'btn btn-primary mr-3',
-                                        cancelButton: 'btn btn-secondary'
-                                    },
-                                    showClass: {
-                                        popup: 'swal2-noanimation',
-                                        backdrop: 'swal2-noanimation'
-                                    },
+                                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                                     buttonsStyling: false
                                 }).then((result) => {
                                     if (result.isConfirmed) {
                                         updateTask(id, status);
                                     }
                                 });
-
                             } else {
-                                updateTask(id, status)
+                                updateTask(id, status);
                             }
-
                         }
                     });
                 } else {
-                    updateTask(id, status)
+                    updateTask(id, status);
                 }
-
-
             });
 
-            $('body').on('click', '#pinnedItem', function() {
-                var type = $('#pinnedItem').attr('data-pinned');
+            $body.on('click' + namespace, '#pinnedItem', function() {
+                var type = $(this).attr('data-pinned');
                 var id = '{{ $task->id }}';
                 var pinType = 'task';
 
-                var dataPin = type.trim(type);
-                if (dataPin == 'pinned') {
+                if (type.trim() == 'pinned') {
                     Swal.fire({
                         title: "@lang('messages.sweetAlertTitle')",
                         icon: 'warning',
@@ -556,37 +566,25 @@ $changeStatusPermission = user()->permission('change_status');
                         focusConfirm: false,
                         confirmButtonText: "@lang('messages.confirmUnpin')",
                         cancelButtonText: "@lang('app.cancel')",
-                        customClass: {
-                            confirmButton: 'btn btn-primary mr-3',
-                            cancelButton: 'btn btn-secondary'
-                        },
-                        showClass: {
-                            popup: 'swal2-noanimation',
-                            backdrop: 'swal2-noanimation'
-                        },
+                        customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                        showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                         buttonsStyling: false
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            var url = "{{ route('tasks.destroy_pin', ':id') }}";
-                            url = url.replace(':id', id);
-
+                            var url = "{{ route('tasks.destroy_pin', ':id') }}".replace(':id', id);
                             var token = "{{ csrf_token() }}";
                             $.easyAjax({
                                 type: 'POST',
                                 url: url,
-                                data: {
-                                    '_token': token,
-                                    'type': pinType
-                                },
+                                data: { '_token': token, 'type': pinType },
                                 success: function(response) {
                                     if (response.status == "success") {
                                         window.location.reload();
                                     }
                                 }
-                            })
+                            });
                         }
                     });
-
                 } else {
                     Swal.fire({
                         title: "@lang('messages.sweetAlertTitle')",
@@ -595,27 +593,17 @@ $changeStatusPermission = user()->permission('change_status');
                         focusConfirm: false,
                         confirmButtonText: "@lang('messages.confirmPin')",
                         cancelButtonText: "@lang('app.cancel')",
-                        customClass: {
-                            confirmButton: 'btn btn-primary mr-3',
-                            cancelButton: 'btn btn-secondary'
-                        },
-                        showClass: {
-                            popup: 'swal2-noanimation',
-                            backdrop: 'swal2-noanimation'
-                        },
+                        customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                        showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                         buttonsStyling: false
                     }).then((result) => {
                         if (result.isConfirmed) {
                             var url = "{{ route('tasks.store_pin') }}?type=" + pinType;
-
                             var token = "{{ csrf_token() }}";
                             $.easyAjax({
                                 type: 'POST',
                                 url: url,
-                                data: {
-                                    '_token': token,
-                                    'task_id': id
-                                },
+                                data: { '_token': token, 'task_id': id },
                                 success: function(response) {
                                     if (response.status == "success") {
                                         window.location.reload();
@@ -627,52 +615,7 @@ $changeStatusPermission = user()->permission('change_status');
                 }
             });
 
-            $(".ajax-tab").click(function(event) {
-                event.preventDefault();
-
-                $('.task-tabs .ajax-tab').removeClass('active');
-                $(this).addClass('active');
-
-                const requestUrl = this.href;
-
-                $.easyAjax({
-                    url: requestUrl,
-                    blockUI: true,
-                    container: "#nav-tabContent",
-                    historyPush: ($(RIGHT_MODAL).hasClass('in') ? false : true),
-                    data: {
-                        'json': true
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            $('#nav-tabContent').html(response.html);
-                        }
-                    }
-                });
-            });
-
-            // Update Task
-            function updateTask(id, status) {
-                var url = "{{ route('tasks.change_status') }}";
-                var token = "{{ csrf_token() }}";
-                $.easyAjax({
-                    url: url,
-                    type: "POST",
-                    async: false,
-                    data: {
-                        '_token': token,
-                        taskId: id,
-                        status: status,
-                        sortBy: 'id'
-                    },
-                    success: function(data) {
-                        window.location.reload();
-                    }
-                })
-            }
-
-
-            $('body').on('click', '.delete-comment', function() {
+            $body.on('click' + namespace, '.delete-comment', function() {
                 var id = $(this).data('row-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
@@ -682,29 +625,17 @@ $changeStatusPermission = user()->permission('change_status');
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        var url = "{{ route('taskComment.destroy', ':id') }}";
-                        url = url.replace(':id', id);
-
+                        var url = "{{ route('taskComment.destroy', ':id') }}".replace(':id', id);
                         var token = "{{ csrf_token() }}";
-
                         $.easyAjax({
                             type: 'POST',
                             url: url,
-                            data: {
-                                '_token': token,
-                                '_method': 'DELETE'
-                            },
+                            data: { '_token': token, '_method': 'DELETE' },
                             success: function(response) {
                                 if (response.status == "success") {
                                     $('#comment-list').html(response.view);
@@ -715,15 +646,14 @@ $changeStatusPermission = user()->permission('change_status');
                 });
             });
 
-            $('body').on('click', '.edit-comment', function() {
+            $body.on('click' + namespace, '.edit-comment', function() {
                 var id = $(this).data('row-id');
-                var url = "{{ route('taskComment.edit', ':id') }}";
-                url = url.replace(':id', id);
+                var url = "{{ route('taskComment.edit', ':id') }}".replace(':id', id);
                 $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
                 $.ajaxModal(MODAL_LG, url);
             });
 
-            $('body').on('click', '.delete-subtask', function() {
+            $body.on('click' + namespace, '.delete-subtask', function() {
                 var id = $(this).data('row-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
@@ -733,29 +663,17 @@ $changeStatusPermission = user()->permission('change_status');
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        var url = "{{ route('sub-tasks.destroy', ':id') }}";
-                        url = url.replace(':id', id);
-
+                        var url = "{{ route('sub-tasks.destroy', ':id') }}".replace(':id', id);
                         var token = "{{ csrf_token() }}";
-
                         $.easyAjax({
                             type: 'POST',
                             url: url,
-                            data: {
-                                '_token': token,
-                                '_method': 'DELETE'
-                            },
+                            data: { '_token': token, '_method': 'DELETE' },
                             success: function(response) {
                                 if (response.status == "success") {
                                     $('#sub-task-list').html(response.view);
@@ -766,21 +684,15 @@ $changeStatusPermission = user()->permission('change_status');
                 });
             });
 
-            $('body').on('click', '.edit-subtask', function() {
+            $body.on('click' + namespace, '.edit-subtask', function() {
                 var id = $(this).data('row-id');
-                var url = "{{ route('sub-tasks.edit', ':id') }}";
-                url = url.replace(':id', id);
+                var url = "{{ route('sub-tasks.edit', ':id') }}".replace(':id', id);
                 $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
                 $.ajaxModal(MODAL_LG, url);
             });
 
-            $('body').on('change', '.task-check', function() {
-                if ($(this).is(':checked')) {
-                    var status = 'complete';
-                } else {
-                    var status = 'incomplete';
-                }
-
+            $body.on('change' + namespace, '.task-check', function() {
+                var status = $(this).is(':checked') ? 'complete' : 'incomplete';
                 var id = $(this).data('sub-task-id');
                 var url = "{{ route('sub_tasks.change_status') }}";
                 var token = "{{ csrf_token() }}";
@@ -788,23 +700,16 @@ $changeStatusPermission = user()->permission('change_status');
                 $.easyAjax({
                     url: url,
                     type: "POST",
-                    data: {
-                        '_token': token,
-                        subTaskId: id,
-                        status: status
-                    },
+                    data: { '_token': token, subTaskId: id, status: status },
                     success: function(response) {
                         if (response.status == "success") {
-
                             $('#sub-task-list').html(response.view);
-
                         }
                     }
-                })
+                });
             });
 
-
-            $('body').on('click', '.delete-file', function() {
+            $body.on('click' + namespace, '.delete-file', function() {
                 var id = $(this).data('row-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
@@ -814,29 +719,17 @@ $changeStatusPermission = user()->permission('change_status');
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        var url = "{{ route('task-files.destroy', ':id') }}";
-                        url = url.replace(':id', id);
-
+                        var url = "{{ route('task-files.destroy', ':id') }}".replace(':id', id);
                         var token = "{{ csrf_token() }}";
-
                         $.easyAjax({
                             type: 'POST',
                             url: url,
-                            data: {
-                                '_token': token,
-                                '_method': 'DELETE'
-                            },
+                            data: { '_token': token, '_method': 'DELETE' },
                             success: function(response) {
                                 if (response.status == "success") {
                                     $('#task-file-list').html(response.view);
@@ -847,7 +740,7 @@ $changeStatusPermission = user()->permission('change_status');
                 });
             });
 
-            $('body').on('click', '.delete-note', function() {
+            $body.on('click' + namespace, '.delete-note', function() {
                 var id = $(this).data('row-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
@@ -857,29 +750,17 @@ $changeStatusPermission = user()->permission('change_status');
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        var url = "{{ route('task-note.destroy', ':id') }}";
-                        url = url.replace(':id', id);
-
+                        var url = "{{ route('task-note.destroy', ':id') }}".replace(':id', id);
                         var token = "{{ csrf_token() }}";
-
                         $.easyAjax({
                             type: 'POST',
                             url: url,
-                            data: {
-                                '_token': token,
-                                '_method': 'DELETE'
-                            },
+                            data: { '_token': token, '_method': 'DELETE' },
                             success: function(response) {
                                 if (response.status == "success") {
                                     $('#note-list').html(response.view);
@@ -890,15 +771,14 @@ $changeStatusPermission = user()->permission('change_status');
                 });
             });
 
-            $('body').on('click', '.edit-note', function() {
+            $body.on('click' + namespace, '.edit-note', function() {
                 var id = $(this).data('row-id');
-                var url = "{{ route('task-note.edit', ':id') }}";
-                url = url.replace(':id', id);
+                var url = "{{ route('task-note.edit', ':id') }}".replace(':id', id);
                 $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
                 $.ajaxModal(MODAL_LG, url);
             });
 
-            $('#start-task-timer').click(function() {
+            $body.on('click' + namespace, '#start-task-timer', function() {
                 var task_id = "{{ $task->id }}";
                 var project_id = "{{ $task->project_id }}";
                 var user_id = "{{ user()->id }}";
@@ -909,41 +789,31 @@ $changeStatusPermission = user()->permission('change_status');
                     url: "{{ route('timelogs.start_timer') }}",
                     blockUI: true,
                     type: "POST",
-                    data: {
-                        task_id: task_id,
-                        project_id: project_id,
-                        memo: memo,
-                        '_token': token,
-                        user_id: user_id
-                    },
+                    data: { task_id: task_id, project_id: project_id, memo: memo, '_token': token, user_id: user_id },
                     success: function(response) {
                         if (response.status == 'success') {
                             window.location.reload();
                         }
                     }
-                })
+                });
             });
 
-            $('#stop-task-timer').click(function() {
+            $body.on('click' + namespace, '#stop-task-timer', function() {
                 var id = $(this).data('time-id');
-                var url = "{{ route('timelogs.stop_timer', ':id') }}";
-                url = url.replace(':id', id);
+                var url = "{{ route('timelogs.stop_timer', ':id') }}".replace(':id', id);
                 var token = '{{ csrf_token() }}';
                 $.easyAjax({
                     url: url,
                     blockUI: true,
                     type: "POST",
-                    data: {
-                        timeId: id,
-                        _token: token
-                    },
+                    data: { timeId: id, _token: token },
                     success: function(data) {
                         window.location.reload();
                     }
-                })
+                });
             });
 
-            $('body').on('click', '#reminderButton', function() {
+            $body.on('click' + namespace, '#reminderButton', function() {
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
                     text: "@lang('messages.sendReminder')",
@@ -952,34 +822,24 @@ $changeStatusPermission = user()->permission('change_status');
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmSend')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
                         var url = "{{ route('tasks.reminder') }}";
                         var token = "{{ csrf_token() }}";
-
                         $.easyAjax({
                             type: 'POST',
                             blockUI: true,
                             url: url,
-                            data: {
-                                'id': "{{ $task->id }}",
-                                '_token': token
-                            }
+                            data: { 'id': "{{ $task->id }}", '_token': token }
                         });
                     }
                 });
             });
 
-            $('body').on('click', '.comment-like', function() {
+            $body.on('click' + namespace, '.comment-like', function() {
                 var commentId = $(this).data('comment-id');
                 var emojiName = $(this).data('emoji');
                 var token = '{{ csrf_token() }}';
@@ -991,22 +851,23 @@ $changeStatusPermission = user()->permission('change_status');
                     container: '#comment-list',
                     disableButton: true,
                     blockUI: true,
-                    data: {
-                        '_token': token,
-                        'commentId': commentId,
-                        'emojiName':emojiName
-                    },
+                    data: { '_token': token, 'commentId': commentId, 'emojiName': emojiName },
                     success: function(response) {
                         if (response.status == "success") {
-                        $("#emoji-"+commentId).html(response.view);
+                            $("#emoji-" + commentId).html(response.view);
                         }
-
                     }
                 });
-            })
-
+            });
 
             init(RIGHT_MODAL);
-        });
+
+            window.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                if (timerTimeout) clearTimeout(timerTimeout);
+                clipboard.destroy();
+                window.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
     </script>
 </div>

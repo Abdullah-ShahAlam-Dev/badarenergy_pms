@@ -97,33 +97,47 @@ $viewClientContact = user()->permission('view_client_contacts');
 
 @push('scripts')
     <script>
-        $("body").on("click", ".ajax-tab", function(event) {
-            event.preventDefault();
+        (function() {
+            var $body = $('body');
+            var activeTab = "{{ $activeTab }}";
 
-            $('.project-menu .p-sub-menu').removeClass('active');
-            $(this).addClass('active');
+            $('.project-menu .' + activeTab).addClass('active');
 
+            $body.off('.clientsShow');
 
-            const requestUrl = this.href;
+            $body.on('click.clientsShow', '.ajax-tab', function(event) {
+                event.preventDefault();
+                $('.project-menu .p-sub-menu').removeClass('active');
+                $(this).addClass('active');
 
-            $.easyAjax({
-                url: requestUrl,
-                blockUI: true,
-                container: ".content-wrapper",
-                historyPush: true,
-                success: function(response) {
-                    if (response.status == "success") {
-                        $('.content-wrapper').html(response.html);
-                        init('.content-wrapper');
+                var requestUrl = this.href;
+                $.easyAjax({
+                    url: requestUrl,
+                    blockUI: true,
+                    container: ".content-wrapper",
+                    historyPush: true,
+                    success: function(response) {
+                        if (response.status == "success") {
+                            $('.content-wrapper').html(response.html);
+                            init('.content-wrapper');
+                        }
                     }
-                }
+                });
             });
-        });
 
-    </script>
-    <script>
-        const activeTab = "{{ $activeTab }}";
-        $('.project-menu .' + activeTab).addClass('active');
+            window.openClientDetailSidebar = function() {
+                $('#mob-client-detail').addClass('open');
+                $('#close-client-overlay').addClass('open');
+            };
 
+            $body.on('click.clientsShow', '#close-client-detail, #close-client-overlay', function() {
+                $('#mob-client-detail').removeClass('open');
+                $('#close-client-overlay').removeClass('open');
+            });
+
+            document.addEventListener("turbo:before-cache", function() {
+                $body.off('.clientsShow');
+            }, { once: true });
+        })();
     </script>
 @endpush

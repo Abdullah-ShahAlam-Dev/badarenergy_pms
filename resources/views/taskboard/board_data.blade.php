@@ -140,76 +140,74 @@ $changeStatusPermission = user()->permission('change_status');
 
 <!-- Drag and Drop Plugin -->
 <script>
-    var arraylike = document.getElementsByClassName('b-p-tasks');
-    var containers = Array.prototype.slice.call(arraylike);
-    var drake = dragula({
-            containers: containers,
-            moves: function(el, source, handle, sibling) {
-                if (el.classList.contains('move-disable') || !KTUtil.isDesktopDevice()) {
-                    return false;
+    (function() {
+        if (window.drake) {
+            window.drake.destroy();
+        }
+        
+        var arraylike = document.getElementsByClassName('b-p-tasks');
+        var containers = Array.prototype.slice.call(arraylike);
+        window.drake = dragula({
+                containers: containers,
+                moves: function(el, source, handle, sibling) {
+                    if (el.classList.contains('move-disable') || !KTUtil.isDesktopDevice()) {
+                        return false;
+                    }
+                    return true;
+                },
+            })
+            .on('drag', function(el) {
+                el.className = el.className.replace('ex-moved', '');
+            }).on('drop', function(el) {
+                el.className += ' ex-moved';
+            }).on('over', function(el, container) {
+                container.className += ' ex-over';
+            }).on('out', function(el, container) {
+                container.className = container.className.replace('ex-over', '');
+            });
+
+        window.drake.on('drop', function(element, target, source, sibling) {
+            var $target = $('#' + target.id);
+            var $source = $('#' + source.id);
+            var boardColumnId = $target.data('column-id');
+            var movingTaskId = $('#' + element.id).data('task-id');
+
+            var sourceBoardColumnId = $source.data('column-id');
+            var sourceColumnCount = parseInt($('#task-column-count-' + sourceBoardColumnId).text());
+            var targetColumnCount = parseInt($('#task-column-count-' + boardColumnId).text());
+
+            var taskIds = [];
+            var prioritys = [];
+
+            $target.children().each(function(ind, el) {
+                taskIds.push($(el).data('task-id'));
+                prioritys.push($(el).index());
+            });
+
+            $.easyAjax({
+                url: "{{ route('taskboards.update_index') }}",
+                type: 'POST',
+                container: '#taskboard-columns',
+                blockUI: true,
+                data: {
+                    boardColumnId: boardColumnId,
+                    movingTaskId: movingTaskId,
+                    taskIds: taskIds,
+                    prioritys: prioritys,
+                    '_token': '{{ csrf_token() }}'
+                },
+                success: function() {
+                    if ($source.find('.task-card').length == 0) {
+                        $source.find('.no-task-card').removeClass('d-none');
+                    }
+                    if ($target.find('.task-card').length > 0) {
+                        $target.find('.no-task-card').addClass('d-none');
+                    }
+
+                    $('#task-column-count-' + sourceBoardColumnId).text(sourceColumnCount - 1);
+                    $('#task-column-count-' + boardColumnId).text(targetColumnCount + 1);
                 }
-
-                return true; // elements are always draggable by default
-            },
-        })
-        .on('drag', function(el) {
-            el.className = el.className.replace('ex-moved', '');
-        }).on('drop', function(el) {
-            el.className += ' ex-moved';
-        }).on('over', function(el, container) {
-            container.className += ' ex-over';
-        }).on('out', function(el, container) {
-            container.className = container.className.replace('ex-over', '');
+            });
         });
-
-</script>
-
-<script>
-    drake.on('drop', function(element, target, source, sibling) {
-        var elementId = element.id;
-
-        $children = $('#' + target.id).children();
-        var boardColumnId = $('#' + target.id).data('column-id');
-        var movingTaskId = $('#' + element.id).data('task-id');
-
-        var sourceBoardColumnId = $('#' + source.id).data('column-id');
-        var sourceColumnCount = parseInt($('#task-column-count-' + sourceBoardColumnId).text());
-        var targetColumnCount = parseInt($('#task-column-count-' + boardColumnId).text());
-
-        var taskIds = [];
-        var prioritys = [];
-
-        $children.each(function(ind, el) {
-            taskIds.push($(el).data('task-id'));
-            prioritys.push($(el).index());
-        });
-
-        // update values for all tasks
-        $.easyAjax({
-            url: "{{ route('taskboards.update_index') }}",
-            type: 'POST',
-            container: '#taskboard-columns',
-            blockUI: true,
-            data: {
-                boardColumnId: boardColumnId,
-                movingTaskId: movingTaskId,
-                taskIds: taskIds,
-                prioritys: prioritys,
-                '_token': '{{ csrf_token() }}'
-            },
-            success: function() {
-                if ($('#' + source.id + ' .task-card').length == 0) {
-                    $('#' + source.id + ' .no-task-card').removeClass('d-none');
-                }
-                if ($('#' + target.id + ' .task-card').length > 0) {
-                    $('#' + target.id + ' .no-task-card').addClass('d-none');
-                }
-
-                $('#task-column-count-' + sourceBoardColumnId).text(sourceColumnCount - 1);
-                $('#task-column-count-' + boardColumnId).text(targetColumnCount + 1);
-            }
-        });
-
-    });
-
+    })();
 </script>

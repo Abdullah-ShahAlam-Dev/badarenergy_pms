@@ -298,8 +298,14 @@ $memberIds = $project->members->pluck('user_id')->toArray();
 </div>
 
 <script>
-    $(document).ready(function() {
-        $('#save-dashboard-widget').click(function() {
+    (function() {
+        var $body = $('body');
+        var namespace = '.projectOverview';
+
+        // Cleanup before re-binding
+        $body.off(namespace);
+
+        $body.on('click' + namespace, '#save-dashboard-widget', function() {
             $.easyAjax({
                 url: "{{ route('dashboard.widget', 'project-overview-dashboard') }}",
                 container: '#projectDashboardWidgetForm',
@@ -313,15 +319,10 @@ $memberIds = $project->members->pluck('user_id')->toArray();
             })
         });
 
-        $('.keep-open .dropdown-menu').on({
-            "click": function(e) {
-                e.stopPropagation();
-            }
-        });
-        $('.change-status').change(function() {
+        $body.on('change' + namespace, '.change-status', function() {
             var status = $(this).val();
             var url = "{{ route('projects.update_status', $project->id) }}";
-            var token = '{{ csrf_token() }}'
+            var token = '{{ csrf_token() }}';
 
             $.easyAjax({
                 url: url,
@@ -335,12 +336,12 @@ $memberIds = $project->members->pluck('user_id')->toArray();
             });
         });
 
-        $('body').on('click', '#pinnedItem', function() {
+        $body.on('click' + namespace, '#pinnedItem', function() {
             var type = $('#pinnedItem').attr('data-pinned');
             var id = '{{ $project->id }}';
             var pinType = 'project';
+            var dataPin = type.trim();
 
-            var dataPin = type.trim(type);
             if (dataPin == 'pinned') {
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
@@ -349,37 +350,23 @@ $memberIds = $project->members->pluck('user_id')->toArray();
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmUnpin')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        var url = "{{ route('projects.destroy_pin', ':id') }}";
-                        url = url.replace(':id', id);
-
+                        var url = "{{ route('projects.destroy_pin', ':id') }}".replace(':id', id);
                         var token = "{{ csrf_token() }}";
                         $.easyAjax({
                             type: 'POST',
                             url: url,
-                            data: {
-                                '_token': token,
-                                'type': pinType
-                            },
+                            data: { '_token': token, 'type': pinType },
                             success: function(response) {
-                                if (response.status == "success") {
-                                    window.location.reload();
-                                }
+                                if (response.status == "success") { window.location.reload(); }
                             }
                         })
                     }
                 });
-
             } else {
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
@@ -388,31 +375,19 @@ $memberIds = $project->members->pluck('user_id')->toArray();
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmPin')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
                         var url = "{{ route('projects.store_pin') }}?type=" + pinType;
-
                         var token = "{{ csrf_token() }}";
                         $.easyAjax({
                             type: 'POST',
                             url: url,
-                            data: {
-                                '_token': token,
-                                'project_id': id
-                            },
+                            data: { '_token': token, 'project_id': id },
                             success: function(response) {
-                                if (response.status == "success") {
-                                    window.location.reload();
-                                }
+                                if (response.status == "success") { window.location.reload(); }
                             }
                         });
                     }
@@ -420,7 +395,7 @@ $memberIds = $project->members->pluck('user_id')->toArray();
             }
         });
 
-        $('body').on('click', '.restore-project', function() {
+        $body.on('click' + namespace, '.restore-project', function() {
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
                 text: "@lang('messages.unArchiveMessage')",
@@ -429,43 +404,35 @@ $memberIds = $project->members->pluck('user_id')->toArray();
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmRevert')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
                     var url = "{{ route('projects.archive_restore', $project->id) }}";
-
                     var token = "{{ csrf_token() }}";
-
                     $.easyAjax({
                         type: 'POST',
                         url: url,
-                        data: {
-                            '_token': token
-                        },
+                        data: { '_token': token },
                         success: function(response) {
-                            if (response.status == "success") {
-                                window.location.reload();
-                            }
+                            if (response.status == "success") { window.location.reload(); }
                         }
                     });
                 }
             });
         });
 
-        $('body').on('click', '#new-chat', function() {
-            let clientId = $(this).data('client-id');
-            const url = "{{ route('messages.create') }}?clientId=" + clientId;
+        $body.on('click' + namespace, '#new-chat', function() {
+            var clientId = $(this).data('client-id');
+            var url = "{{ route('messages.create') }}?clientId=" + clientId;
             $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-    });
+        window.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            window.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

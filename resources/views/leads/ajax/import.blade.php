@@ -34,15 +34,16 @@
 </div>
 
 <script>
-
-    $(document).ready(function() {
-
-        $("#lead_import").dropify({
+    (function() {
+        var $body = $('body');
+        var $dropify = $("#lead_import").dropify({
             messages: dropifyMessages
         });
 
-        $('body').on('click', '#import-lead-form', function() {
-            const url = "{{ route('leads.import.store') }}";
+        $body.off('.leadsImport');
+
+        $body.on('click.leadsImport', '#import-lead-form', function() {
+            var url = "{{ route('leads.import.store') }}";
 
             $.easyAjax({
                 url: url,
@@ -60,5 +61,12 @@
                 }
             });
         });
-    });
+
+        document.addEventListener("turbo:before-cache", function() {
+            $body.off('.leadsImport');
+            if ($dropify.data('dropify')) {
+                $dropify.data('dropify').destroy();
+            }
+        }, { once: true });
+    })();
 </script>

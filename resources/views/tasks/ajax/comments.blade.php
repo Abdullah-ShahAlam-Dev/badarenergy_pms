@@ -157,52 +157,43 @@
 
 <!-- TAB CONTENT END -->
 <script>
-    var add_task_comments = "{{ $addTaskCommentPermission }}";
-    $(document).ready(function() {
+    (function() {
+        var $body = $('body');
+        var namespace = '.taskComment';
 
-        $('#add-comment').click(function() {
+        // Clean up any existing listeners in this namespace before re-binding
+        $body.off(namespace);
+
+        $body.on('click' + namespace, '#add-comment', function() {
             $(this).closest('.row').addClass('d-none');
             $('#save-comment-data-form').removeClass('d-none');
         });
 
-    });
-
-    $('#cancel-comment').click(function() {
-        $('#save-comment-data-form').addClass('d-none');
-        $('#add-comment').closest('.row').removeClass('d-none');
-
-    });
-        //quill mention
-
-        var userValues = @json($taskuserData);
-
-        $(document).ready(function() {
-            if (add_task_comments == "all" || add_task_comments == "added") {
-                quillMention(userValues, '#task-comment');
-            }
+        $body.on('click' + namespace, '#cancel-comment', function() {
+            $('#save-comment-data-form').addClass('d-none');
+            $('#add-comment').closest('.row').removeClass('d-none');
         });
 
+        if ("{{ $addTaskCommentPermission }}" == "all" || "{{ $addTaskCommentPermission }}" == "added") {
+            quillMention(@json($taskuserData), '#task-comment');
+        }
 
-        $('#submit-comment').click(function() {
+        $body.on('click' + namespace, '#submit-comment', function() {
             var comment = document.getElementById('task-comment').children[0].innerHTML;
             document.getElementById('task-comment-text').value = comment;
             var mention_user_id = $('#task-comment span[data-id]').map(function(){
-                return $(this).attr('data-id')
-
+                return $(this).attr('data-id');
             }).get();
 
-            var token = '{{ csrf_token() }}';
-            const url = "{{ route('taskComment.store') }}";
-
             $.easyAjax({
-                url: url,
+                url: "{{ route('taskComment.store') }}",
                 container: '#save-comment-data-form',
                 type: "POST",
                 disableButton: true,
                 blockUI: true,
                 buttonSelector: "#submit-comment",
                 data: {
-                    '_token': token,
+                    '_token': '{{ csrf_token() }}',
                     comment: comment,
                     mention_user_id : mention_user_id,
                     taskId: '{{ $task->id }}'
@@ -213,10 +204,14 @@
                         document.getElementById('task-comment').children[0].innerHTML = "";
                         $('#task-comment-text').val('');
                     }
-
                 }
             });
         });
 
-
-  </script>
+        window.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            destory_editor('#task-comment');
+            window.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
+</script>

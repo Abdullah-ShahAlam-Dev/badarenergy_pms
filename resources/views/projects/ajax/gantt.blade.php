@@ -112,13 +112,13 @@ $editTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->
 <!-- ROW END -->
 
 <script>
-    var allowDrag = "{{ ($editTaskPermission == 'all' ? 'true' : 'false') }}";
-</script>
+    (function() {
+        var $body = $('body');
+        var namespace = '.projectGantt';
+        var allowDrag = "{{ ($editTaskPermission == 'all' ? 'true' : 'false') }}";
 
-<script src="{{ asset('vendor/frappe/frappe-gantt.js') }}"></script>
-
-<script>
-    $(document).ready(function() {
+        // Cleanup before re-binding
+        $body.off(namespace);
 
         function loadData() {
             var projectID = "{{ $project->id }}";
@@ -156,13 +156,10 @@ $editTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->
                         on_date_change: function(task, start, end) {
                             var taskId = task.taskid;
                             var token = '{{ csrf_token() }}';
-                            var url =
-                                "{{ route('tasks.gantt_task_update', ':id') }}";
+                            var url = "{{ route('tasks.gantt_task_update', ':id') }}";
                             url = url.replace(':id', taskId);
-                            var startDate = moment.utc(start.toDateString())
-                                .format('DD/MM/Y');
-                            var endDate = moment.utc(end.toDateString())
-                                .subtract(1, "days").format('DD/MM/Y');
+                            var startDate = moment.utc(start.toDateString()).format('DD/MM/Y');
+                            var endDate = moment.utc(end.toDateString()).subtract(1, "days").format('DD/MM/Y');
 
                             $.easyAjax({
                                 url: url,
@@ -175,21 +172,13 @@ $editTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->
                                 }
                             });
                         },
-                        on_progress_change: function(task, progress) {
-                        },
-                        on_view_change: function(mode) {
-                        }
+                        on_progress_change: function(task, progress) {},
+                        on_view_change: function(mode) {}
                     });
-
                 }
             });
         }
 
-        $('#assignedTo, #gantt-view, #projectTask, #task_status, #milestones').on('change keyup', function() {
-            loadData();
-        });
-
-        // Task Detail show in sidebar
         var taskDetail = function(id) {
             openTaskDetail();
             var url = "{{ route('tasks.show', ':id') }}";
@@ -207,24 +196,27 @@ $editTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->
                     }
                 },
                 error: function(request, status, error) {
+                    var $content = $(RIGHT_MODAL_CONTENT);
                     if (request.status == 403) {
-                        $(RIGHT_MODAL_CONTENT).html(
-                            '<div class="align-content-between d-flex justify-content-center mt-105 f-21">403 | Permission Denied</div>'
-                        );
+                        $content.html('<div class="align-content-between d-flex justify-content-center mt-105 f-21">403 | Permission Denied</div>');
                     } else if (request.status == 404) {
-                        $(RIGHT_MODAL_CONTENT).html(
-                            '<div class="align-content-between d-flex justify-content-center mt-105 f-21">404 | Not Found</div>'
-                        );
+                        $content.html('<div class="align-content-between d-flex justify-content-center mt-105 f-21">404 | Not Found</div>');
                     } else if (request.status == 500) {
-                        $(RIGHT_MODAL_CONTENT).html(
-                            '<div class="align-content-between d-flex justify-content-center mt-105 f-21">500 | Something Went Wrong</div>'
-                        );
+                        $content.html('<div class="align-content-between d-flex justify-content-center mt-105 f-21">500 | Something Went Wrong</div>');
                     }
                 }
             });
         }
 
-        loadData();
-    });
+        $body.on('change' + namespace + ' keyup' + namespace, '#assignedTo, #gantt-view, #projectTask, #task_status, #milestones', function() {
+            loadData();
+        });
 
+        loadData();
+
+        window.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            window.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

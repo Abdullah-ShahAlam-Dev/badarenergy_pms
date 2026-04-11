@@ -52,14 +52,22 @@ $viewClientNote = user()->permission('view_lead_note');
 @endsection
 
 @push('scripts')
-    <script>
-        $("body").on("click", ".ajax-tab", function(event) {
+<script>
+    (function() {
+        var $body = $('body');
+        var activeTab = "{{ $activeTab }}";
+
+        $('.project-menu .' + activeTab).addClass('active');
+
+        $body.off('.leadsShow');
+
+        $body.on('click.leadsShow', '.ajax-tab', function(event) {
             event.preventDefault();
 
             $('.project-menu .p-sub-menu').removeClass('active');
             $(this).addClass('active');
 
-            const requestUrl = this.href;
+            var requestUrl = this.href;
 
             $.easyAjax({
                 url: requestUrl,
@@ -75,18 +83,12 @@ $viewClientNote = user()->permission('view_lead_note');
             });
         });
 
-    </script>
-    <script>
-        const activeTab = "{{ $activeTab }}";
-        $('.project-menu .' + activeTab).addClass('active');
-
-        $('body').on('click', '#add-files', function() {
-            const url = "{{ route('lead-files.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+        $body.on('click.leadsShow', '#add-files', function() {
+            var url = "{{ route('lead-files.create') }}";
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('body').on('click', '.delete-table-row', function() {
+        $body.on('click.leadsShow', '.delete-table-row', function() {
             var id = $(this).data('id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
@@ -96,29 +98,17 @@ $viewClientNote = user()->permission('view_lead_note');
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    var url = "{{ route('leads.destroy', ':id') }}";
-                    url = url.replace(':id', id);
-
+                    var url = "{{ route('leads.destroy', ':id') }}".replace(':id', id);
                     var token = "{{ csrf_token() }}";
-
                     $.easyAjax({
                         type: 'POST',
                         url: url,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
+                        data: { '_token': token, '_method': 'DELETE' },
                         success: function(response) {
                             if (response.status == "success") {
                                 window.location.href = "{{ route('leads.index')}}";
@@ -129,5 +119,9 @@ $viewClientNote = user()->permission('view_lead_note');
             });
         });
 
-    </script>
+        document.addEventListener("turbo:before-cache", function() {
+            $body.off('.leadsShow');
+        }, { once: true });
+    })();
+</script>
 @endpush

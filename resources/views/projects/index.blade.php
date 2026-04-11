@@ -275,177 +275,190 @@ $deleteProjectPermission = user()->permission('delete_projects');
     @include('sections.datatable_js')
 
     <script>
-        var deadLineStartDate = '';
-        var deadLineEndDate = '';
+        (function() {
+            var deadLineStartDate = '';
+            var deadLineEndDate = '';
+            var startFilterDate = '';
+            var endFilterDate = '';
+            var $body = $('body');
+            var namespace = '.projectsIndex';
+            var $table = $('#projects-table');
 
-        var startFilterDate = '';
-        var endFilterDate = '';
-        $(".select-picker").selectpicker();
-
-        $('#projects-table').on('preXhr.dt', function(e, settings, data) {
-
-            var dateRangePicker = $('#datatableRange').data('daterangepicker');
-            var startFilterDate = $('#datatableRange').val();
-
-            if (startFilterDate == '') {
-                startFilterDate = null;
-                endFilterDate = null;
-            } else {
-                startFilterDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endFilterDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+            // Initial cleanup of any previous instances/listeners
+            $body.off(namespace);
+            if (window.LaravelDataTables && window.LaravelDataTables["projects-table"]) {
+                window.LaravelDataTables["projects-table"].destroy();
             }
 
-            var status = $('#status').val();
-            var clientID = $('#client_id').val();
-            var categoryID = $('#category_id').val();
-            var teamID = $('#team_id').val();
-            var employee_id = $('#employee_id').val();
-            var pinned = $('#pinned').val();
-            var date_filter_on = $('#date_filter_on').val();
-            var public = $('#public').val();
-            var searchText = $('#search-text-field').val();
-            var progress = $('#progress').val();
+            $(".select-picker").selectpicker();
 
-            @if (request('deadLineStartDate') && request('deadLineEndDate'))
-                deadLineStartDate = '{{ request("deadLineStartDate") }}';
-                deadLineEndDate = '{{ request("deadLineEndDate") }}'
-            @endif
+            $table.on('preXhr.dt' + namespace, function(e, settings, data) {
+                var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                var currentRange = $('#datatableRange').val();
 
-            data['status'] = status;
-            data['progress'] = progress;
-            data['client_id'] = clientID;
-            data['pinned'] = pinned;
-            data['date_filter_on'] = date_filter_on;
-            data['category_id'] = categoryID;
-            data['team_id'] = teamID;
-            data['public'] = public;
-            data['employee_id'] = employee_id;
-            data['deadLineStartDate'] = deadLineStartDate;
-            data['deadLineEndDate'] = deadLineEndDate;
-            data['startFilterDate'] = startFilterDate;
-            data['endFilterDate'] = endFilterDate;
-            data['searchText'] = searchText;
-            @if (!is_null(request('start')) && !is_null(request('end')))
-                data['startDate'] = '{{ request('start') }}';
-                data['endDate'] = '{{ request('end') }}';
-            @endif
-        });
-
-        const showTable = () => {
-            window.LaravelDataTables["projects-table"].draw(false);
-        }
-
-        $('#client_id, #status, #employee_id, #team_id, #category_id, #pinned, #date_filter_on, #public, #progress').on('change keyup',
-            function() {
-                if ($('#status').val() != "not finished") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#employee_id').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#team_id').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#category_id').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#client_id').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#pinned').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#date_filter_on').val() != "deadline") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#public').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
+                if (currentRange == '') {
+                    startFilterDate = null;
+                    endFilterDate = null;
+                } else if (dateRangePicker) {
+                    startFilterDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endFilterDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
                 }
-                else if ($('#progress').val() != "all") {
+
+                var status = $('#status').val();
+                var clientID = $('#client_id').val();
+                var categoryID = $('#category_id').val();
+                var teamID = $('#team_id').val();
+                var employee_id = $('#employee_id').val();
+                var pinned = $('#pinned').val();
+                var date_filter_on = $('#date_filter_on').val();
+                var public = $('#public').val();
+                var searchText = $('#search-text-field').val();
+                var progress = $('#progress').val();
+
+                @if (request('deadLineStartDate') && request('deadLineEndDate'))
+                    deadLineStartDate = '{{ request("deadLineStartDate") }}';
+                    deadLineEndDate = '{{ request("deadLineEndDate") }}';
+                @endif
+
+                data['status'] = status;
+                data['progress'] = progress;
+                data['client_id'] = clientID;
+                data['pinned'] = pinned;
+                data['date_filter_on'] = date_filter_on;
+                data['category_id'] = categoryID;
+                data['team_id'] = teamID;
+                data['public'] = public;
+                data['employee_id'] = employee_id;
+                data['deadLineStartDate'] = deadLineStartDate;
+                data['deadLineEndDate'] = deadLineEndDate;
+                data['startFilterDate'] = startFilterDate;
+                data['endFilterDate'] = endFilterDate;
+                data['searchText'] = searchText;
+                @if (!is_null(request('start')) && !is_null(request('end')))
+                    data['startDate'] = '{{ request('start') }}';
+                    data['endDate'] = '{{ request('end') }}';
+                @endif
+            });
+
+            window.showTable = function() {
+                if (window.LaravelDataTables && window.LaravelDataTables["projects-table"]) {
+                    window.LaravelDataTables["projects-table"].draw(false);
+                }
+            };
+
+            $body.on('change' + namespace + ' keyup' + namespace, '#client_id, #status, #employee_id, #team_id, #category_id, #pinned, #date_filter_on, #public, #progress', function() {
+                var filtersActive = ($('#status').val() != "not finished") ||
+                                    ($('#employee_id').val() != "all") ||
+                                    ($('#team_id').val() != "all") ||
+                                    ($('#category_id').val() != "all") ||
+                                    ($('#client_id').val() != "all") ||
+                                    ($('#pinned').val() != "all") ||
+                                    ($('#date_filter_on').val() != "deadline") ||
+                                    ($('#public').val() != "all") ||
+                                    ($('#progress').val() != "all");
+
+                if (filtersActive) {
                     $('#reset-filters').removeClass('d-none');
-                    showTable();
-                }else {
+                } else {
                     $('#reset-filters').addClass('d-none');
-                    showTable();
+                }
+                window.showTable();
+            });
+
+            $body.on('keyup' + namespace, '#search-text-field', function() {
+                if ($(this).val() != "") {
+                    $('#reset-filters').removeClass('d-none');
+                }
+                window.showTable();
+            });
+
+            $body.on('click' + namespace, '.show-pinned', function() {
+                $('.projects').removeClass('btn-active');
+                if ($(this).hasClass('btn-active')) {
+                    $('#pinned').val('all');
+                } else {
+                    $('#pinned').val('pinned');
+                }
+
+                $('#pinned').selectpicker('refresh');
+                $(this).toggleClass('btn-active');
+                $('#reset-filters').removeClass('d-none');
+                window.showTable();
+            });
+
+            $body.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
+                $('#filter-form')[0].reset();
+                $('.filter-box #date_filter_on').val('deadline');
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                window.showTable();
+            });
+
+            $body.on('change' + namespace, '.change-status', function() {
+                var url = "{{ route('projects.change_status') }}";
+                var token = "{{ csrf_token() }}";
+                var id = $(this).data('project-id');
+                var status = $(this).val();
+
+                if (id != "" && status != "") {
+                    $.easyAjax({
+                        url: url,
+                        type: "POST",
+                        container: '.content-wrapper',
+                        blockUI: true,
+                        data: {
+                            '_token': token,
+                            projectId: id,
+                            statusId: status,
+                            sortBy: 'id'
+                        },
+                        success: function(data) {
+                            window.showTable();
+                        }
+                    });
                 }
             });
 
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            }
-        });
-
-        $('.show-pinned').click(function() {
-            $('.projects').removeClass('btn-active');
-            if ($(this).hasClass('btn-active')) {
-                $('#pinned').val('all');
-            } else {
-                $('#pinned').val('pinned');
-            }
-
-            $('#pinned').selectpicker('refresh');
-            $(this).toggleClass('btn-active')
-            $('#reset-filters').removeClass('d-none');
-            showTable();
-        });
-
-        $('#reset-filters,#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
-            $('.filter-box #date_filter_on').val('deadline');
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        $('#projects-table').on('change', '.change-status', function() {
-            var url = "{{ route('projects.change_status') }}";
-            var token = "{{ csrf_token() }}";
-            var id = $(this).data('project-id');
-            var status = $(this).val();
-
-            if (id != "" && status != "") {
-                $.easyAjax({
-                    url: url,
-                    type: "POST",
-                    container: '.content-wrapper',
-                    blockUI: true,
-                    data: {
-                        '_token': token,
-                        projectId: id,
-                        statusId: status,
-                        sortBy: 'id'
-                    },
-                    success: function(data) {
-                        window.LaravelDataTables["projects-table"].draw(false);
-                    }
-                });
-
-            }
-        });
-
-        $('#quick-action-type').change(function() {
-            const actionValue = $(this).val();
-            if (actionValue != '') {
-                $('#quick-action-apply').removeAttr('disabled');
-
-                if (actionValue == 'change-status') {
+            $body.on('change' + namespace, '#quick-action-type', function() {
+                var actionValue = $(this).val();
+                if (actionValue != '') {
+                    $('#quick-action-apply').removeAttr('disabled');
                     $('.quick-action-field').addClass('d-none');
-                    $('#change-status-action').removeClass('d-none');
+                    if (actionValue == 'change-status') {
+                        $('#change-status-action').removeClass('d-none');
+                    }
                 } else {
+                    $('#quick-action-apply').attr('disabled', true);
                     $('.quick-action-field').addClass('d-none');
                 }
-            } else {
-                $('#quick-action-apply').attr('disabled', true);
-                $('.quick-action-field').addClass('d-none');
-            }
-        });
+            });
 
-        $('#quick-action-apply').click(function() {
-            const actionValue = $('#quick-action-type').val();
-            if (actionValue == 'delete') {
+            $body.on('click' + namespace, '#quick-action-apply', function() {
+                var actionValue = $('#quick-action-type').val();
+                if (actionValue == 'delete') {
+                    Swal.fire({
+                        title: "@lang('messages.sweetAlertTitle')",
+                        text: "@lang('messages.recoverRecord')",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        focusConfirm: false,
+                        confirmButtonText: "@lang('messages.confirmDelete')",
+                        cancelButtonText: "@lang('app.cancel')",
+                        customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                        showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.applyQuickAction();
+                        }
+                    });
+                } else {
+                    window.applyQuickAction();
+                }
+            });
+
+            $body.on('click' + namespace, '.delete-table-row', function() {
+                var id = $(this).data('user-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
                     text: "@lang('messages.recoverRecord')",
@@ -454,151 +467,105 @@ $deleteProjectPermission = user()->permission('delete_projects');
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        applyQuickAction();
+                        var url = "{{ route('projects.destroy', ':id') }}";
+                        url = url.replace(':id', id);
+                        var token = "{{ csrf_token() }}";
+                        $.easyAjax({
+                            type: 'POST',
+                            url: url,
+                            container: '.content-wrapper',
+                            blockUI: true,
+                            data: { '_token': token, '_method': 'DELETE' },
+                            success: function(response) {
+                                if (response.status == "success") { window.showTable(); }
+                            }
+                        });
                     }
                 });
-
-            } else {
-                applyQuickAction();
-            }
-        });
-
-        $('body').on('click', '.delete-table-row', function() {
-            var id = $(this).data('user-id');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.recoverRecord')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmDelete')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('projects.destroy', ':id') }}";
-                    url = url.replace(':id', id);
-
-                    var token = "{{ csrf_token() }}";
-
-                    $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        container: '.content-wrapper',
-                        blockUI: true,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
-                        success: function(response) {
-                            if (response.status == "success") {
-                                showTable();
-                            }
-                        }
-                    });
-                }
             });
-        });
 
-        $('body').on('click', '.archive', function() {
-            var id = $(this).data('user-id');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.archiveMessage')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmArchive')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('projects.archive_delete', ':id') }}";
-                    url = url.replace(':id', id);
-
-                    var token = "{{ csrf_token() }}";
-
-                    $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        container: '.content-wrapper',
-                        blockUI: true,
-                        data: {
-                            '_token': token,
-                        },
-                        success: function(response) {
-                            if (response.status == "success") {
-                                window.LaravelDataTables["projects-table"].draw(false);
+            $body.on('click' + namespace, '.archive', function() {
+                var id = $(this).data('user-id');
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.archiveMessage')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmArchive')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        var url = "{{ route('projects.archive_delete', ':id') }}";
+                        url = url.replace(':id', id);
+                        var token = "{{ csrf_token() }}";
+                        $.easyAjax({
+                            type: 'POST',
+                            url: url,
+                            container: '.content-wrapper',
+                            blockUI: true,
+                            data: { '_token': token },
+                            success: function(response) {
+                                if (response.status == "success") { window.showTable(); }
                             }
-                        }
-                    });
-                }
-            });
-        });
-
-        const applyQuickAction = () => {
-            var rowdIds = $("#projects-table input:checkbox:checked").map(function() {
-                return $(this).val();
-            }).get();
-
-            var url = "{{ route('projects.apply_quick_action') }}?row_ids=" + rowdIds;
-
-            $.easyAjax({
-                url: url,
-                container: '#quick-action-form',
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#quick-action-apply",
-                data: $('#quick-action-form').serialize(),
-                success: function(response) {
-                    if (response.status == 'success') {
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
-                        $('#quick-action-apply').attr('disabled', 'disabled');
-                        $('#change-status-action').addClass('d-none');
-                        $('#quick-action-form').hide();
+                        });
                     }
+                });
+            });
+
+            window.applyQuickAction = function() {
+                var rowdIds = $("#projects-table input:checkbox:checked").map(function() {
+                    return $(this).val();
+                }).get();
+
+                var url = "{{ route('projects.apply_quick_action') }}?row_ids=" + rowdIds;
+
+                $.easyAjax({
+                    url: url,
+                    container: '#quick-action-form',
+                    type: "POST",
+                    disableButton: true,
+                    buttonSelector: "#quick-action-apply",
+                    data: $('#quick-action-form').serialize(),
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            window.showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                            $('#quick-action-apply').attr('disabled', 'disabled');
+                            $('#change-status-action').addClass('d-none');
+                            $('#quick-action-form').hide();
+                        }
+                    }
+                })
+            };
+
+            $body.on('click' + namespace, '.duplicateProject', function() {
+                var id = $(this).data('project-id');
+                var url = "{{ route('projects.duplicate_project', ':id') }}".replace(':id', id);
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG, url);
+            });
+
+            window.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                $table.off(namespace);
+                if (window.LaravelDataTables && window.LaravelDataTables["projects-table"]) {
+                    window.LaravelDataTables["projects-table"].destroy();
                 }
-            })
-        };
+                window.showTable = undefined;
+                window.applyQuickAction = undefined;
+                window.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
 
-
-        $('body').on('click', '.duplicateProject', function(){
-            var id = $(this).data('project-id');
-            var url = "{{ route('projects.duplicate_project', ':id') }}";
-            url = url.replace(':id', id);
-
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
-
+        })();
     </script>
 @endpush

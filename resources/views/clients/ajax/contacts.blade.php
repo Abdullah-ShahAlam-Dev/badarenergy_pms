@@ -1,4 +1,4 @@
-@php
+﻿@php
 $addClientPermission = user()->permission('add_client_contacts');
 @endphp
 
@@ -40,35 +40,87 @@ $addClientPermission = user()->permission('add_client_contacts');
 @include('sections.datatable_js')
 
 <script>
-    $('#clients-table').on('preXhr.dt', function(e, settings, data) {
-        var clientID = "{{ $client->id }}";
+    (function() {
+        var $body = $('body');
+        var $table = $('#clients-table');
 
-        data['clientID'] = clientID;
-    });
-    const showTable = () => {
-        window.LaravelDataTables["clients-table"].draw(false);
-    }
+        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+            var clientID = "{{ $client->id }}";
+            data['clientID'] = clientID;
+        });
 
-    $('#quick-action-type').change(function() {
-        const actionValue = $(this).val();
-        if (actionValue != '') {
-            $('#quick-action-apply').removeAttr('disabled');
+        var showTable = function() {
+            if (window.LaravelDataTables["clients-table"]) {
+                window.LaravelDataTables["clients-table"].draw(false);
+            }
+        };
 
-            if (actionValue == 'change-status') {
-                $('.quick-action-field').addClass('d-none');
-                $('#change-status-action').removeClass('d-none');
+        $body.off('.clientsContacts');
+
+        $body.on('change.clientsContacts', '#quick-action-type', function() {
+            var actionValue = $(this).val();
+            if (actionValue != '') {
+                $('#quick-action-apply').removeAttr('disabled');
+                if (actionValue == 'change-status') {
+                    $('.quick-action-field').addClass('d-none');
+                    $('#change-status-action').removeClass('d-none');
+                } else {
+                    $('.quick-action-field').addClass('d-none');
+                }
             } else {
+                $('#quick-action-apply').attr('disabled', true);
                 $('.quick-action-field').addClass('d-none');
             }
-        } else {
-            $('#quick-action-apply').attr('disabled', true);
-            $('.quick-action-field').addClass('d-none');
-        }
-    });
+        });
 
-    $('#quick-action-apply').click(function() {
-        const actionValue = $('#quick-action-type').val();
-        if (actionValue == 'delete') {
+        var applyQuickAction = function() {
+            var rowdIds = $("#clients-table input:checkbox:checked").map(function() {
+                return $(this).val();
+            }).get();
+
+            var url = "{{ route('client-contacts.apply_quick_action') }}?row_ids=" + rowdIds;
+
+            $.easyAjax({
+                url: url,
+                container: '#quick-action-form',
+                type: "POST",
+                disableButton: true,
+                buttonSelector: "#quick-action-apply",
+                data: $('#quick-action-form').serialize(),
+                success: function(response) {
+                    if (response.status == 'success') {
+                        showTable();
+                        if (typeof resetActionButtons === 'function') resetActionButtons();
+                        if (typeof deSelectAll === 'function') deSelectAll();
+                    }
+                }
+            });
+        };
+
+        $body.on('click.clientsContacts', '#quick-action-apply', function() {
+            var actionValue = $('#quick-action-type').val();
+            if (actionValue == 'delete') {
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.recoverRecord')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) { applyQuickAction(); }
+                });
+            } else {
+                applyQuickAction();
+            }
+        });
+
+        $body.on('click.clientsContacts', '.delete-table-row', function() {
+            var id = $(this).data('user-id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
                 text: "@lang('messages.recoverRecord')",
@@ -77,90 +129,28 @@ $addClientPermission = user()->permission('add_client_contacts');
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    applyQuickAction();
+                    var url = "{{ route('client-contacts.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { showTable(); }
+                        }
+                    });
                 }
             });
-
-        } else {
-            applyQuickAction();
-        }
-    });
-
-    $('body').on('click', '.delete-table-row', function() {
-        var id = $(this).data('user-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('client-contacts.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            showTable();
-                        }
-                    }
-                });
-            }
         });
-    });
 
-    const applyQuickAction = () => {
-        var rowdIds = $("#clients-table input:checkbox:checked").map(function() {
-            return $(this).val();
-        }).get();
-
-        var url = "{{ route('client-contacts.apply_quick_action') }}?row_ids=" + rowdIds;
-
-        $.easyAjax({
-            url: url,
-            container: '#quick-action-form',
-            type: "POST",
-            disableButton: true,
-            buttonSelector: "#quick-action-apply",
-            data: $('#quick-action-form').serialize(),
-            success: function(response) {
-                if (response.status == 'success') {
-                    showTable();
-                    resetActionButtons();
-                    deSelectAll();
-                }
-            }
-        })
-    };
+        document.addEventListener("turbo:before-cache", function() {
+            $body.off('.clientsContacts');
+            $table.off('preXhr.dt');
+        }, { once: true });
+    })();
 </script>

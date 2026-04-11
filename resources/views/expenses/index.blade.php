@@ -168,94 +168,138 @@ $recurringExpensesPermission = user()->permission('manage_recurring_expense');
     @include('sections.datatable_js')
 
     <script>
-        $('#expenses-table').on('preXhr.dt', function(e, settings, data) {
-            var dateRangePicker = $('#datatableRange').data('daterangepicker');
-            var startDate = $('#datatableRange').val();
+        (function() {
+            var $body = $('body');
+            var $table = $('#expenses-table');
+            var namespace = '.expensesIndex';
 
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+            $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+                var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                var startDate = $('#datatableRange').val();
+                var endDate = null;
+
+                if (startDate == '') {
+                    startDate = null;
+                } else if (dateRangePicker) {
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                }
+
+                var status = $('#filter-status').val();
+                var searchText = $('#search-text-field').val();
+                var employee = $('#employee2').val();
+                var projectId = $('#project_id2').val();
+                var categoryId = $('#category_id').val();
+
+                data['startDate'] = startDate;
+                data['endDate'] = endDate;
+                data['status'] = status;
+                data['employee'] = employee;
+                data['projectId'] = projectId;
+                data['categoryId'] = categoryId;
+                data['searchText'] = searchText;
+            });
+
+            function showTable() {
+                if (window.LaravelDataTables && window.LaravelDataTables["expenses-table"]) {
+                    window.LaravelDataTables["expenses-table"].draw(false);
+                }
             }
+            window.showTable = showTable;
 
-            var status = $('#filter-status').val();
-            var searchText = $('#search-text-field').val();
-            var employee = $('#employee2').val();
-            var projectId = $('#project_id2').val();
-            var categoryId = $('#category_id').val();
+            $body.off(namespace);
 
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['status'] = status;
-            data['employee'] = employee;
-            data['projectId'] = projectId;
-            data['categoryId'] = categoryId;
-            data['searchText'] = searchText;
-        });
-        const showTable = () => {
-            window.LaravelDataTables["expenses-table"].draw(false);
-        }
-
-        $('#filter-status, #employee2,#project_id2,#category_id')
-            .on('change keyup',
-                function() {
-                    if ($('#filter-status').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else {
-                        $('#reset-filters').addClass('d-none');
-                        showTable();
-                    }
-                });
-
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            }
-        });
-
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-
-        $('#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box #status').val('not finished');
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-
-        $('#quick-action-type').change(function() {
-            const actionValue = $(this).val();
-            if (actionValue != '') {
-                $('#quick-action-apply').removeAttr('disabled');
-
-                if (actionValue == 'change-status') {
-                    $('.quick-action-field').addClass('d-none');
-                    $('#change-status-action').removeClass('d-none');
+            $body.on('change' + namespace + ' keyup' + namespace,
+                '#filter-status, #employee2, #project_id2, #category_id', function() {
+                if ($('#filter-status').val() != "all") {
+                    $('#reset-filters').removeClass('d-none');
                 } else {
+                    $('#reset-filters').addClass('d-none');
+                }
+                showTable();
+            });
+
+            $body.on('keyup' + namespace, '#search-text-field', function() {
+                if ($(this).val() != '') { $('#reset-filters').removeClass('d-none'); }
+                showTable();
+            });
+
+            $body.on('click' + namespace, '#reset-filters', function() {
+                $('#filter-form')[0].reset();
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            });
+
+            $body.on('click' + namespace, '#reset-filters-2', function() {
+                $('#filter-form')[0].reset();
+                $('.filter-box #status').val('not finished');
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            });
+
+            $body.on('change' + namespace, '#quick-action-type', function() {
+                var actionValue = $(this).val();
+                if (actionValue != '') {
+                    $('#quick-action-apply').removeAttr('disabled');
+                    $('.quick-action-field').addClass('d-none');
+                    if (actionValue == 'change-status') {
+                        $('#change-status-action').removeClass('d-none');
+                    }
+                } else {
+                    $('#quick-action-apply').attr('disabled', true);
                     $('.quick-action-field').addClass('d-none');
                 }
-            } else {
-                $('#quick-action-apply').attr('disabled', true);
-                $('.quick-action-field').addClass('d-none');
-            }
-        });
+            });
 
-        $('#quick-action-apply').click(function() {
-            const actionValue = $('#quick-action-type').val();
-            if (actionValue == 'delete') {
+            $body.on('click' + namespace, '#quick-action-apply', function() {
+                var actionValue = $('#quick-action-type').val();
+                if (actionValue == 'delete') {
+                    Swal.fire({
+                        title: "@lang('messages.sweetAlertTitle')",
+                        text: "@lang('messages.recoverRecord')",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        focusConfirm: false,
+                        confirmButtonText: "@lang('messages.confirmDelete')",
+                        cancelButtonText: "@lang('app.cancel')",
+                        customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                        showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            applyQuickAction();
+                        }
+                    });
+                } else {
+                    applyQuickAction();
+                }
+            });
+
+            $body.on('change' + namespace, '.change-expense-status', function() {
+                var id = $(this).data('expense-id');
+                var token = "{{ csrf_token() }}";
+                var status = $(this).val();
+
+                if (typeof id !== 'undefined') {
+                    $.easyAjax({
+                        url: "{{ route('expenses.change_status') }}",
+                        type: "POST",
+                        data: { '_token': token, expenseId: id, status: status },
+                        success: function(response) {
+                            if (response.status == "success") {
+                                showTable();
+                                if (typeof resetActionButtons === 'function') resetActionButtons();
+                                if (typeof deSelectAll === 'function') deSelectAll();
+                            }
+                        }
+                    });
+                }
+            });
+
+            $body.on('click' + namespace, '.delete-table-row', function() {
+                var id = $(this).data('expense-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
                     text: "@lang('messages.recoverRecord')",
@@ -264,120 +308,56 @@ $recurringExpensesPermission = user()->permission('manage_recurring_expense');
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        applyQuickAction();
-                    }
-                });
-
-            } else {
-                applyQuickAction();
-            }
-        });
-
-        $('body').on('change', '.change-expense-status', function() {
-            var id = $(this).data('expense-id');
-            var url = "{{ route('expenses.change_status') }}";
-
-            var token = "{{ csrf_token() }}";
-            var status = $(this).val();
-
-            if (typeof id !== 'undefined') {
-                $.easyAjax({
-                    url: "{{ route('expenses.change_status') }}",
-                    type: "POST",
-                    data: {
-                        '_token': token,
-                        expenseId: id,
-                        status: status
-                    },
-
-                    success: function(response) {
-                        if (response.status == "success") {
-                            showTable();
-                            resetActionButtons();
-                            deSelectAll();
-                        }
-                    }
-                });
-            }
-        });
-
-        $('body').on('click', '.delete-table-row', function() {
-            var id = $(this).data('expense-id');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.recoverRecord')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmDelete')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('expenses.destroy', ':id') }}";
-                    url = url.replace(':id', id);
-
-                    var token = "{{ csrf_token() }}";
-
-                    $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
-                        success: function(response) {
-                            if (response.status == "success") {
-                                showTable();
+                        var url = "{{ route('expenses.destroy', ':id') }}".replace(':id', id);
+                        var token = "{{ csrf_token() }}";
+                        $.easyAjax({
+                            type: 'POST',
+                            url: url,
+                            data: { '_token': token, '_method': 'DELETE' },
+                            success: function(response) {
+                                if (response.status == "success") { showTable(); }
                             }
-                        }
-                    });
-                }
-            });
-        });
-
-        const applyQuickAction = () => {
-            var rowdIds = $("#expenses-table input:checkbox:checked").map(function() {
-                return $(this).val();
-            }).get();
-
-            var url = "{{ route('expenses.apply_quick_action') }}?row_ids=" + rowdIds;
-
-            $.easyAjax({
-                url: url,
-                container: '#quick-action-form',
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#quick-action-apply",
-                data: $('#quick-action-form').serialize(),
-                success: function(response) {
-                    if (response.status == 'success') {
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
-                        $('#quick-action-form').hide();
+                        });
                     }
-                }
-            })
-        };
+                });
+            });
+
+            function applyQuickAction() {
+                var rowdIds = $("#expenses-table input:checkbox:checked").map(function() {
+                    return $(this).val();
+                }).get();
+
+                $.easyAjax({
+                    url: "{{ route('expenses.apply_quick_action') }}?row_ids=" + rowdIds,
+                    container: '#quick-action-form',
+                    type: "POST",
+                    disableButton: true,
+                    buttonSelector: "#quick-action-apply",
+                    data: $('#quick-action-form').serialize(),
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                            $('#quick-action-form').hide();
+                        }
+                    }
+                });
+            }
+            window.applyQuickAction = applyQuickAction;
+
+            document.addEventListener("turbo:before-cache", function cleanup() {
+                $body.off(namespace);
+                $table.off('preXhr.dt');
+                delete window.showTable;
+                delete window.applyQuickAction;
+                document.removeEventListener("turbo:before-cache", cleanup);
+            }, { once: true });
+        })();
     </script>
 @endpush

@@ -29,87 +29,78 @@ $deleteLeadFollowUpPermission = user()->permission('delete_lead_follow_up');
 <!-- ROW END -->
 @include('sections.datatable_js')
 <script>
+    (function() {
+        var $body = $('body');
+        var $table = $('#leadfollowup-table');
 
-    $('#leadfollowup-table').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+            var leadId = "{{ $lead->id }}";
+            data['leadId'] = leadId;
+        });
 
-    var leadId = "{{ $lead->id }}";
-    data['leadId'] = leadId;
-    });
-    const showTable = () => {
-    window.LaravelDataTables["leadfollowup-table"].draw(false);
-    }
-    $('body').on('click', '.delete-table-row-lead', function() {
-        var id = $(this).data('followup-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('leads.follow_up_delete', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            showTable();
-                        }
-                    }
-                });
+        var showTable = function() {
+            if (window.LaravelDataTables["leadfollowup-table"]) {
+                window.LaravelDataTables["leadfollowup-table"].draw(false);
             }
+        };
+
+        $body.off('.leadsFollowUp');
+
+        $body.on('click.leadsFollowUp', '#add-lead-followup', function() {
+            var url = "{{ route('leads.follow_up', $leadId) }}";
+            $.ajaxModal(MODAL_LG, url);
         });
-    });
 
-    $('#add-lead-followup').click(function() {
-        const url = "{{ route('leads.follow_up', $leadId) }}";
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    })
-
-    $('body').on('click', '.edit-table-row-lead', function() {
-        var id = $(this).data('followup-id');
-        var url = "{{ route('leads.follow_up_edit', ':id') }}";
-        url = url.replace(':id', id);
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    });
-    $('body').on('change', '.status', function() {
-        var status = $(this).val();
-        var followUpId = $(this).data('followup-id');
-        console.log(followUpId);
-        var url = "{{ route('leads.change_follow_up_status') }}";
-        var token = "{{ csrf_token() }}";
-
-        $.easyAjax({
-            url:url,
-            type:'POST',
-            blockUI: true,
-            data: {
-                '_token': token,
-                id: followUpId,
-                status: status,
-                sortBy: 'id'
-            },
+        $body.on('click.leadsFollowUp', '.edit-table-row-lead', function() {
+            var id = $(this).data('followup-id');
+            var url = "{{ route('leads.follow_up_edit', ':id') }}".replace(':id', id);
+            $.ajaxModal(MODAL_LG, url);
         });
-    })
+
+        $body.on('click.leadsFollowUp', '.delete-table-row-lead', function() {
+            var id = $(this).data('followup-id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('leads.follow_up_delete', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token },
+                        success: function(response) {
+                            if (response.status == "success") { showTable(); }
+                        }
+                    });
+                }
+            });
+        });
+
+        $body.on('change.leadsFollowUp', '.status', function() {
+            var status = $(this).val();
+            var followUpId = $(this).data('followup-id');
+            var url = "{{ route('leads.change_follow_up_status') }}";
+            var token = "{{ csrf_token() }}";
+
+            $.easyAjax({
+                url: url, type: 'POST', blockUI: true,
+                data: { '_token': token, id: followUpId, status: status, sortBy: 'id' }
+            });
+        });
+
+        document.addEventListener("turbo:before-cache", function() {
+            $body.off('.leadsFollowUp');
+            $table.off('.leadsFollowUp');
+        }, { once: true });
+    })();
 </script>

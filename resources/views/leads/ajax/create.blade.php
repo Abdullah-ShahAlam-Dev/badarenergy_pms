@@ -271,10 +271,9 @@ $addProductPermission = user()->permission('add_product');
 
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script>
-
-    var add_lead_note_permission = "{{ $addLeadNotePermission }}";
-
-    $(document).ready(function() {
+    (function() {
+        var $body = $('body');
+        var add_lead_note_permission = "{{ $addLeadNotePermission }}";
 
         $('.custom-date-picker').each(function(ind, el) {
             datepicker(el, {
@@ -283,39 +282,13 @@ $addProductPermission = user()->permission('add_product');
             });
         });
 
-        if(add_lead_note_permission == 'all' || add_lead_note_permission == 'added' || add_lead_note_permission == 'both') {
-
+        if (add_lead_note_permission == 'all' || add_lead_note_permission == 'added' || add_lead_note_permission == 'both') {
             quillImageLoad('#note');
-
         }
 
-        $('#save-more-lead-form').click(function () {
+        $body.off('.leadsCreate');
 
-            if(add_lead_note_permission == 'all' || add_lead_note_permission == 'added' || add_lead_note_permission == 'both') {
-            var note = document.getElementById('note').children[0].innerHTML;
-            document.getElementById('note-text').value = note;
-            }
-
-            const url = "{{ route('leads.store') }}";
-            var data = $('#save-lead-data-form').serialize() + '&add_more=true';
-
-            saveLead(data, url, "#save-more-lead-form");
-
-        });
-
-        $('#save-lead-form').click(function() {
-            if(add_lead_note_permission == 'all' || add_lead_note_permission == 'added' || add_lead_note_permission == 'both') {
-            var note = document.getElementById('note').children[0].innerHTML;
-            document.getElementById('note-text').value = note;
-            }
-
-            const url = "{{ route('leads.store') }}";
-            var data = $('#save-lead-data-form').serialize();
-            saveLead(data, url, "#save-lead-form");
-
-        });
-
-        function saveLead(data, url, buttonSelector) {
+        var saveLead = function(data, url, buttonSelector) {
             $.easyAjax({
                 url: url,
                 container: '#save-lead-data-form',
@@ -326,65 +299,82 @@ $addProductPermission = user()->permission('add_product');
                 buttonSelector: buttonSelector,
                 data: data,
                 success: function(response) {
-                    if(response.add_more == true) {
-
+                    if (response.add_more == true) {
                         var right_modal_content = $.trim($(RIGHT_MODAL_CONTENT).html());
-
-                        if(right_modal_content.length) {
-
+                        if (right_modal_content.length) {
                             $(RIGHT_MODAL_CONTENT).html(response.html.html);
-                            $('#add_more').val(false);
-                        }
-                        else {
-
+                        } else {
                             $('.content-wrapper').html(response.html.html);
                             init('.content-wrapper');
-                            $('#add_more').val(false);
                         }
-                    }
-                    else {
+                    } else {
                         window.location.href = response.redirectUrl;
                     }
 
                     if (typeof showTable !== 'undefined' && typeof showTable === 'function') {
-                            showTable();
+                        showTable();
                     }
                 }
             });
+        };
 
-        }
+        $body.on('click.leadsCreate', '#save-more-lead-form', function() {
+            if (add_lead_note_permission == 'all' || add_lead_note_permission == 'added' || add_lead_note_permission == 'both') {
+                var note = document.getElementById('note').children[0].innerHTML;
+                document.getElementById('note-text').value = note;
+            }
 
-        $('body').on('click', '.add-lead-agent', function() {
+            var url = "{{ route('leads.store') }}";
+            var data = $('#save-lead-data-form').serialize() + '&add_more=true';
+            saveLead(data, url, "#save-more-lead-form");
+        });
+
+        $body.on('click.leadsCreate', '#save-lead-form', function() {
+            if (add_lead_note_permission == 'all' || add_lead_note_permission == 'added' || add_lead_note_permission == 'both') {
+                var note = document.getElementById('note').children[0].innerHTML;
+                document.getElementById('note-text').value = note;
+            }
+
+            var url = "{{ route('leads.store') }}";
+            var data = $('#save-lead-data-form').serialize();
+            saveLead(data, url, "#save-lead-form");
+        });
+
+        $body.on('click.leadsCreate', '.add-lead-agent', function() {
             var url = '{{ route('lead-agent-settings.create') }}';
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('body').on('click', '.add-lead-source', function() {
+        $body.on('click.leadsCreate', '.add-lead-source', function() {
             var url = '{{ route('lead-source-settings.create') }}';
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('body').on('click', '.add-lead-category', function() {
+        $body.on('click.leadsCreate', '.add-lead-category', function() {
             var url = '{{ route('leadCategory.create') }}';
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('.toggle-other-details').click(function() {
+        $body.on('click.leadsCreate', '.toggle-other-details', function() {
             $(this).find('svg').toggleClass('fa-chevron-down fa-chevron-up');
             $('#other-details').toggleClass('d-none');
         });
 
-        init(RIGHT_MODAL);
-    });
+        var checkboxChange = function(parentClass, id) {
+            var checkedData = '';
+            $('.' + parentClass).find("input[type= 'checkbox']:checked").each(function() {
+                checkedData = (checkedData !== '') ? checkedData + ', ' + $(this).val() : $(this).val();
+            });
+            $('#' + id).val(checkedData);
+        };
 
-    function checkboxChange(parentClass, id){
-        var checkedData = '';
-        $('.'+parentClass).find("input[type= 'checkbox']:checked").each(function () {
-            checkedData = (checkedData !== '') ? checkedData+', '+$(this).val() : $(this).val();
-        });
-        $('#'+id).val(checkedData);
-    }
+        init(RIGHT_MODAL);
+
+        document.addEventListener("turbo:before-cache", function() {
+            $body.off('.leadsCreate');
+            if (typeof quill !== 'undefined' && quill) {
+                // Quill cleanup if necessary, though usually handled by DOM removal
+            }
+        }, { once: true });
+    })();
 </script>

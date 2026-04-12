@@ -921,23 +921,27 @@ class ProjectController extends AccountBaseController
 
     public function tasks($projectAdmin = false)
     {
-        $dataTable = new TasksDataTable($this->project->id);
+        try {
+            $dataTable = new TasksDataTable($this->project->id);
 
-        if (!$projectAdmin) {
-            $viewPermission = user()->permission('view_project_tasks');
-            abort_403(!in_array($viewPermission, ['all', 'added', 'owned']));
+            if (!$projectAdmin) {
+                $viewPermission = user()->permission('view_project_tasks');
+                abort_403(!in_array($viewPermission, ['all', 'added', 'owned']));
 
-            $viewPermission = user()->permission('view_tasks');
-            abort_403(!in_array($viewPermission, ['all', 'added', 'owned', 'both']));
+                $viewPermission = user()->permission('view_tasks');
+                abort_403(!in_array($viewPermission, ['all', 'added', 'owned', 'both']));
+            }
+
+            $tab = request('tab');
+            $this->activeTab = $tab ?: 'overview';
+
+            $this->view = 'projects.ajax.tasks';
+
+            return $dataTable->render('projects.show', $this->data);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\File::append(storage_path('logs/debug_tasks.txt'), $e->getMessage() . "\n" . $e->getTraceAsString() . "\n\n");
+            throw $e;
         }
-
-        $tab = request('tab');
-        $this->activeTab = $tab ?: 'overview';
-
-        $this->view = 'projects.ajax.tasks';
-
-        return $dataTable->render('projects.show', $this->data);
-
     }
 
     public function archivedTasks($projectAdmin = false)

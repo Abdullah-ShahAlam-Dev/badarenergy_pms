@@ -9,16 +9,16 @@ $viewProjectMemberPermission = user()->permission('view_project_members');
 $viewProjectMilestonePermission = ($project->project_admin == user()->id) ? 'all' : user()->permission('view_project_milestones');
 $viewTasksPermission = ($project->project_admin == user()->id) ? 'all' : user()->permission('view_project_tasks');
 $viewGanttPermission = ($project->project_admin == user()->id) ? 'all' : user()->permission('view_project_gantt_chart');
-$viewInvoicePermission = user()->permission('view_project_invoices');
+$viewInvoicePermission = user()->permission('view_invoices');
 $viewDiscussionPermission = user()->permission('view_project_discussions');
 $viewNotePermission = user()->permission('view_project_note');
 $viewFilesPermission = user()->permission('view_project_files');
 $viewRatingPermission = user()->permission('view_project_rating');
-$viewProjectTimelogPermission = user()->permission('view_project_timelogs');
-$viewExpensePermission = user()->permission('view_project_expenses');
-$viewMiroboardPermission = user()->permission('view_project_miroboard');
-$viewPaymentPermission = user()->permission('view_project_payments');
-$viewBurndownChartPermission = user()->permission('view_project_burndown_chart');
+$viewProjectTimelogPermission = user()->permission('view_timelogs');
+$viewExpensePermission = user()->permission('view_expenses');
+$viewMiroboardPermission = user()->permission('view_miroboard');
+$viewPaymentPermission = user()->permission('view_payments');
+$viewBurndownChartPermission = user()->permission('view_burndown_chart');
 $projectArchived = $project->trashed();
 @endphp
 

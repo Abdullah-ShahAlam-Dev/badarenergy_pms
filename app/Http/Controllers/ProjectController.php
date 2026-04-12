@@ -702,89 +702,85 @@ class ProjectController extends AccountBaseController
 
         $tab = request('tab');
 
-        try {
-            switch ($tab) {
-            case 'members':
-                abort_403(!(
-                    $this->viewProjectMemberPermission == 'all'
-                ));
-                $this->view = 'projects.ajax.members';
-                break;
-            case 'milestones':
-                $this->view = 'projects.ajax.milestones';
-                break;
-            case 'taskboard':
-                session()->forget('pusher_settings');
-                $this->view = 'projects.ajax.taskboard';
-                break;
-            case 'tasks':
-                $this->taskBoardStatus = TaskboardColumn::all();
+        switch ($tab) {
+        case 'members':
+            abort_403(!(
+                $this->viewProjectMemberPermission == 'all'
+            ));
+            $this->view = 'projects.ajax.members';
+            break;
+        case 'milestones':
+            $this->view = 'projects.ajax.milestones';
+            break;
+        case 'taskboard':
+            session()->forget('pusher_settings');
+            $this->view = 'projects.ajax.taskboard';
+            break;
+        case 'tasks':
+            $this->taskBoardStatus = TaskboardColumn::all();
 
-                return (!$this->project->trashed()) ? $this->tasks($this->project->project_admin == user()->id) : $this->archivedTasks($this->project->project_admin == user()->id);
-            case 'gantt':
-                $this->taskBoardStatus = TaskboardColumn::all();
-                $this->view = 'projects.ajax.gantt';
-                break;
-            case 'invoices':
-                return $this->invoices();
-            case 'files':
-                $this->view = 'projects.ajax.files';
-                break;
-            case 'timelogs':
-                return $this->timelogs($this->project->project_admin == user()->id);
-            case 'expenses':
-                return $this->expenses();
-            case 'miroboard';
-                abort_403(!in_array($this->viewMiroboardPermission, ['all']) || !$this->project->enable_miroboard &&
-                    ((!in_array('client', user_roles()) && !$this->project->client_access && $this->project->client_id != user()->id)));
-                $this->view = 'projects.ajax.miroboard';
-                break;
-            case 'payments':
-                return $this->payments();
-            case 'discussion':
-                $this->discussionCategories = DiscussionCategory::orderBy('order', 'asc')->get();
+            return (!$this->project->trashed()) ? $this->tasks($this->project->project_admin == user()->id) : $this->archivedTasks($this->project->project_admin == user()->id);
+        case 'gantt':
+            $this->taskBoardStatus = TaskboardColumn::all();
+            $this->view = 'projects.ajax.gantt';
+            break;
+        case 'invoices':
+            return $this->invoices();
+        case 'files':
+            $this->view = 'projects.ajax.files';
+            break;
+        case 'timelogs':
+            return $this->timelogs($this->project->project_admin == user()->id);
+        case 'expenses':
+            return $this->expenses();
+        case 'miroboard';
+            abort_403(!in_array($this->viewMiroboardPermission, ['all']) || !$this->project->enable_miroboard &&
+                ((!in_array('client', user_roles()) && !$this->project->client_access && $this->project->client_id != user()->id)));
+            $this->view = 'projects.ajax.miroboard';
+            break;
+        case 'payments':
+            return $this->payments();
+        case 'discussion':
+            $this->discussionCategories = DiscussionCategory::orderBy('order', 'asc')->get();
 
-                return $this->discussions($this->project->project_admin == user()->id);
-            case 'notes':
-                return $this->notes($this->project->project_admin == user()->id);
-            case 'rating':
-                return $this->rating($this->project->project_admin == user()->id);
-            case 'burndown-chart':
-                $this->fromDate = now($this->company->timezone)->startOfMonth();
-                $this->toDate = now($this->company->timezone);
+            return $this->discussions($this->project->project_admin == user()->id);
+        case 'notes':
+            return $this->notes($this->project->project_admin == user()->id);
+        case 'rating':
+            return $this->rating($this->project->project_admin == user()->id);
+        case 'burndown-chart':
+            $this->fromDate = now($this->company->timezone)->startOfMonth();
+            $this->toDate = now($this->company->timezone);
 
-                return $this->burndownChart($this->project);
-            case 'activity':
-                $this->activities = ProjectActivity::getProjectActivities($id, 10);
-                $this->view = 'projects.ajax.activity';
-                break;
-            default:
-                $this->taskChart = $this->taskChartData($id);
-                $hoursLogged = $this->project->times()->sum('total_minutes');
+            return $this->burndownChart($this->project);
+        case 'activity':
+            $this->activities = ProjectActivity::getProjectActivities($id, 10);
+            $this->view = 'projects.ajax.activity';
+            break;
+        default:
+            $this->taskChart = $this->taskChartData($id);
+            $hoursLogged = $this->project->times()->sum('total_minutes');
 
-                $breakMinutes = ProjectTimeLogBreak::projectBreakMinutes($id);
+            $breakMinutes = ProjectTimeLogBreak::projectBreakMinutes($id);
 
-                $this->hoursBudgetChart = $this->hoursBudgetChartData($this->project, $hoursLogged, $breakMinutes);
+            $this->hoursBudgetChart = $this->hoursBudgetChartData($this->project, $hoursLogged, $breakMinutes);
 
-                $this->amountBudgetChart = $this->amountBudgetChartData($this->project);
-                $this->taskBoardStatus = TaskboardColumn::all();
-                $this->earnings = Payment::where('status', 'complete')
-                    ->where('project_id', $id)
-                    ->sum('amount');
+            $this->amountBudgetChart = $this->amountBudgetChartData($this->project);
+            $this->taskBoardStatus = TaskboardColumn::all();
+            $this->earnings = Payment::where('status', 'complete')
+                ->where('project_id', $id)
+                ->sum('amount');
 
-                $this->hoursLogged = intdiv($hoursLogged - $breakMinutes, 60);
-                $this->expenses = Expense::where(['project_id' => $id, 'status' => 'approved'])->sum('price');
-                
-                $this->widgets = DashboardWidget::where('dashboard_type', 'project-overview-dashboard')->get();
-                $this->activeWidgets = $this->widgets->filter(function ($value, $key) {
-                    return $value->status == '1';
-                })->pluck('widget_name')->toArray();
+            $this->hoursLogged = intdiv($hoursLogged - $breakMinutes, 60);
+            $this->expenses = Expense::where(['project_id' => $id, 'status' => 'approved'])->sum('price');
+            
+            $this->widgets = DashboardWidget::where('dashboard_type', 'project-overview-dashboard')->get();
+            $this->activeWidgets = $this->widgets->filter(function ($value, $key) {
+                return $value->status == '1';
+            })->pluck('widget_name')->toArray();
 
-                $this->view = 'projects.ajax.overview';
-                break;
-            }
-        } catch (\Exception $e) {
-            dd($e->getMessage(), $e->getFile(), $e->getLine());
+            $this->view = 'projects.ajax.overview';
+            break;
         }
 
 
@@ -925,26 +921,22 @@ class ProjectController extends AccountBaseController
 
     public function tasks($projectAdmin = false)
     {
-        try {
-            $dataTable = new TasksDataTable($this->project->id);
+        $dataTable = new TasksDataTable($this->project->id);
 
-            if (!$projectAdmin) {
-                $viewPermission = user()->permission('view_project_tasks');
-                abort_403(!in_array($viewPermission, ['all', 'added', 'owned']));
+        if (!$projectAdmin) {
+            $viewPermission = user()->permission('view_project_tasks');
+            abort_403(!in_array($viewPermission, ['all', 'added', 'owned']));
 
-                $viewPermission = user()->permission('view_tasks');
-                abort_403(!in_array($viewPermission, ['all', 'added', 'owned', 'both']));
-            }
-
-            $tab = request('tab');
-            $this->activeTab = $tab ?: 'overview';
-
-            $this->view = 'projects.ajax.tasks';
-
-            return $dataTable->render('projects.show', $this->data);
-        } catch (\Exception $e) {
-            dd($e->getMessage(), $e->getFile(), $e->getLine());
+            $viewPermission = user()->permission('view_tasks');
+            abort_403(!in_array($viewPermission, ['all', 'added', 'owned', 'both']));
         }
+
+        $tab = request('tab');
+        $this->activeTab = $tab ?: 'overview';
+
+        $this->view = 'projects.ajax.tasks';
+
+        return $dataTable->render('projects.show', $this->data);
     }
 
     public function archivedTasks($projectAdmin = false)

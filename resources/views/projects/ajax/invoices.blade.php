@@ -154,7 +154,7 @@ $addInvoicePermission = user()->permission('add_invoices');
             }).then((result) => {
                 if (result.isConfirmed) {
                     var url = "{{ route('invoices.destroy', ':id') }}".replace(':id', id);
-                    var token = "{{ csrf_token() }}";
+                    var token = $('meta[name="csrf-token"]').attr('content');
                     $.easyAjax({
                         type: 'POST',
                         url: url,
@@ -191,7 +191,7 @@ $addInvoicePermission = user()->permission('add_invoices');
         $body.on('click' + namespace, '.sendButton', function() {
             var id = $(this).data('invoice-id');
             var url = "{{ route('invoices.send_invoice', ':id') }}".replace(':id', id);
-            var token = "{{ csrf_token() }}";
+            var token = $('meta[name="csrf-token"]').attr('content');
             $.easyAjax({
                 type: 'POST',
                 url: url,

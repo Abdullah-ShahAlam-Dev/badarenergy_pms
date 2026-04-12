@@ -404,7 +404,8 @@ class TicketController extends AccountBaseController
             'closedTickets' => $closedTickets,
             'openTickets' => $openTickets,
             'pendingTickets' => $pendingTickets,
-            'resolvedTickets' => $resolvedTickets
+            'resolvedTickets' => $resolvedTickets,
+            'unreadNotificationCount' => (isset($this->unreadNotificationCount) ? $this->unreadNotificationCount : (isset(user()->unreadNotifications) ? count(user()->unreadNotifications) : 0))
         ];
 
         return Reply::dataOnly($ticketData);

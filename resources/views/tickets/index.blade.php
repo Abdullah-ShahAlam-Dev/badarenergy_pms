@@ -436,7 +436,7 @@ $addTicketPermission = user()->permission('add_tickets');
                 }).then((result) => {
                     if (result.isConfirmed) {
                         var url = "{{ route('tickets.destroy', ':id') }}".replace(':id', id);
-                        var token = "{{ csrf_token() }}";
+                        var token = $('meta[name="csrf-token"]').attr('content');
                         $.easyAjax({
                             type: 'POST',
                             url: url,
@@ -451,7 +451,7 @@ $addTicketPermission = user()->permission('add_tickets');
 
             $body.on('change' + namespace, '#ticket-table .change-status', function() {
                 var url = "{{ route('tickets.change-status') }}";
-                var token = "{{ csrf_token() }}";
+                var token = $('meta[name="csrf-token"]').attr('content');
                 var id = $(this).data('ticket-id');
                 var status = $(this).val();
 
@@ -537,6 +537,9 @@ $addTicketPermission = user()->permission('add_tickets');
                         $('#openTickets').html(response.openTickets);
                         $('#pendingTickets').html(response.pendingTickets);
                         $('#resolvedTickets').html(response.resolvedTickets);
+                        if (typeof window.syncGlobalStats === 'function') {
+                            window.syncGlobalStats(response);
+                        }
                     }
                 });
             }

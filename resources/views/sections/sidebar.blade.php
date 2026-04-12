@@ -114,34 +114,8 @@
 </aside>
 <!-- SIDEBAR END -->
 
+@push('scripts')
 <script>
-    $(document).ready(function() {
-
-        $('.invite-member').click(function() {
-            const url = "{{ route('employees.invite_member') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
-
-        $('#dark-theme-toggle').change(function() {
-            const darkTheme = ($(this).is(':checked')) ? '1' : '0'
-
-            $.easyAjax({
-                type: 'POST',
-                url: "{{ route('profile.dark_theme') }}",
-                blockUI: true,
-                data: {
-                    '_token': '{{ csrf_token() }}',
-                    'darkTheme': darkTheme
-                },
-                success: function(response) {
-                    if (response.status === 'success') {
-                        window.location.reload();
-                    }
-                }
-            });
-
-        });
-
-    });
+   // Sidebar specific scripts are now handled by global delegated listeners in app.blade.php
 </script>
+@endpush

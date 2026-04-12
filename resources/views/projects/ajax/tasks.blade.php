@@ -304,12 +304,9 @@ $projectArchived = $project->trashed();
                 data: { task_id: task_id, memo: memo, '_token': token, user_id: user_id },
                 success: function(response) {
                     if (response.status == 'success') {
-                        if (response.activeTimerCount > 0) {
-                            $('#show-active-timer .active-timer-count').html(response.activeTimerCount).removeClass('d-none');
-                        } else {
-                            $('#show-active-timer .active-timer-count').addClass('d-none');
+                        if (typeof window.syncGlobalStats === 'function') {
+                            window.syncGlobalStats(response);
                         }
-                        $('#timer-clock').html(response.clockHtml);
                         showTable();
                     }
                 }
@@ -322,7 +319,7 @@ $projectArchived = $project->trashed();
             var url = "{{ route('timelogs.show', ':id') }}";
             url = url.replace('show', action);
             url = url.replace(':id', id);
-            var token = '{{ csrf_token() }}';
+            var token = $('meta[name="csrf-token"]').attr('content');
             var $this = $(this);
 
             $.easyAjax({
@@ -334,12 +331,9 @@ $projectArchived = $project->trashed();
                 buttonSelector: $this,
                 data: { timeId: id, _token: token },
                 success: function(response) {
-                    if (response.activeTimerCount > 0) {
-                        $('#show-active-timer .active-timer-count').html(response.activeTimerCount).removeClass('d-none');
-                    } else {
-                        $('#show-active-timer .active-timer-count').addClass('d-none');
+                    if (typeof window.syncGlobalStats === 'function') {
+                        window.syncGlobalStats(response);
                     }
-                    $('#timer-clock').html(response.clockHtml || '');
                     showTable();
                 }
             })

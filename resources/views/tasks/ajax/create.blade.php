@@ -769,12 +769,3 @@
         $('#' + id).val(checkedData);
     }
 </script>
-
-    function checkboxChange(parentClass, id) {
-        let checkedData = '';
-        $('.' + parentClass).find("input[type= 'checkbox']:checked").each(function () {
-            checkedData = (checkedData !== '') ? checkedData + ', ' + $(this).val() : $(this).val();
-        });
-        $('#' + id).val(checkedData);
-    }
-</script>

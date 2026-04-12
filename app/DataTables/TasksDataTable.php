@@ -430,7 +430,7 @@ class TasksDataTable extends BaseDataTable
             ->addSelect('tasks.company_id') // Company_id is fetched so the we have fetch company relation with it)
             ->with('users', 'activeTimerAll', 'boardColumn', 'activeTimer', 'timeLogged', 'timeLogged.breaks', 'userActiveTimer', 'userActiveTimer.activeBreak', 'labels', 'taskUsers')
             ->withCount('activeTimerAll', 'completedSubtasks', 'subtasks')
-            ->groupBy('tasks.id', 'tasks.completed_on', 'tasks.task_short_code', 'tasks.start_date', 'tasks.added_by', 'projects.project_name', 'projects.project_admin', 'tasks.heading', 'clientName', 'created_by', 'created_image', 'tasks.board_column_id', 'tasks.due_date', 'board_column', 'label_color', 'tasks.project_id', 'tasks.is_private', 'tasks.company_id');
+            ->groupBy('tasks.id', 'tasks.completed_on', 'tasks.task_short_code', 'tasks.start_date', 'tasks.added_by', 'projects.project_name', 'projects.project_admin', 'tasks.heading', 'client.name', 'creator_user.name', 'creator_user.image', 'tasks.board_column_id', 'tasks.due_date', 'taskboard_columns.column_name', 'taskboard_columns.label_color', 'tasks.project_id', 'tasks.is_private', 'tasks.company_id');
 
         if ($request->pinned == 'pinned') {
             $model->join('pinned', 'pinned.task_id', 'tasks.id');

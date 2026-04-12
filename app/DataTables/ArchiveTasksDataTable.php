@@ -326,7 +326,7 @@ class ArchiveTasksDataTable extends BaseDataTable
               tasks.project_id, tasks.is_private ,( select count(*) from pinned where pinned.task_id = tasks.id and pinned.user_id = ' . user()->id . ') as pinned_task')
             ->with('users', 'activeTimerAll', 'boardColumn', 'activeTimer', 'timeLogged', 'timeLogged.breaks', 'userActiveTimer', 'userActiveTimer.activeBreak', 'labels')
             ->withCount('activeTimerAll')
-            ->groupBy('tasks.id', 'tasks.task_short_code', 'tasks.completed_on', 'tasks.added_by', 'projects.project_name', 'projects.project_admin', 'tasks.heading', 'clientName', 'created_by', 'created_image', 'tasks.board_column_id', 'tasks.due_date', 'board_column', 'label_color', 'tasks.project_id', 'tasks.is_private');
+            ->groupBy('tasks.id', 'tasks.task_short_code', 'tasks.completed_on', 'tasks.added_by', 'projects.project_name', 'projects.project_admin', 'tasks.heading', 'client.name', 'creator_user.name', 'creator_user.image', 'tasks.board_column_id', 'tasks.due_date', 'taskboard_columns.column_name', 'taskboard_columns.label_color', 'tasks.project_id', 'tasks.is_private');
 
 
         if ($request->pinned == 'pinned') {

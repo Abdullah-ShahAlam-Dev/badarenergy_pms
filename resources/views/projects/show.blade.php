@@ -14,6 +14,11 @@ $viewDiscussionPermission = user()->permission('view_project_discussions');
 $viewNotePermission = user()->permission('view_project_note');
 $viewFilesPermission = user()->permission('view_project_files');
 $viewRatingPermission = user()->permission('view_project_rating');
+$viewProjectTimelogPermission = user()->permission('view_project_timelogs');
+$viewExpensePermission = user()->permission('view_project_expenses');
+$viewMiroboardPermission = user()->permission('view_project_miroboard');
+$viewPaymentPermission = user()->permission('view_project_payments');
+$viewBurndownChartPermission = user()->permission('view_project_burndown_chart');
 $projectArchived = $project->trashed();
 @endphp
 

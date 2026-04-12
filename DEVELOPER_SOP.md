@@ -22,7 +22,31 @@ This document serves as the master guide for developing, deploying, and mirrorin
 
 ---
 
-## 💻 2. Local Development Workflow
+## 🌿 2. Branching Strategy & Beta Environments (GitFlow Lite)
+
+As the project scales, we follow a standard industry branching model to separate stable code from experimental features. This ensures production never breaks.
+
+### The Branches
+1.  **`main` (Production)**
+    *   **Purpose**: Holds the highly stable, live code currently running on `pms.badarexposolutions.cloud`.
+    *   **Rules**: Never commit directly to `main`. Only merge code into `main` after it has been fully tested on staging.
+2.  **`staging` (Beta / Develop)**
+    *   **Purpose**: The central integration branch for active development. This branch powers the Beta subdomain (e.g., `beta.pms.badarexposolutions.cloud`).
+    *   **Rules**: All daily commits and feature developments are pushed here first.
+3.  **`feature/*` (Local Branches - Optional)**
+    *   **Purpose**: For massive features, developers create a local branch (e.g., `feature/multi-department`), build the code, and merge into `staging`.
+
+### The Beta Subdomain Setup (Future Roadmap)
+Big companies use a secondary deployment pipeline:
+1.  Create a subdomain on Hostinger (e.g., `beta.pms.badarexposolutions.cloud`).
+2.  Clone the repository into a separate VPS directory (e.g., `/var/www/beta-pms`).
+3.  Checkout the `staging` branch instead of `main`.
+4.  Point the beta site to a separate `beta_pms_db` database so testing doesn't corrupt client data.
+5.  When a feature in Beta is approved by the client, run `git checkout main && git merge staging` to deploy to Production.
+
+---
+
+## 💻 3. Local Development Workflow
 
 When you want to make code changes (e.g., UI tweaks, logic updates):
 
@@ -42,13 +66,14 @@ npm run prod
 Stage and commit your mapped changes.
 ```bash
 git add .
-git commit -m "feat/fix: described changes"
+git commit -m "Brief description of change"
 git push origin <branch-name>
 ```
+*Note: We push to `staging` now. Once tested, create a Pull Request on Github or merge directly into `main`.*
 
 ---
 
-## 🚢 3. Production Deployment (VPS - `main` branch)
+## 🚢 4. Live Deployment (VPS Sync)
 
 Deployments to Production are driven by GitHub Actions when code is pushed to `main`. 
 
@@ -62,6 +87,7 @@ cd /var/www/pms
 git fetch origin main
 git reset --hard origin/main
 docker-compose up -d --build
+docker exec pms_app php artisan migrate --force
 docker exec pms_app php artisan optimize:clear
 docker exec pms_app php artisan view:cache
 ```
@@ -72,7 +98,7 @@ docker exec pms_app php artisan view:cache
 
 ---
 
-## 🧪 4. Staging Deployment (Hostinger - `staging` branch)
+## 🧪 5. Staging Deployment (Hostinger - `staging` branch)
 
 The Staging environment automatically updates via a custom GitHub Action (`deploy-staging.yml`) whenever code is pushed to `staging`.
 
@@ -91,7 +117,7 @@ cd ~/domains/betapms.badarexposolutions.cloud/public_html
 
 ---
 
-## 🔄 5. Environment Mirroring (VPS -> Staging)
+## 🔄 6. Environment Mirroring (VPS -> Staging)
 
 To create a 100% 1:1 replica of Production data on Staging, we must securely transfer the database and user-uploaded media.
 
@@ -133,7 +159,18 @@ rm latest_vps_backup.sql latest_uploads.tar.gz
 
 ---
 
-## 🧩 6. Custom Module Quirks (Zoom & Recruit)
+## 🛠️ 7. Troubleshooting Common Issues
+
+### Issue: "Changes not showing on live site"
+- **Reason**: Either the `git pull` failed on the VPS or the browser is caching old files.
+- **Fix**: Run the "Master Sync" command in Section 4 and check if `public/mix-manifest.json` exists on the VPS.
+
+### Issue: "Disk usage is high (30GB+)"
+- **Fix**: Run the cleanup command in Section 4 (VPS Disk Maintenance).
+
+---
+
+## 📂 8. Custom Module Quirks (Zoom & Recruit)
 
 Nwidart Laravel Modules (`storage/app/modules_statuses.json`) are completely ignored by `.gitignore`. After setting up Staging or resetting environments, modules must be manually activated and translated.
 

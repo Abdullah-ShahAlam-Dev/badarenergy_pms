@@ -519,7 +519,11 @@ class ProjectsDataTable extends BaseDataTable
 
                     $("body").tooltip({
                         selector: \'[data-toggle="tooltip"]\'
-                    })
+                    });
+
+                    if (typeof syncGlobalStats === "function") {
+                        syncGlobalStats(oSettings.json);
+                    }
                 }',
                 ]
             )

@@ -75,210 +75,171 @@ $manageCategoryPermission = user()->permission('manage_discussion_category');
 @include('sections.datatable_js')
 
 <script>
-    $('#discussion-table').on('preXhr.dt', function(e, settings, data) {
+    (function() {
+        var $body = $('body');
+        var $table = $('#discussion-table');
+        var namespace = '.projectDiscussion';
 
-        var projectId = "{{ $project->id }}";
-        var categoryId = $('#discussion_category').val();
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
+            var projectId = "{{ $project->id }}";
+            var categoryId = $('#discussion_category').val();
+            data['project_id'] = projectId;
+            data['category_id'] = categoryId;
+        });
 
-        data['project_id'] = projectId;
-        data['category_id'] = categoryId;
-    });
+        function showTable() {
+            if (window.LaravelDataTables && window.LaravelDataTables["discussion-table"]) {
+                window.LaravelDataTables["discussion-table"].draw(false);
+            }
+        }
+        window.showTable = showTable;
 
-    const showTable = () => {
-        window.LaravelDataTables["discussion-table"].draw(false);
-    }
+        $body.off(namespace);
 
-    $('#discussion_category').change(function() {
-        showTable();
-    });
+        $body.on('change' + namespace, '#discussion_category', function() {
+            showTable();
+        });
 
-    $('body').on('click', '.delete-discussion', function() {
-        var id = $(this).data('discussion-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('discussion.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            window.LaravelDataTables["discussion-table"].draw(false);
+        $body.on('click' + namespace, '.delete-discussion', function() {
+            var id = $(this).data('discussion-id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('discussion.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { showTable(); }
                         }
-                    }
-                });
-            }
-        });
-    });
-
-
-    $('body').on('click', '#discussion-category', function() {
-        var url = "{{ route('discussion-category.create') }}";
-
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    });
-
-    $('body').on('click', '#add-discussion', function() {
-        let redirectUrl = encodeURIComponent($(this).data("redirect-url"));
-        var url = "{{ route('discussion.create') }}?id="+"{{ $project->id }}&redirectUrl="+redirectUrl;
-
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_XL, url);
-    });
-
-    $('body').on('click', '.edit-category', function() {
-        var categoryId = $(this).data('category-id');
-        var url = "{{ route('discussion-category.edit', ':id') }}";
-        url = url.replace(':id', categoryId);
-
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    });
-
-    $('body').on('click', '.add-reply', function() {
-        var discussionId = $(this).data('discussion-id');
-        var url = "{{ route('discussion-reply.create') }}?id=" + discussionId;
-
-        $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_XL, url);
-    });
-
-    $('body').on('click', '.edit-reply', function() {
-        var id = $(this).data('row-id');
-        var url = "{{ route('discussion-reply.edit', ':id') }}";
-        url = url.replace(':id', id);
-
-        $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_XL, url);
-    });
-
-    $('body').on('click', '.set-best-answer', function() {
-        var replyId = $(this).data('row-id');
-        var type = 'set';
-        var url = "{{ route('discussion.set_best_answer') }}";
-        var token = "{{ csrf_token() }}";
-
-        $.easyAjax({
-            type: 'POST',
-            url: url,
-            container: '#right-modal-content',
-            blockUI: true,
-            data: {
-                '_token': token,
-                '_method': 'POST',
-                'replyId': replyId,
-                'type': type
-            },
-            success: function(response) {
-                if (response.status == "success") {
-                    $('#right-modal-content').html(response.html);
+                    });
                 }
-            }
+            });
         });
-    });
 
-    $('body').on('click', '.unset-best-answer', function() {
-        var replyId = $(this).data('reply-id');
-        var type = 'unset';
-        var url = "{{ route('discussion.set_best_answer') }}";
-        var token = "{{ csrf_token() }}";
+        $body.on('click' + namespace, '#discussion-category', function() {
+            var url = "{{ route('discussion-category.create') }}";
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
+        });
 
-        $.easyAjax({
-            type: 'POST',
-            url: url,
-            container: '#right-modal-content',
-            blockUI: true,
-            data: {
-                '_token': token,
-                '_method': 'POST',
-                'replyId': replyId,
-                'type': type
-            },
-            success: function(response) {
-                if (response.status == "success") {
-                    $('#right-modal-content').html(response.html);
+        $body.on('click' + namespace, '#add-discussion', function() {
+            let redirectUrl = encodeURIComponent($(this).data("redirect-url"));
+            var url = "{{ route('discussion.create') }}?id="+"{{ $project->id }}&redirectUrl="+redirectUrl;
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_XL, url);
+        });
+
+        $body.on('click' + namespace, '.edit-category', function() {
+            var categoryId = $(this).data('category-id');
+            var url = "{{ route('discussion-category.edit', ':id') }}".replace(':id', categoryId);
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
+        });
+
+        $body.on('click' + namespace, '.add-reply', function() {
+            var discussionId = $(this).data('discussion-id');
+            var url = "{{ route('discussion-reply.create') }}?id=" + discussionId;
+            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_XL, url);
+        });
+
+        $body.on('click' + namespace, '.edit-reply', function() {
+            var id = $(this).data('row-id');
+            var url = "{{ route('discussion-reply.edit', ':id') }}".replace(':id', id);
+            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_XL, url);
+        });
+
+        $body.on('click' + namespace, '.set-best-answer', function() {
+            var replyId = $(this).data('row-id');
+            var type = 'set';
+            var url = "{{ route('discussion.set_best_answer') }}";
+            var token = "{{ csrf_token() }}";
+            $.easyAjax({
+                type: 'POST',
+                url: url,
+                container: '#right-modal-content',
+                blockUI: true,
+                data: { '_token': token, '_method': 'POST', 'replyId': replyId, 'type': type },
+                success: function(response) {
+                    if (response.status == "success") { $('#right-modal-content').html(response.html); }
                 }
-            }
+            });
         });
-    });
 
-    $('body').on('click', '.delete-message', function() {
-        var id = $(this).data('row-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('discussion-reply.destroy', ':id') }}";
-                url = url.replace(':id', id);
+        $body.on('click' + namespace, '.unset-best-answer', function() {
+            var replyId = $(this).data('reply-id');
+            var type = 'unset';
+            var url = "{{ route('discussion.set_best_answer') }}";
+            var token = "{{ csrf_token() }}";
+            $.easyAjax({
+                type: 'POST',
+                url: url,
+                container: '#right-modal-content',
+                blockUI: true,
+                data: { '_token': token, '_method': 'POST', 'replyId': replyId, 'type': type },
+                success: function(response) {
+                    if (response.status == "success") { $('#right-modal-content').html(response.html); }
+                }
+            });
+        });
 
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    container: '#right-modal-content',
-                    blockUI: true,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            $('#right-modal-content').html(response.html);
+        $body.on('click' + namespace, '.delete-message', function() {
+            var id = $(this).data('row-id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('discussion-reply.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        container: '#right-modal-content',
+                        blockUI: true,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { $('#right-modal-content').html(response.html); }
                         }
-                    }
-                });
-            }
+                    });
+                }
+            });
         });
-    });
 
+        $body.on('click' + namespace, '.go-best-reply', function() {
+            var replyId = $(this).data('reply-id');
+            $('html, body').animate({
+                scrollTop: $("#replyMessageBox_" + replyId).offset().top
+            }, 1000);
+        });
 
-    $('.go-best-reply').click(function() {
-        var replyId = $(this).data('reply-id');
-
-        $('html, body').animate({
-            scrollTop: $("#replyMessageBox_" + replyId).offset().top
-        }, 1000);
-    });
-
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            document.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

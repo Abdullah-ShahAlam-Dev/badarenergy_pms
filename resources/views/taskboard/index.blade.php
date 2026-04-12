@@ -235,289 +235,227 @@ $addTaskPermission = user()->permission('add_tasks');
 @push('scripts')
     <script src="{{ asset('vendor/jquery/dragula.js') }}"></script>
 
-
     <script>
-        const dp1 = datepicker('.date-range-field', {
-            position: 'bl',
-            onSelect: (instance, date) => {
-                $('#reset-filters').removeClass('d-none');
-                dp2.setMin(date);
-                loadData();
-            },
-            ...datepickerConfig
-        });
+        (function() {
+            var $body = $('body');
+            var namespace = '.taskBoard';
+            var dp1, dp2;
 
-        const dp2 = datepicker('.date-range-field1', {
-            position: 'bl',
-            onSelect: (instance, date) => {
-                $('#reset-filters').removeClass('d-none');
-                dp1.setMax(date);
-                loadData();
-            },
-            ...datepickerConfig
-        });
-
-        $('#billable_task, #status, #clientID, #category_id, #assignedBY, #assignedTo, #label, #project_id')
-            .on('change keyup',
-                function() {
-                    if ($('#status').val() != "not finished") {
+            function initDatePickers() {
+                dp1 = datepicker('#start-date', {
+                    position: 'bl',
+                    onSelect: (instance, date) => {
                         $('#reset-filters').removeClass('d-none');
+                        if (dp2) dp2.setMin(date);
                         loadData();
-                    } else if ($('#project_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        loadData();
-                    } else if ($('#clientID').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        loadData();
-                    } else if ($('#category_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        loadData();
-                    } else if ($('#assignedBY').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        loadData();
-                    } else if ($('#assignedTo').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        loadData();
-                    } else if ($('#label').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        loadData();
-                    } else if ($('#billable_task').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        loadData();
-                    } else {
-                        $('#reset-filters').addClass('d-none');
-                        loadData();
-                    }
+                    },
+                    ...datepickerConfig
                 });
 
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
+                dp2 = datepicker('#end-date', {
+                    position: 'bl',
+                    onSelect: (instance, date) => {
+                        $('#reset-filters').removeClass('d-none');
+                        if (dp1) dp1.setMax(date);
+                        loadData();
+                    },
+                    ...datepickerConfig
+                });
+            }
+
+            $('.filter-box').on('change keyup' + namespace, '#billable_task, #status, #clientID, #category_id, #assignedBY, #assignedTo, #label, #project_id', function() {
+                var status = $('#status').val();
+                if (status != "not finished" || $('#project_id').val() != "all" || $('#clientID').val() != "all" || 
+                    $('#category_id').val() != "all" || $('#assignedBY').val() != "all" || $('#assignedTo').val() != "all" || 
+                    $('#label').val() != "all" || $('#billable_task').val() != "all") {
+                    $('#reset-filters').removeClass('d-none');
+                } else {
+                    $('#reset-filters').addClass('d-none');
+                }
+                loadData();
+            });
+
+            $('#search-text-field').on('keyup' + namespace, function() {
+                if ($(this).val() != "") {
+                    $('#reset-filters').removeClass('d-none');
+                }
+                loadData();
+            });
+
+            $body.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
+                $('#filter-form')[0].reset();
+                $('.filter-box #status').val('not finished');
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                loadData();
+            });
+
+            window.loadData = function() {
+                var startDate = $('#start-date').val() || null;
+                var endDate = $('#end-date').val() || null;
+                var projectID = $('#project_id').val();
+                var clientID = $('#clientID').val();
+                var assignedBY = $('#assignedBY').val();
+                var assignedTo = $('#assignedTo').val();
+                var categoryId = $('#category_id').val();
+                var labelId = $('#label').val();
+                var searchText = $('#search-text-field').val();
+                var billable = $('#billable_task').val();
+
+                var url = "{{ route('taskboards.index') }}?startDate=" + encodeURIComponent(startDate) + '&endDate=' +
+                    encodeURIComponent(endDate) + '&clientID=' + clientID + '&assignedBY=' + assignedBY + '&assignedTo=' +
+                    assignedTo + '&projectID=' + projectID + '&category_id=' + categoryId + '&label_id=' + labelId +
+                    '&searchText=' + searchText + '&billable=' + billable;
+
+                $.easyAjax({
+                    url: url,
+                    container: '#taskboard-columns',
+                    type: "GET",
+                    success: function(response) {
+                        $('#taskboard-columns').html(response.view);
+                        $body.tooltip({ selector: '[data-toggle="tooltip"]' });
+                    }
+                });
+            }
+
+            $body.on('click' + namespace, '.load-more-tasks', function() {
+                var $this = $(this);
+                var columnId = $this.data('column-id');
+                var totalTasks = $this.data('total-tasks');
+                var currentTotalTasks = $('#drag-container-' + columnId + ' .task-card').length;
+
+                var startDate = $('#start-date').val() || null;
+                var endDate = $('#end-date').val() || null;
+                var projectID = $('#project_id').val();
+                var clientID = $('#clientID').val();
+                var assignedBY = $('#assignedBY').val();
+                var assignedTo = $('#assignedTo').val();
+                var categoryId = $('#category_id').val();
+                var labelId = $('#label').val();
+                var searchText = $('#search-text-field').val();
+
+                var url = "{{ route('taskboards.load_more') }}?startDate=" + encodeURIComponent(startDate) +
+                    '&endDate=' + encodeURIComponent(endDate) + '&clientID=' + clientID + '&assignedBY=' + assignedBY +
+                    '&assignedTo=' + assignedTo + '&projectID=' + projectID + '&category_id=' + categoryId + '&label_id=' + labelId +
+                    '&searchText=' + searchText + '&columnId=' + columnId + '&currentTotalTasks=' + currentTotalTasks +
+                    '&totalTasks=' + totalTasks;
+
+                $.easyAjax({
+                    url: url,
+                    container: '#drag-container-' + columnId,
+                    blockUI: true,
+                    type: "GET",
+                    success: function(response) {
+                        var $container = $('#drag-container-' + columnId);
+                        $container.append(response.view);
+                        if (response.load_more != 'show') {
+                            $this.remove();
+                        }
+                        $body.tooltip({ selector: '[data-toggle="tooltip"]' });
+                    }
+                });
+            });
+
+            $body.on('click' + namespace, '#add-column', function() {
+                var url = "{{ route('taskboards.create') }}";
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG, url);
+            });
+
+            $body.on('click' + namespace, '.edit-column', function() {
+                var id = $(this).data('column-id');
+                var url = "{{ route('taskboards.edit', ':id') }}".replace(':id', id);
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG, url);
+            });
+
+            $body.on('click' + namespace, '.delete-column', function() {
+                var id = $(this).data('column-id');
+                var url = "{{ route('taskboards.destroy', ':id') }}".replace(':id', id);
+
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.recoverRecord')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.easyAjax({
+                            url: url,
+                            type: 'POST',
+                            data: { '_token': '{{ csrf_token() }}', '_method': 'DELETE' },
+                            success: function(response) {
+                                if (response.status == 'success') {
+                                    window.loadData();
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+
+            $body.on('click' + namespace, '#filter-my-task', function () {
+                $('.filter-box #assignedTo').val('{{ user()->id }}');
+                $('.filter-box .select-picker').selectpicker("refresh");
                 $('#reset-filters').removeClass('d-none');
                 loadData();
-            }
-        });
-
-        $('#reset-filters,#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box #status').val('not finished');
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            loadData();
-        });
-
-
-        function loadData() {
-            var startDate = $('#start-date').val();
-
-            if (startDate == '') {
-                startDate = null;
-            }
-
-            var endDate = $('#end-date').val();
-
-            if (endDate == '') {
-                endDate = null;
-            }
-
-            var projectID = $('#project_id').val();
-            var clientID = $('#clientID').val();
-            var assignedBY = $('#assignedBY').val();
-            var assignedTo = $('#assignedTo').val();
-            var categoryId = $('#category_id').val();
-            var labelId = $('#label').val();
-            var searchText = $('#search-text-field').val();
-            var billable = $('#billable_task').val();
-
-            var url = "{{ route('taskboards.index') }}?startDate=" + encodeURIComponent(startDate) + '&endDate=' +
-                encodeURIComponent(endDate) + '&clientID=' + clientID + '&assignedBY=' + assignedBY + '&assignedTo=' +
-                assignedTo + '&projectID=' + projectID + '&category_id=' + categoryId + '&label_id=' + labelId +
-                '&searchText=' + searchText + '&billable=' + billable;
-
-            $.easyAjax({
-                url: url,
-                container: '#taskboard-columns',
-                type: "GET",
-                success: function(response) {
-                    $('#taskboard-columns').html(response.view);
-                    $("body").tooltip({
-                        selector: '[data-toggle="tooltip"]'
-                    });
-                }
-            });
-        }
-
-        $('body').on('click', '.load-more-tasks', function() {
-            var columnId = $(this).data('column-id');
-            var totalTasks = $(this).data('total-tasks');
-            var currentTotalTasks = $('#drag-container-' + columnId + ' .task-card').length;
-
-            var startDate = $('#start-date').val();
-
-            if (startDate == '') {
-                startDate = null;
-            }
-
-            var endDate = $('#end-date').val();
-
-            if (endDate == '') {
-                endDate = null;
-            }
-
-            var projectID = $('#project_id').val();
-            var clientID = $('#clientID').val();
-            var assignedBY = $('#assignedBY').val();
-            var assignedTo = $('#assignedTo').val();
-            var categoryId = $('#category_id').val();
-            var labelId = $('#label').val();
-            var searchText = $('#search-text-field').val();
-
-            var url = "{{ route('taskboards.load_more') }}?startDate=" + encodeURIComponent(startDate) +
-                '&endDate=' +
-                encodeURIComponent(endDate) + '&clientID=' + clientID + '&assignedBY=' + assignedBY +
-                '&assignedTo=' +
-                assignedTo + '&projectID=' + projectID + '&category_id=' + categoryId + '&label_id=' + labelId +
-                '&searchText=' + searchText + '&columnId=' + columnId + '&currentTotalTasks=' + currentTotalTasks +
-                '&totalTasks=' + totalTasks;
-
-            $.easyAjax({
-                url: url,
-                container: '#drag-container-' + columnId,
-                blockUI: true,
-                type: "GET",
-                success: function(response) {
-                    $('#drag-container-' + columnId).append(response.view);
-                    if (response.load_more == 'show') {
-                        $('#drag-container-' + columnId).closest('.b-p-body').find('.load-more-tasks');
-
-                    } else {
-                        $('#drag-container-' + columnId).closest('.b-p-body').find('.load-more-tasks')
-                            .remove();
-                    }
-
-                    $("body").tooltip({
-                        selector: '[data-toggle="tooltip"]'
-                    });
-                }
             });
 
-        });
+            $body.on('click' + namespace, '.collapse-column', function() {
+                var boardColumnId = $(this).data('column-id');
+                var type = $(this).data('type');
 
-        var elem = document.getElementById("fullscreen");
-
-        function openFullscreen() {
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen();
-                elem.classList.add("full");
-            } else if (elem.mozRequestFullScreen) {
-                /* Firefox */
-                elem.mozRequestFullScreen();
-            } else if (elem.webkitRequestFullscreen) {
-                /* Chrome, Safari & Opera */
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) {
-                /* IE/Edge */
-                elem.msRequestFullscreen();
-            }
-        }
-
-        $('#add-column').click(function() {
-            const url = "{{ route('taskboards.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
-
-        $('body').on('click', '.edit-column', function() {
-            var id = $(this).data('column-id');
-            var url = "{{ route('taskboards.edit', ':id') }}";
-            url = url.replace(':id', id);
-
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
-
-        $('body').on('click', '.delete-column', function() {
-            var id = $(this).data('column-id');
-            var url = "{{ route('taskboards.destroy', ':id') }}";
-            url = url.replace(':id', id);
-
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.recoverRecord')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmDelete')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.easyAjax({
-                        url: url,
-                        type: 'POST',
-                        data: {
-                            '_token': '{{ csrf_token() }}',
-                            '_method': 'DELETE'
-                        },
-                        success: function(response) {
-                            if (response.status == 'success') {
-                                window.location.reload();
-                            }
+                $.easyAjax({
+                    url: "{{ route('taskboards.collapse_column') }}",
+                    type: 'POST',
+                    container: '#taskboard-columns',
+                    blockUI: true,
+                    data: { boardColumnId: boardColumnId, type: type, '_token': '{{ csrf_token() }}' },
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            loadData();
                         }
+                    }
+                });
+            });
+
+            // Pusher Init
+            if (typeof window.taskPusherInit === 'undefined') {
+                window.taskPusherInit = true;
+                if ((pusher_setting.status == 1 && pusher_setting.taskboard == 1)) {
+                    var channel = pusher.subscribe('task-updated-channel');
+                    channel.bind('task-updated' + namespace, function (data) {
+                        loadData();
                     });
                 }
-            });
+            }
 
-        });
-
-
-        $('#filter-my-task').click(function () {
-            $('.filter-box #assignedTo').val('{{ user()->id }}');
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').removeClass('d-none');
+            initDatePickers();
             loadData();
-        });
 
-
-        $('body').on('click', '.collapse-column', function() {
-            var boardColumnId = $(this).data('column-id');
-            var type = $(this).data('type');
-
-            $.easyAjax({
-                url: "{{ route('taskboards.collapse_column') }}",
-                type: 'POST',
-                container: '#taskboard-columns',
-                blockUI: true,
-                data: {
-                    boardColumnId: boardColumnId,
-                    type: type,
-                    '_token': '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    if (response.status == 'success') {
-                        loadData();
-                    }
+            window.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                if (dp1) dp1.destroy();
+                if (dp2) dp2.destroy();
+                
+                // Cleanup Dragula if exists
+                if (window.drake) {
+                    window.drake.destroy();
+                    window.drake = undefined;
                 }
-            });
-        });
 
-        //pusher
-        if ((pusher_setting.status === 1 && pusher_setting.taskboard === 1) || (pusher_setting.status == "1" && pusher_setting.taskboard == "1")) {
+                // If we want to unsubscribe from pusher, we can:
+                // pusher.unsubscribe('task-updated-channel'); 
+                // but usually we keep it for real-time updates across the app if it's global
 
-            var channel = pusher.subscribe('task-updated-channel');
-                channel.bind('task-updated', function (data) {
-                loadData()
-            });
-        }
-
-        loadData();
+                window.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
     </script>
 @endpush

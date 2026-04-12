@@ -136,197 +136,160 @@
 
 @push('scripts')
     <script>
-        var manageEmployeeShiftPermission = "{{ $manageEmployeeShifts }}";
+        (function() {
+            var $body = $('body');
+            var namespace = '.shiftRostersIndex';
+            var manageEmployeeShiftPermission = "{{ $manageEmployeeShifts }}";
 
-        $('#user_id, #department, #view_type').on('change', function() {
-            if ($('#user_id').val() != "all") {
-                $('#reset-filters').removeClass('d-none');
+            $body.off(namespace);
+
+            $body.on('change' + namespace, '#user_id, #department, #view_type', function() {
+                var hasFilters = ($('#user_id').val() != "all") || ($('#department').val() != "all");
+                $('#reset-filters').toggleClass('d-none', !hasFilters);
                 showTable();
-            } else if ($('#department').val() != "all") {
-                $('#reset-filters').removeClass('d-none');
+            });
+
+            $body.on('click' + namespace, '#attendance-data .change-month', function() {
+                $("#month").val($(this).data('month'));
                 showTable();
-            } else {
+            });
+
+            $body.on('change' + namespace, '#attendance-data #change-month', function() {
+                $("#month").val($(this).val());
+                showTable();
+            });
+
+            $body.on('change' + namespace, '#attendance-data #change-year', function() {
+                $("#year").val($(this).val());
+                showTable();
+            });
+
+            $body.on('click' + namespace, '#reset-filters', function() {
+                $('#filter-form')[0].reset();
+                $('.filter-box .select-picker').selectpicker("refresh");
                 $('#reset-filters').addClass('d-none');
                 showTable();
-            }
-        });
-
-        $('#attendance-data').on('click', '.change-month', function() {
-            $("#month").val($(this).data('month'));
-            showTable();
-        });
-
-        $('#attendance-data').on('change', '#change-month', function() {
-            $("#month").val($(this).val());
-            showTable();
-        });
-
-        $('#attendance-data').on('change', '#change-year', function() {
-            $("#year").val($(this).val());
-            showTable();
-        });
-
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-
-        $('#attendance-data').on('click', '#week-start-date', function() {
-            $("#week_start_date").val($(this).data('date'));
-            showTable();
-        });
-
-        $('#attendance-data').on('click', '#week-end-date', function() {
-            $("#week_start_date").val($(this).data('date'));
-            showTable();
-        });
-
-        function showTable(loading = true) {
-
-            var year = $('#year').val();
-            var month = $('#month').val();
-            var weekStartDate = $('#week_start_date').val();
-
-            var userId = $('#user_id').val();
-            var department = $('#department').val();
-            var viewType = $('#view_type').val();
-
-            //refresh counts
-            var url = "{{ route('shifts.index') }}";
-
-            var token = "{{ csrf_token() }}";
-
-            $.easyAjax({
-                data: {
-                    '_token': token,
-                    year: year,
-                    month: month,
-                    department: department,
-                    userId: userId,
-                    view_type: viewType,
-                    week_start_date: weekStartDate,
-                },
-                url: url,
-                blockUI: loading,
-                container: '.content-wrapper',
-                success: function(response) {
-                    $('#attendance-data').html(response.data);
-                    $('#attendance-data #change-year').selectpicker("refresh");
-                    $('#attendance-data #change-month').selectpicker("refresh");
-                }
             });
 
-        }
+            $body.on('click' + namespace, '#attendance-data #week-start-date, #attendance-data #week-end-date', function() {
+                $("#week_start_date").val($(this).data('date'));
+                showTable();
+            });
 
-        $('#attendance-data').on('click', '.view-attendance', function() {
-            var attendanceID = $(this).data('attendance-id');
-            var url = "{{ route('attendances.show', ':attendanceID') }}";
-            url = url.replace(':attendanceID', attendanceID);
-
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_XL, url);
-        });
-
-        if (manageEmployeeShiftPermission == 'all') {
-            $('#attendance-data').on('click', '.change-shift', function(event) {
-                var attendanceDate = $(this).data('attendance-date');
-                var userData = $(this).closest('tr').children('td:first');
-                var userID = $(this).data('user-id');
+            function showTable(loading = true) {
                 var year = $('#year').val();
                 var month = $('#month').val();
+                var weekStartDate = $('#week_start_date').val();
+                var userId = $('#user_id').val();
+                var department = $('#department').val();
+                var viewType = $('#view_type').val();
+                var url = "{{ route('shifts.index') }}";
+                var token = "{{ csrf_token() }}";
 
-                var url = "{{ route('shifts.mark', [':userid', ':day', ':month', ':year']) }}";
-                url = url.replace(':userid', userID);
-                url = url.replace(':day', attendanceDate);
-                url = url.replace(':month', month);
-                url = url.replace(':year', year);
+                $.easyAjax({
+                    data: {
+                        '_token': token,
+                        year: year,
+                        month: month,
+                        department: department,
+                        userId: userId,
+                        view_type: viewType,
+                        week_start_date: weekStartDate,
+                    },
+                    url: url,
+                    blockUI: loading,
+                    container: '.content-wrapper',
+                    success: function(response) {
+                        $('#attendance-data').html(response.data);
+                        $('#attendance-data #change-year').selectpicker("refresh");
+                        $('#attendance-data #change-month').selectpicker("refresh");
+                    }
+                });
+            }
+            window.showTable = showTable;
 
-                $(MODAL_DEFAULT + ' ' + MODAL_HEADING).html('...');
-                $.ajaxModal(MODAL_DEFAULT, url);
+            $body.on('click' + namespace, '.view-attendance', function() {
+                var attendanceID = $(this).data('attendance-id');
+                var url = "{{ route('attendances.show', ':attendanceID') }}".replace(':attendanceID', attendanceID);
+                $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_XL, url);
             });
 
-            $('#attendance-data').on('click', '.change-shift-week', function(event) {
-                var attendanceDate = $(this).data('attendance-date');
-                var splitAttendance = attendanceDate.split('-');
-                attendanceDate = splitAttendance[2];
-                var userData = $(this).closest('tr').children('td:first');
-                var userID = $(this).data('user-id');
-                var year = splitAttendance[0];
-                var month = splitAttendance[1];
+            if (manageEmployeeShiftPermission == 'all') {
+                $body.on('click' + namespace, '.change-shift', function(event) {
+                    var attendanceDate = $(this).data('attendance-date');
+                    var userID = $(this).data('user-id');
+                    var year = $('#year').val();
+                    var month = $('#month').val();
+                    var url = "{{ route('shifts.mark', [':userid', ':day', ':month', ':year']) }}";
+                    url = url.replace(':userid', userID).replace(':day', attendanceDate).replace(':month', month).replace(':year', year);
+                    $(MODAL_DEFAULT + ' ' + MODAL_HEADING).html('...');
+                    $.ajaxModal(MODAL_DEFAULT, url);
+                });
 
-                var url = "{{ route('shifts.mark', [':userid', ':day', ':month', ':year']) }}";
-                url = url.replace(':userid', userID);
-                url = url.replace(':day', attendanceDate);
-                url = url.replace(':month', month);
-                url = url.replace(':year', year);
+                $body.on('click' + namespace, '.change-shift-week', function(event) {
+                    var attendanceDate = $(this).data('attendance-date');
+                    var splitAttendance = attendanceDate.split('-');
+                    var userID = $(this).data('user-id');
+                    var url = "{{ route('shifts.mark', [':userid', ':day', ':month', ':year']) }}";
+                    url = url.replace(':userid', userID).replace(':day', splitAttendance[2]).replace(':month', splitAttendance[1]).replace(':year', splitAttendance[0]);
+                    $(MODAL_DEFAULT + ' ' + MODAL_HEADING).html('...');
+                    $.ajaxModal(MODAL_DEFAULT, url);
+                });
+            }
 
-                $(MODAL_DEFAULT + ' ' + MODAL_HEADING).html('...');
-                $.ajaxModal(MODAL_DEFAULT, url);
+            $body.on('click' + namespace, '#export-all', function() {
+                var year = $('#year').val();
+                var month = $('#month').val();
+                var department = $('#department').val();
+                var userId = $('#user_id').val();
+                var startDate = $('#week_start_date').val();
+                var viewType = $('#view_type').val();
+                var url = "{{ route('shifts.export_all', [':year', ':month', ':userId', ':department', ':startDate', ':viewType']) }}";
+                url = url.replace(':year', year).replace(':month', month).replace(':userId', userId).replace(':department', department).replace(':startDate', startDate).replace(':viewType', viewType);
+                window.location.href = url;
             });
-        }
 
-        showTable(false);
+            $body.on('click' + namespace, '.approve-request', function() {
+                var id = $(this).data('request-id');
+                var url = "{{ route('shifts-change.approve_request', ':id') }}".replace(':id', id);
+                $.easyAjax({
+                    url: url,
+                    type: "POST",
+                    blockUI: true,
+                    container: '.content-wrapper',
+                    data: { id: id, _token: '{{ csrf_token() }}' },
+                    success: function(data) {
+                        showTable();
+                        $(MODAL_DEFAULT).modal('hide');
+                    }
+                })
+            });
 
-        $('#export-all').click(function() {
-            var year = $('#year').val();
-            var month = $('#month').val();
-            var department = $('#department').val();
-            var userId = $('#user_id').val();
-            var startDate = $('#week_start_date').val();
-            var viewType = $('#view_type').val();
+            $body.on('click' + namespace, '.decline-request', function() {
+                var id = $(this).data('request-id');
+                var url = "{{ route('shifts-change.decline_request', ':id') }}".replace(':id', id);
+                $.easyAjax({
+                    url: url,
+                    type: "POST",
+                    blockUI: true,
+                    container: '.content-wrapper',
+                    data: { id: id, _token: '{{ csrf_token() }}' },
+                    success: function(data) {
+                        showTable();
+                        $(MODAL_DEFAULT).modal('hide');
+                    }
+                })
+            });
 
-            var url =
-                "{{ route('shifts.export_all', [':year', ':month', ':userId', ':department', ':startDate', ':viewType']) }}";
-            url = url.replace(':year', year).replace(':month', month).replace(':userId', userId).replace(':department', department).replace(':startDate', startDate).replace(':viewType', viewType);
-            window.location.href = url;
+            showTable(false);
 
-        });
-
-        $('body').on('click', '.approve-request', function() {
-            var id = $(this).data('request-id');
-            var url = "{{ route('shifts-change.approve_request', ':id') }}";
-            url = url.replace(':id', id);
-            var token = '{{ csrf_token() }}';
-            $.easyAjax({
-                url: url,
-                type: "POST",
-                blockUI: true,
-                container: '.content-wrapper',
-                data: {
-                    id: id,
-                    _token: token
-                },
-                success: function(data) {
-                    showTable();
-                    $(MODAL_DEFAULT).modal('hide');
-                }
-            })
-
-        });
-
-        $('body').on('click', '.decline-request', function() {
-            var id = $(this).data('request-id');
-            var url = "{{ route('shifts-change.decline_request', ':id') }}";
-            url = url.replace(':id', id);
-            var token = '{{ csrf_token() }}';
-            $.easyAjax({
-                url: url,
-                type: "POST",
-                blockUI: true,
-                container: '.content-wrapper',
-                data: {
-                    id: id,
-                    _token: token
-                },
-                success: function(data) {
-                    showTable();
-                    $(MODAL_DEFAULT).modal('hide');
-                }
-            })
-
-        });
+            document.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                delete window.showTable;
+                document.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
     </script>
+
 @endpush

@@ -21,6 +21,16 @@ function toggleItem() {
                 Accordion Sidebar Menu End
 *******************************************************/
 
+// Safety helper for class manipulation
+function safeToggleClass(id, className, action) {
+    var el = document.getElementById(id);
+    if (el) {
+        if (action === 'add') el.classList.add(className);
+        else if (action === 'remove') el.classList.remove(className);
+        else if (action === 'toggle') el.classList.toggle(className);
+    }
+}
+
 /*******************************************************
             Toggle The Side Navigation Start
 *******************************************************/
@@ -32,14 +42,14 @@ if (ts) {
 }
 
 function toggleSidebar() {
-    let toggle = document.querySelector('body');
-    toggle.classList.toggle('sidebar-toggled');
+    var toggle = document.querySelector('body');
+    if (toggle) toggle.classList.toggle('sidebar-toggled');
 }
 
 window.addEventListener("resize", resiz);
 function resiz() {
-    if (screen.width < 769) {
-        var element = document.querySelector("body");
+    var element = document.querySelector('body');
+    if (window.innerWidth <= 1024 && element) {
         element.classList.remove("sidebar-toggled");
     }
 }
@@ -51,13 +61,11 @@ function resiz() {
                Header More Filter Start
 *******************************************************/
 function openMoreFilter() {
-    var omf = document.getElementById("more_filter");
-    omf.classList.add("in");
+    safeToggleClass("more_filter", "in", "add");
 }
 
 function closeMoreFilter() {
-    var cls = document.getElementById("more_filter");
-    cls.classList.remove("in");
+    safeToggleClass("more_filter", "in", "remove");
 }
 
 if ($('#more_filter').length > 0) {
@@ -85,19 +93,13 @@ if ($('#more_filter').length > 0) {
                     Mobile Menu Start
 *******************************************************/
 function openMobileMenu() {
-    var omm = document.getElementById("mobile_menu_collapse");
-    omm.classList.add("toggled");
-
-    var omm1 = document.getElementById("mobile_close_panel");
-    omm1.classList.add("toggled");
+    safeToggleClass("mobile_menu_collapse", "toggled", "add");
+    safeToggleClass("mobile_close_panel", "toggled", "add");
 }
 
 function closeMobileMenu() {
-    var cmm = document.getElementById("mobile_menu_collapse");
-    cmm.classList.remove("toggled");
-
-    var cmm1 = document.getElementById("mobile_close_panel");
-    cmm1.classList.remove("toggled");
+    safeToggleClass("mobile_menu_collapse", "toggled", "remove");
+    safeToggleClass("mobile_close_panel", "toggled", "remove");
 }
 /*******************************************************
                     Mobile Menu End
@@ -107,29 +109,23 @@ function closeMobileMenu() {
               Mobile Admin Dashboard Open
 *******************************************************/
 function openAdminDashboard() {
-    var oad1 = document.getElementById("mob-admin-dash");
-    oad1.classList.add("in");
-
-    var oad2 = document.getElementById("close-admin-overlay");
-    oad2.classList.add("in");
+    safeToggleClass("mob-admin-dash", "in", "add");
+    safeToggleClass("close-admin-overlay", "in", "add");
 }
 
-var el = document.getElementById('close-admin-overlay');
-if (el) {
-    el.addEventListener("click", closeAdminDashboard);
+var el_admin = document.getElementById('close-admin-overlay');
+if (el_admin) {
+    el_admin.addEventListener("click", closeAdminDashboard);
 }
 
-var el = document.getElementById('close-admin');
-if (el) {
-    el.addEventListener("click", closeAdminDashboard);
+var el_admin2 = document.getElementById('close-admin');
+if (el_admin2) {
+    el_admin2.addEventListener("click", closeAdminDashboard);
 }
 
 function closeAdminDashboard() {
-    var cad1 = document.getElementById("mob-admin-dash");
-    cad1.classList.remove("in");
-
-    var cad2 = document.getElementById("close-admin-overlay");
-    cad2.classList.remove("in");
+    safeToggleClass("mob-admin-dash", "in", "remove");
+    safeToggleClass("close-admin-overlay", "in", "remove");
 }
 /*******************************************************
                     Mobile Settings End
@@ -139,29 +135,23 @@ function closeAdminDashboard() {
                     Mobile Settings Open
 *******************************************************/
 function openSettingsSidebar() {
-    var oss1 = document.getElementById("mob-settings-sidebar");
-    oss1.classList.add("in");
-
-    var oss2 = document.getElementById("close-settings-overlay");
-    oss2.classList.add("in");
+    safeToggleClass("mob-settings-sidebar", "in", "add");
+    safeToggleClass("close-settings-overlay", "in", "add");
 }
 
-var el = document.getElementById('close-settings');
-if (el) {
-    el.addEventListener("click", closeSettingsSidebar);
+var el_settings = document.getElementById('close-settings');
+if (el_settings) {
+    el_settings.addEventListener("click", closeSettingsSidebar);
 }
 
-var el = document.getElementById('close-settings-overlay');
-if (el) {
-    el.addEventListener("click", closeSettingsSidebar);
+var el_settings_overlay = document.getElementById('close-settings-overlay');
+if (el_settings_overlay) {
+    el_settings_overlay.addEventListener("click", closeSettingsSidebar);
 }
 
 function closeSettingsSidebar() {
-    var cls1 = document.getElementById("mob-settings-sidebar");
-    cls1.classList.remove("in");
-
-    var cls2 = document.getElementById("close-settings-overlay");
-    cls2.classList.remove("in");
+    safeToggleClass("mob-settings-sidebar", "in", "remove");
+    safeToggleClass("close-settings-overlay", "in", "remove");
 }
 /*******************************************************
                     Mobile Settings End
@@ -171,29 +161,23 @@ function closeSettingsSidebar() {
                     Mobile Ticket Open
 *******************************************************/
 function openTicketsSidebar() {
-    var ots1 = document.getElementById("ticket-detail-contact");
-    ots1.classList.add("in");
-
-    var oss2 = document.getElementById("close-tickets-overlay");
-    oss2.classList.add("in");
+    safeToggleClass("ticket-detail-contact", "in", "add");
+    safeToggleClass("close-tickets-overlay", "in", "add");
 }
 
-var el = document.getElementById('close-tickets');
-if (el) {
-    el.addEventListener("click", closeTicketsSidebar);
+var el_tickets = document.getElementById('close-tickets');
+if (el_tickets) {
+    el_tickets.addEventListener("click", closeTicketsSidebar);
 }
 
-var el = document.getElementById('close-tickets-overlay');
-if (el) {
-    el.addEventListener("click", closeTicketsSidebar);
+var el_tickets_overlay = document.getElementById('close-tickets-overlay');
+if (el_tickets_overlay) {
+    el_tickets_overlay.addEventListener("click", closeTicketsSidebar);
 }
 
 function closeTicketsSidebar(){
-    var cts1 = document.getElementById("ticket-detail-contact");
-    cts1.classList.remove("in");
-
-    var cts2 = document.getElementById("close-tickets-overlay");
-    cts2.classList.remove("in");
+    safeToggleClass("ticket-detail-contact", "in", "remove");
+    safeToggleClass("close-tickets-overlay", "in", "remove");
 }
 /*******************************************************
                     Mobile Ticket End
@@ -203,41 +187,25 @@ function closeTicketsSidebar(){
                     Client Detail Open
 *******************************************************/
 function openClientDetailSidebar() {
-    var ocds1 = document.getElementById("mob-client-detail");
-    ocds1.classList.add("in");
-
-    var ocds2 = document.getElementById("close-client-overlay");
-    ocds2.classList.add("in");
-
-    // var ocds4 = document.getElementById("close-client-detail");
-    // ocds4.classList.remove("d-none");
-
-    var ocds3 = document.getElementById("hide-project-menues");
-    ocds3.classList.add("in");
+    safeToggleClass("mob-client-detail", "in", "add");
+    safeToggleClass("close-client-overlay", "in", "add");
+    safeToggleClass("hide-project-menues", "in", "add");
 }
 
-var el = document.getElementById('close-client-overlay');
-if (el) {
-    el.addEventListener("click", closeClientDetail);
+var el_client_overlay = document.getElementById('close-client-overlay');
+if (el_client_overlay) {
+    el_client_overlay.addEventListener("click", closeClientDetail);
 }
 
-var el = document.getElementById('close-client-detail');
-if (el) {
-    el.addEventListener("click", closeClientDetail);
+var el_client_detail = document.getElementById('close-client-detail');
+if (el_client_detail) {
+    el_client_detail.addEventListener("click", closeClientDetail);
 }
 
 function closeClientDetail() {
-    // var ocds4 = document.getElementById("close-client-detail");
-    // ocds4.classList.add("d-none");
-
-    var ccd1 = document.getElementById("mob-client-detail");
-    ccd1.classList.remove("in");
-
-    var ccd2 = document.getElementById("close-client-overlay");
-    ccd2.classList.remove("in");
-
-    var ccd3 = document.getElementById("hide-project-menues");
-    ccd3.classList.remove("in");
+    safeToggleClass("mob-client-detail", "in", "remove");
+    safeToggleClass("close-client-overlay", "in", "remove");
+    safeToggleClass("hide-project-menues", "in", "remove");
 }
 /*******************************************************
                     Client Detail End
@@ -247,29 +215,23 @@ function closeClientDetail() {
                     Project Menu Open
 *******************************************************/
 function openProjectSidebar() {
-    var ops1 = document.getElementById("mob-project-menu");
-    ops1.classList.add("in");
-
-    var ops2 = document.getElementById("close-project-overlay");
-    ops2.classList.add("in");
+    safeToggleClass("mob-project-menu", "in", "add");
+    safeToggleClass("close-project-overlay", "in", "add");
 }
 
-var el = document.getElementById('close-project-overlay');
-if (el) {
-    el.addEventListener("click", closeProjectSidebar);
+var el_proj_overlay = document.getElementById('close-project-overlay');
+if (el_proj_overlay) {
+    el_proj_overlay.addEventListener("click", closeProjectSidebar);
 }
 
-var el = document.getElementById('close-projects');
-if (el) {
-    el.addEventListener("click", closeProjectSidebar);
+var el_proj = document.getElementById('close-projects');
+if (el_proj) {
+    el_proj.addEventListener("click", closeProjectSidebar);
 }
 
 function closeProjectSidebar() {
-    var cps1 = document.getElementById("mob-project-menu");
-    cps1.classList.remove("in");
-
-    var cps2 = document.getElementById("close-project-overlay");
-    cps2.classList.remove("in");
+    safeToggleClass("mob-project-menu", "in", "remove");
+    safeToggleClass("close-project-overlay", "in", "remove");
 }
 /*******************************************************
                     Project Menu End
@@ -291,12 +253,12 @@ function msgTabs(evt, tabName) {
     document.getElementById(tabName).style.display = "block";
     evt.currentTarget.className += " active";
 
-    document.getElementById('msgContentRight').className += ' d-block';
+    var mcr = document.getElementById('msgContentRight');
+    if (mcr) mcr.classList.add('d-block');
 }
 
 function closeMessageTab() {
-    var cmt = document.getElementById("msgContentRight");
-    cmt.classList.remove("d-block");
+    safeToggleClass("msgContentRight", "d-block", "remove");
 }
 /*******************************************************
                    Message Tabs End
@@ -306,8 +268,7 @@ function closeMessageTab() {
                    RTL Start
 *******************************************************/
 function rtl() {
-    var rtl = document.querySelector("body");
-    rtl.classList.toggle("rtl");
+    safeToggleClass("body", "rtl", "toggle");
 }
 /*******************************************************
                    RTL End
@@ -317,39 +278,32 @@ function rtl() {
                  Task Detail Start
 *******************************************************/
 function openTaskDetail() {
-    var otd1 = document.getElementById("task-detail-1");
-    otd1.classList.add("in");
-
-    var ops2 = document.getElementById("close-task-detail-overlay");
-    ops2.classList.add("in");
-
-    var otd4 = document.getElementById("close-task-detail");
-    otd4.classList.add("in");
+    safeToggleClass("task-detail-1", "in", "add");
+    safeToggleClass("close-task-detail-overlay", "in", "add");
+    safeToggleClass("close-task-detail", "in", "add");
 }
 
-var el = document.getElementById('close-task-detail-overlay');
-if (el) {
-    el.addEventListener("click", closeTaskDetail);
+var el_task_detail_overlay = document.getElementById('close-task-detail-overlay');
+if (el_task_detail_overlay) {
+    el_task_detail_overlay.addEventListener("click", closeTaskDetail);
 }
 
-var el = document.getElementById('close-task-detail');
-if (el) {
-    el.addEventListener("click", closeTaskDetail);
+var el_task_detail_close = document.getElementById('close-task-detail');
+if (el_task_detail_close) {
+    el_task_detail_close.addEventListener("click", closeTaskDetail);
 }
 
 function closeTaskDetail() {
-    var ctd1 = document.getElementById("task-detail-1");
-    ctd1.classList.remove("in");
-
-    var ctd2 = document.getElementById("close-task-detail-overlay");
-    ctd2.classList.remove("in");
+    safeToggleClass("task-detail-1", "in", "remove");
+    safeToggleClass("close-task-detail-overlay", "in", "remove");
 
 	sessionStorage.setItem('RIGHT_MODAL', 'opened');
 
-    window.history.back();
+    if (window.history.length > 1) {
+        window.history.back();
+    }
 
-    var ctd3 = document.getElementById("close-task-detail");
-    ctd3.classList.remove("in");
+    safeToggleClass("close-task-detail", "in", "remove");
 }
 /*******************************************************
                  Task Detail End

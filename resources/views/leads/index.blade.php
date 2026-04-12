@@ -2,6 +2,7 @@
 
 @push('datatable-styles')
     @include('sections.datatable_css')
+    <meta name="turbo-cache-control" content="no-cache">
 @endpush
 
 @section('filter-section')
@@ -91,8 +92,22 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
     @include('sections.datatable_js')
 
     <script>
-        $('#leads-table').on('preXhr.dt', function(e, settings, data) {
+        (function() {
+            var $doc = $(document);
+            var $table = $('#leads-table');
+            var namespace = '.leadsIndex';
 
+            document.addEventListener("turbo:before-cache", function cleanup() {
+                $doc.off(namespace);
+                $table.off('preXhr.dt' + namespace);
+                window.showTable = undefined;
+                window.applyQuickAction = undefined;
+                window.changeStatus = undefined;
+                window.followUp = undefined;
+                document.removeEventListener("turbo:before-cache", cleanup);
+            }, { once: true });
+
+            $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
             var dateRangePicker = $('#datatableRange').data('daterangepicker');
             var startDate = $('#datatableRange').val();
 
@@ -104,47 +119,39 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
                 endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
             }
 
-            var searchText = $('#search-text-field').val();
-            var min = $('#min').val();
-            var max = $('#max').val();
-            var type = $('#type').val();
-            var followUp = $('#followUp').val();
-            var agent = $('#filter_agent_id').val();
-            var category_id = $('#filter_category_id').val();
-            var source_id = $('#filter_source_id').val();
-            var status_id = $('#filter_status_id').val();
-            var date_filter_on = $('#date_filter_on').val();
-
             data['startDate'] = startDate;
             data['endDate'] = endDate;
-            data['searchText'] = searchText;
-            data['type'] = type;
-            data['followUp'] = followUp;
-            data['agent'] = agent;
-            data['min'] = min;
-            data['max'] = max;
-            data['category_id'] = category_id;
-            data['source_id'] = source_id;
-            data['status_id'] = status_id;
-            data['date_filter_on'] = date_filter_on;
+            data['searchText'] = $('#search-text-field').val();
+            data['type'] = $('#type').val();
+            data['followUp'] = $('#followUp').val();
+            data['agent'] = $('#filter_agent_id').val();
+            data['min'] = $('#min').val();
+            data['max'] = $('#max').val();
+            data['category_id'] = $('#filter_category_id').val();
+            data['source_id'] = $('#filter_source_id').val();
+            data['status_id'] = $('#filter_status_id').val();
+            data['date_filter_on'] = $('#date_filter_on').val();
         });
 
-        const showTable = () => {
-            window.LaravelDataTables["leads-table"].draw(false);
-        }
+            var showTable = function() {
+                if (window.LaravelDataTables && window.LaravelDataTables["leads-table"]) {
+                    window.LaravelDataTables["leads-table"].draw(false);
+                }
+            }
+            window.showTable = showTable;
 
-        $('#reset-filters').click(function() {
+            $doc.off(namespace);
+
+            $doc.on('click' + namespace, '#reset-filters', function() {
             $('#filter-form')[0].reset();
-
             $('.filter-box #status').val('not finished');
             $('.filter-box .select-picker').selectpicker("refresh");
             $('#reset-filters').addClass('d-none');
             showTable();
         });
 
-        $('#reset-filters-2').click(function() {
+        $doc.on('click' + namespace, '#reset-filters-2', function() {
             $('#filter-form')[0].reset();
-
             $('.filter-box #status').val('all');
             $('.filter-box #leave_type').val('all');
             $('.filter-box .select-picker').selectpicker("refresh");
@@ -152,19 +159,15 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             showTable();
         });
 
-        $('#quick-action-type').change(function() {
-            const actionValue = $(this).val();
+        $doc.on('change' + namespace, '#quick-action-type', function() {
+            var actionValue = $(this).val();
             if (actionValue != '') {
                 $('#quick-action-apply').removeAttr('disabled');
-
+                $('.quick-action-field').addClass('d-none');
                 if (actionValue == 'change-status') {
-                    $('.quick-action-field').addClass('d-none');
                     $('#change-status-action').removeClass('d-none');
                 } else if (actionValue == 'change-agent') {
-                    $('.quick-action-field').addClass('d-none');
                     $('#change-agent-action').removeClass('d-none');
-                } else {
-                    $('.quick-action-field').addClass('d-none');
                 }
             } else {
                 $('#quick-action-apply').attr('disabled', true);
@@ -172,8 +175,37 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             }
         });
 
-        $('#quick-action-apply').click(function() {
-            const actionValue = $('#quick-action-type').val();
+            var applyQuickAction = function() {
+                var rowdIds = $("#leads-table input:checkbox:checked").map(function() {
+                    return $(this).val();
+                }).get();
+
+                var url = "{{ route('leads.apply_quick_action') }}?row_ids=" + rowdIds;
+
+                $.easyAjax({
+                    url: url,
+                    container: '#quick-action-form',
+                    type: "POST",
+                    disableButton: true,
+                    buttonSelector: "#quick-action-apply",
+                    data: $('#quick-action-form').serialize(),
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                            $('#quick-action-form').hide();
+                            if (typeof syncGlobalStats === 'function') {
+                                syncGlobalStats();
+                            }
+                        }
+                    }
+                });
+            }
+            window.applyQuickAction = applyQuickAction;
+
+            $doc.on('click' + namespace, '#quick-action-apply', function() {
+            var actionValue = $('#quick-action-type').val();
             if (actionValue == 'delete') {
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
@@ -183,27 +215,18 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
-                    if (result.isConfirmed) {
-                        applyQuickAction();
-                    }
+                    if (result.isConfirmed) { applyQuickAction(); }
                 });
-
             } else {
                 applyQuickAction();
             }
         });
 
-        $('body').on('click', '.delete-table-row', function() {
+        $doc.on('click' + namespace, '.delete-table-row', function() {
             var id = $(this).data('id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
@@ -213,32 +236,23 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    var url = "{{ route('leads.destroy', ':id') }}";
-                    url = url.replace(':id', id);
-
+                    var url = "{{ route('leads.destroy', ':id') }}".replace(':id', id);
                     var token = "{{ csrf_token() }}";
-
                     $.easyAjax({
                         type: 'POST',
                         url: url,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
+                        data: { '_token': token, '_method': 'DELETE' },
                         success: function(response) {
                             if (response.status == "success") {
                                 showTable();
+                                if (typeof syncGlobalStats === 'function') {
+                                    syncGlobalStats();
+                                }
                             }
                         }
                     });
@@ -246,32 +260,7 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             });
         });
 
-        const applyQuickAction = () => {
-            var rowdIds = $("#leads-table input:checkbox:checked").map(function() {
-                return $(this).val();
-            }).get();
-
-            var url = "{{ route('leads.apply_quick_action') }}?row_ids=" + rowdIds;
-
-            $.easyAjax({
-                url: url,
-                container: '#quick-action-form',
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#quick-action-apply",
-                data: $('#quick-action-form').serialize(),
-                success: function(response) {
-                    if (response.status == 'success') {
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
-                        $('#quick-action-form').hide();
-                    }
-                }
-            })
-        };
-
-        $('#leads-table').on('change', '.change-status', function() {
+        $table.on('change' + namespace, '.change-status', function() {
             var url = "{{ route('leads.change_status') }}";
             var token = "{{ csrf_token() }}";
             var id = $(this).data('task-id');
@@ -281,68 +270,57 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
                 $.easyAjax({
                     url: url,
                     type: "POST",
-                    data: {
-                        '_token': token,
-                        taskId: id,
-                        status: status,
-                        sortBy: 'id'
-                    },
+                    data: { '_token': token, taskId: id, status: status, sortBy: 'id' },
                     success: function(data) {
                         showTable();
-                        resetActionButtons();
-                        deSelectAll();
+                        if (typeof resetActionButtons === 'function') resetActionButtons();
+                        if (typeof deSelectAll === 'function') deSelectAll();
                     }
                 });
-
             }
         });
 
-        function changeStatus(leadID, statusID) {
-
-            var url = "{{ route('leads.change_status') }}";
-            var token = "{{ csrf_token() }}";
-
-            $.easyAjax({
-                type: 'POST',
-                url: url,
-                data: {
-                    '_token': token,
-                    'leadID': leadID,
-                    'statusID': statusID
-                },
-                success: function(response) {
-                    if (response.status == "success") {
-                        $.easyBlockUI('#leads-table');
-                        $.easyUnblockUI('#leads-table');
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
+            var changeStatus = function(leadID, statusID) {
+                var url = "{{ route('leads.change_status') }}";
+                var token = "{{ csrf_token() }}";
+                $.easyAjax({
+                    type: 'POST',
+                    url: url,
+                    data: { '_token': token, 'leadID': leadID, 'statusID': statusID },
+                    success: function(response) {
+                        if (response.status == "success") {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                            if (typeof syncGlobalStats === 'function') {
+                                syncGlobalStats();
+                            }
+                        }
                     }
-                }
-            });
-        }
+                });
+            }
+            window.changeStatus = changeStatus;
 
-        function followUp(leadID) {
-            var url = '{{ route('leads.follow_up', ':id') }}';
-            url = url.replace(':id', leadID);
+            var followUp = function(leadID) {
+                var url = '{{ route('leads.follow_up', ':id') }}'.replace(':id', leadID);
+                $.ajaxModal(MODAL_LG, url);
+            }
+            window.followUp = followUp;
 
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        }
-
-        $('body').on('click', '#add-lead', function() {
+            $doc.on('click' + namespace, '#add-lead', function() {
             window.location.href = "{{ route('lead-form.index') }}";
         });
 
-        $( document ).ready(function() {
-            @if (!is_null(request('start')) && !is_null(request('end')))
-            $('#datatableRange').val('{{ request('start') }}' +
-            ' @lang("app.to") ' + '{{ request('end') }}');
-            $('#datatableRange').data('daterangepicker').setStartDate("{{ request('start') }}");
-            $('#datatableRange').data('daterangepicker').setEndDate("{{ request('end') }}");
-                showTable();
-            @endif
-        });
+        // Initialize from request params if present
+        @if (!is_null(request('start')) && !is_null(request('end')))
+            $('#datatableRange').val('{{ request('start') }}' + ' @lang("app.to") ' + '{{ request('end') }}');
+            if ($('#datatableRange').data('daterangepicker')) {
+                $('#datatableRange').data('daterangepicker').setStartDate("{{ request('start') }}");
+                $('#datatableRange').data('daterangepicker').setEndDate("{{ request('end') }}");
+            }
+            showTable();
+        @endif
 
-    </script>
+    })();
+</script>
 @endpush

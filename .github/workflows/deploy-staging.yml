@@ -1,0 +1,29 @@
+name: Deploy to Staging (Hostinger Beta)
+
+on:
+  push:
+    branches: [ staging ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Hostinger via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USERNAME }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: 22
+          script: |
+            cd domains/betapms.badarexposolutions.cloud/public_html
+            git pull origin staging
+            /usr/local/bin/composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan optimize

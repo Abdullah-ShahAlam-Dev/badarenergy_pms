@@ -102,17 +102,20 @@
 
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script>
-    $(document).ready(function () {
-        var add_task_files = "{{ $addTaskFilePermission }}";
-        if (add_task_files == "all" || add_task_files == "added") {
+    (function() {
+        var $body = $('body');
+        var namespace = '.taskFile';
+        var taskFileDropzone;
 
+        // Clean up any existing listeners in this namespace before re-binding
+        $body.off(namespace);
+
+        if ("{{ $addTaskFilePermission }}" == "all" || "{{ $addTaskFilePermission }}" == "added") {
             Dropzone.autoDiscover = false;
-            taskDropzone = new Dropzone("div#task-file-upload-dropzone", {
+            taskFileDropzone = new Dropzone("div#task-file-upload-dropzone", {
                 dictDefaultMessage: "{{ __('app.dragDrop') }}",
                 url: "{{ route('task-files.store') }}",
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 paramName: "file",
                 maxFilesize: DROPZONE_MAX_FILESIZE,
                 maxFiles: DROPZONE_MAX_FILES,
@@ -121,65 +124,56 @@
                 parallelUploads: DROPZONE_MAX_FILES,
                 acceptedFiles: DROPZONE_FILE_ALLOW,
                 init: function () {
-                    taskDropzone = this;
+                    window.taskFileDropzone = this;
                 }
             });
-            taskDropzone.on('sending', function (file, xhr, formData) {
-                var ids = "{{ $task->id }}";
-                formData.append('task_id', ids);
-                $.easyBlockUI();
-            });
-            taskDropzone.on('uploadprogress', function () {
-                $.easyBlockUI();
-            });
-            taskDropzone.on('queuecomplete', function (file) {
-                var response = JSON.parse(file[0].xhr.response);
 
-                if (response?.error?.message) {
-                    $('.error-block').removeClass('d-none');
-                    $('#error').html(response?.error?.message);
+            taskFileDropzone.on('sending', function (file, xhr, formData) {
+                formData.append('task_id', "{{ $task->id }}");
+                $.easyBlockUI();
+            });
+
+            taskFileDropzone.on('queuecomplete', function (file) {
+                if (file.length > 0 && file[0].xhr) {
+                    var response = JSON.parse(file[0].xhr.response);
+                    if (response?.error?.message) {
+                        $('.error-block').removeClass('d-none');
+                        $('#error').html(response?.error?.message);
+                    }
+                    $('#task-file-list').html(response.view);
                 }
-
-                var taskView = response.view;
-                taskDropzone.removeAllFiles();
+                taskFileDropzone.removeAllFiles();
                 $.easyUnblockUI();
-
-                $('#task-file-list').html(taskView);
             });
-            taskDropzone.on('removedfile', function () {
-                var grp = $('div#file-upload-dropzone').closest(".form-group");
-                var label = $('div#file-upload-box').siblings("label");
-                $(grp).removeClass("has-error");
-                $(label).removeClass("is-invalid");
-            });
-            taskDropzone.on('error', function (file, message) {
-                taskDropzone.removeFile(file);
-                var grp = $('div#file-upload-dropzone').closest(".form-group");
-                var label = $('div#file-upload-box').siblings("label");
-                $(grp).find(".help-block").remove();
-                var helpBlockContainer = $(grp);
 
-                if (helpBlockContainer.length == 0) {
-                    helpBlockContainer = $(grp);
-                }
-
-                helpBlockContainer.append('<div class="help-block invalid-feedback">' + message + '</div>');
-                $(grp).addClass("has-error");
-                $(label).addClass("is-invalid");
-
+            taskFileDropzone.on('error', function (file, message) {
+                taskFileDropzone.removeFile(file);
+                var $grp = $('div#task-file-upload-dropzone').closest(".form-group");
+                $grp.find(".help-block").remove();
+                $grp.append('<div class="help-block invalid-feedback">' + message + '</div>').addClass("has-error");
+                $grp.siblings("label").addClass("is-invalid");
             });
         }
 
-        $('#add-task-file').click(function () {
+        $body.on('click' + namespace, '#add-task-file', function () {
             $(this).closest('.row').addClass('d-none');
             $('.error-block').addClass('d-none');
             $('#save-taskfile-data-form').removeClass('d-none');
         });
 
-        $('#cancel-taskfile').click(function () {
+        $body.on('click' + namespace, '#cancel-taskfile', function () {
             $('#save-taskfile-data-form').addClass('d-none');
             $('#add-task-file').closest('.row').removeClass('d-none');
             return false;
         });
-    });
+
+        window.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            if (taskFileDropzone) {
+                taskFileDropzone.destroy();
+                window.taskFileDropzone = undefined;
+            }
+            window.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

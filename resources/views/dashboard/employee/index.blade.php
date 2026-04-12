@@ -398,295 +398,260 @@
         <script src="{{ asset('vendor/full-calendar/main.min.js') }}"></script>
         <script src="{{ asset('vendor/full-calendar/locales-all.min.js') }}"></script>
         <script>
-            var initialLocaleCode = '{{ user()->locale }}';
-            var calendarEl = document.getElementById('calendar');
+            (function() {
+                var initialLocaleCode = '{{ user()->locale }}';
+                var calendarEl = document.getElementById('calendar');
 
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                locale: initialLocaleCode,
-                timeZone: '{{ company()->timezone }}',
-                firstDay: parseInt("{{ attendance_setting()?->week_start_from }}"),
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-                },
-                navLinks: true, // can click day/week names to navigate views
-                selectable: false,
-                initialView: 'listWeek',
-                selectMirror: true,
-                select: function(arg) {
-                    addEventModal(arg.start, arg.end, arg.allDay);
-                    calendar.unselect()
-                },
-                eventClick: function(arg) {
-                    getEventDetail(arg.event.id,arg.event.extendedProps.event_type);
-                },
-                editable: false,
-                dayMaxEvents: true, // allow "more" link when too many events
-                events: {
-                    url: "{{ route('dashboard.private_calendar') }}",
-                },
-                eventDidMount: function(info) {
-                        $(info.el).css('background-color', info.event.extendedProps.bg_color);
-                        $(info.el).css('color', info.event.extendedProps.color);
-                        $(info.el).find('td.fc-list-event-title').prepend('<i class="fa '+info.event.extendedProps.icon+'"></i>&nbsp;&nbsp;');
-                        // tooltip for leaves
-                        if(info.event.extendedProps.event_type == 'leave'){
-                            $(info.el).find('td.fc-list-event-title > a').css('cursor','default'); // list view cursor for leave
-                            $(info.el).css('cursor','default')
-                            $(info.el).tooltip({
-                                title: info.event.extendedProps.name,
-                                container: 'body',
-                                delay: { "show": 50, "hide": 50 }
-                            });
-                    }
-                },
-                eventTimeFormat: { // like '14:30:00'
-                    hour: company.time_format == 'H:i' ? '2-digit' : 'numeric',
-                    minute: '2-digit',
-                    meridiem: company.time_format == 'H:i' ? false : true
+                if (window.employeeCalendar) {
+                    window.employeeCalendar.destroy();
                 }
-            });
 
-            if (calendarEl != null) {
-                calendar.render();
-            }
+                if (calendarEl) {
+                    window.employeeCalendar = new FullCalendar.Calendar(calendarEl, {
+                        locale: initialLocaleCode,
+                        timeZone: '{{ company()->timezone }}',
+                        firstDay: parseInt("{{ attendance_setting()?->week_start_from }}"),
+                        headerToolbar: {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                        },
+                        navLinks: true,
+                        selectable: false,
+                        initialView: 'listWeek',
+                        selectMirror: true,
+                        select: function(arg) {
+                            if (typeof addEventModal === 'function') addEventModal(arg.start, arg.end, arg.allDay);
+                            window.employeeCalendar.unselect();
+                        },
+                        eventClick: function(arg) {
+                            if (typeof getEventDetail === 'function') getEventDetail(arg.event.id, arg.event.extendedProps.event_type);
+                        },
+                        editable: false,
+                        dayMaxEvents: true,
+                        events: {
+                            url: "{{ route('dashboard.private_calendar') }}",
+                        },
+                        eventDidMount: function(info) {
+                            $(info.el).css('background-color', info.event.extendedProps.bg_color);
+                            $(info.el).css('color', info.event.extendedProps.color);
+                            $(info.el).find('td.fc-list-event-title').prepend('<i class="fa ' + info.event.extendedProps.icon + '"></i>&nbsp;&nbsp;');
+                            if (info.event.extendedProps.event_type == 'leave') {
+                                $(info.el).find('td.fc-list-event-title > a').css('cursor', 'default');
+                                $(info.el).css('cursor', 'default');
+                                $(info.el).tooltip({
+                                    title: info.event.extendedProps.name,
+                                    container: 'body',
+                                    delay: { "show": 50, "hide": 50 }
+                                });
+                            }
+                        },
+                        eventTimeFormat: {
+                            hour: company.time_format == 'H:i' ? '2-digit' : 'numeric',
+                            minute: '2-digit',
+                            meridiem: company.time_format == 'H:i' ? false : true
+                        }
+                    });
 
-            // Task Detail show in sidebar
-            var getEventDetail = function(id,type) {
-                if(type == 'ticket')
-                {
-                    var url = "{{ route('tickets.show', ':id') }}";
-                        url = url.replace(':id', id);
-                        window.location = url;
+                    window.employeeCalendar.render();
+                }
+
+                var getEventDetail = function(id, type) {
+                    if (type == 'ticket') {
+                        window.location = "{{ route('tickets.show', ':id') }}".replace(':id', id);
                         return true;
-                }
-
-                if(type == 'leave')
-                {
-                    return true;
-                }
-
-                openTaskDetail();
-
-                switch (type) {
-                    case 'task':
-                        var url = "{{ route('tasks.show', ':id') }}";
-                        break;
-                    case 'event':
-                        var url = "{{ route('events.show', ':id') }}";
-                        break;
-                    case 'holiday':
-                        var url = "{{ route('holidays.show', ':id') }}";
-                        break;
-                    case 'leave':
-                        var url = "{{ route('leaves.show', ':id') }}";
-                        break;
-                    default:
-                        return 0;
-                        break;
-                }
-
-                url = url.replace(':id', id);
-
-                $.easyAjax({
-                    url: url,
-                    blockUI: true,
-                    container: RIGHT_MODAL,
-                    historyPush: true,
-                    success: function(response) {
-                        if (response.status == "success") {
-                            $(RIGHT_MODAL_CONTENT).html(response.html);
-                            $(RIGHT_MODAL_TITLE).html(response.title);
-                        }
-                    },
-                    error: function(request, status, error) {
-                        if (request.status == 403) {
-                            $(RIGHT_MODAL_CONTENT).html(
-                                '<div class="align-content-between d-flex justify-content-center mt-105 f-21">403 | Permission Denied</div>'
-                            );
-                        } else if (request.status == 404) {
-                            $(RIGHT_MODAL_CONTENT).html(
-                                '<div class="align-content-between d-flex justify-content-center mt-105 f-21">404 | Not Found</div>'
-                            );
-                        } else if (request.status == 500) {
-                            $(RIGHT_MODAL_CONTENT).html(
-                                '<div class="align-content-between d-flex justify-content-center mt-105 f-21">500 | Something Went Wrong</div>'
-                            );
-                        }
                     }
-                });
+                    if (type == 'leave') return true;
 
-            };
+                    openTaskDetail();
+                    var url = "";
+                    switch (type) {
+                        case 'task': url = "{{ route('tasks.show', ':id') }}"; break;
+                        case 'event': url = "{{ route('events.show', ':id') }}"; break;
+                        case 'holiday': url = "{{ route('holidays.show', ':id') }}"; break;
+                        case 'leave': url = "{{ route('leaves.show', ':id') }}"; break;
+                        default: return 0;
+                    }
 
-            // calendar filter
-            var hideDropdown = false;
+                    $.easyAjax({
+                        url: url.replace(':id', id),
+                        blockUI: true,
+                        container: RIGHT_MODAL,
+                        historyPush: true,
+                        success: function(response) {
+                            if (response.status == "success") {
+                                $(RIGHT_MODAL_CONTENT).html(response.html);
+                                $(RIGHT_MODAL_TITLE).html(response.title);
+                            }
+                        }
+                    });
+                };
 
-            $('#event-btn').click(function(){
-                if(hideDropdown == true)
-                {
-                    $('#cal-drop').hide();
-                    hideDropdown = false;
-                }
-                else
-                {
+                // Event Listeners for Calendar
+                var $body = $('body');
+                $body.off('click.calendarAction').on('click.calendarAction', '#event-btn', function() {
                     $('#cal-drop').toggle();
-                    hideDropdown = true;
-                }
-            });
-
-
-            $(document).mouseup(e => {
-
-                const $menu = $('.calendar-action');
-
-                if (!$menu.is(e.target) && $menu.has(e.target).length === 0)
-                {
-                    hideDropdown = false;
-                    $('#cal-drop').hide();
-                }
-            });
-
-
-            $('.cal-filter').on('click', function() {
-
-                var filter = [];
-
-                $('.filter-check:checked').each(function() {
-                    filter.push($(this).val());
                 });
 
-                if(filter.length < 1){
-                    filter.push('None');
-                }
-
-                calendar.removeAllEventSources();
-                calendar.addEventSource({
-                    url: "{{ route('dashboard.private_calendar') }}",
-                    extraParams: {
-                        filter: filter
+                $(document).off('mouseup.calendarHide').on('mouseup.calendarHide', function(e) {
+                    var $menu = $('.calendar-action');
+                    if (!$menu.is(e.target) && $menu.has(e.target).length === 0) {
+                        $('#cal-drop').hide();
                     }
                 });
 
-                filter = null;
-            });
+                $body.off('click.calendarFilter').on('click.calendarFilter', '.cal-filter', function() {
+                    var filter = [];
+                    $('.filter-check:checked').each(function() {
+                        filter.push($(this).val());
+                    });
+                    if (filter.length < 1) filter.push('None');
+
+                    window.employeeCalendar.removeAllEventSources();
+                    window.employeeCalendar.addEventSource({
+                        url: "{{ route('dashboard.private_calendar') }}",
+                        extraParams: { filter: filter }
+                    });
+                });
+
+                document.addEventListener("turbo:before-cache", function() {
+                    if (window.employeeCalendar) {
+                        window.employeeCalendar.destroy();
+                        window.employeeCalendar = null;
+                    }
+                    $body.off('.calendarAction .calendarFilter');
+                    $(document).off('.calendarHide');
+                }, { once: true });
+
+            })();
+        </script>
         </script>
     @endif
 
     <script>
-        window.setInterval(function () {
-            let date = new Date();
-            $('#dashboard-clock').html(moment.tz(date, "{{ company()->timezone }}").format(MOMENTJS_TIME_FORMAT))
-        }, 1000);
+        (function() {
+            if (typeof window.DashboardClockManager === 'undefined') {
+                window.DashboardClockManager = (function() {
+                    var clockInterval = null;
+                    var start = function() {
+                        stop();
+                        clockInterval = setInterval(function () {
+                            var $clock = $('#dashboard-clock');
+                            if ($clock.length === 0) return;
+                            var date = new Date();
+                            $clock.html(moment.tz(date, "{{ company()->timezone }}").format(MOMENTJS_TIME_FORMAT));
+                        }, 1000);
+                    };
+                    var stop = function() {
+                        if (clockInterval) {
+                            clearInterval(clockInterval);
+                            clockInterval = null;
+                        }
+                    };
+                    document.addEventListener("turbo:before-cache", stop);
+                    document.addEventListener("turbo:before-visit", stop);
+                    return { start, stop };
+                })();
+            }
+            window.DashboardClockManager.start();
 
-        $('#save-dashboard-widget').click(function() {
-            $.easyAjax({
-                url: "{{ route('dashboard.widget', 'private-dashboard') }}",
-                container: '#privateDashboardWidgetForm',
-                blockUI: true,
-                type: "POST",
-                redirect: true,
-                data: $('#privateDashboardWidgetForm').serialize(),
-                success: function() {
-                    window.location.reload();
-                }
-            })
-        });
+            var $body = $('body');
+            $body.off('.empDashboard');
 
-        $('#clock-in').click(function() {
-            const url = "{{ route('attendances.clock_in_modal') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
-
-        $('.request-shift-change').click(function() {
-            var id = $(this).data('shift-schedule-id');
-            var date = $(this).data('shift-schedule-date');
-            var shiftId = $(this).data('shift-id');
-            var url = "{{ route('shifts-change.edit', ':id') }}?date="+date+"&shift_id="+shiftId;
-            url = url.replace(':id', id);
-
-            $(MODAL_DEFAULT + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_DEFAULT, url);
-        });
-
-        $('#view-shifts').click(function() {
-            const url = "{{ route('employee-shifts.index') }}";
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_XL, url);
-        });
-
-        @if (!is_null($currentClockIn))
-            $('#clock-out').click(function() {
-
-                var token = "{{ csrf_token() }}";
-                var currentLatitude = document.getElementById("current-latitude").value;
-                var currentLongitude = document.getElementById("current-longitude").value;
-
+            $body.on('click.empDashboard', '#save-dashboard-widget', function() {
                 $.easyAjax({
-                    url: "{{ route('attendances.update_clock_in') }}",
-                    type: "GET",
+                    url: "{{ route('dashboard.widget', 'private-dashboard') }}",
+                    container: '#privateDashboardWidgetForm',
+                    blockUI: true,
+                    type: "POST",
+                    redirect: true,
+                    data: $('#privateDashboardWidgetForm').serialize(),
+                    success: function() {
+                        window.location.reload();
+                    }
+                })
+            });
+
+            $body.on('click.empDashboard', '#clock-in', function() {
+                var url = "{{ route('attendances.clock_in_modal') }}";
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG, url);
+            });
+
+            $body.on('click.empDashboard', '.request-shift-change', function() {
+                var id = $(this).data('shift-schedule-id');
+                var date = $(this).data('shift-schedule-date');
+                var shiftId = $(this).data('shift-id');
+                var url = "{{ route('shifts-change.edit', ':id') }}?date="+date+"&shift_id="+shiftId;
+                url = url.replace(':id', id);
+                $(MODAL_DEFAULT + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_DEFAULT, url);
+            });
+
+            $body.on('click.empDashboard', '#view-shifts', function() {
+                var url = "{{ route('employee-shifts.index') }}";
+                $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_XL, url);
+            });
+
+            @if (!is_null($currentClockIn))
+                $body.on('click.empDashboard', '#clock-out', function() {
+                    var token = "{{ csrf_token() }}";
+                    var currentLatitude = document.getElementById("current-latitude").value;
+                    var currentLongitude = document.getElementById("current-longitude").value;
+                    $.easyAjax({
+                        url: "{{ route('attendances.update_clock_in') }}",
+                        type: "GET",
+                        data: {
+                            currentLatitude: currentLatitude,
+                            currentLongitude: currentLongitude,
+                            _token: token,
+                            id: '{{ $currentClockIn->id }}'
+                        },
+                        success: function(response) {
+                            if (response.status == 'success') {
+                                window.location.reload();
+                            }
+                        }
+                    });
+                });
+            @endif
+
+            $body.on('click.empDashboard', '#weekly-timelogs .week-timelog-day', function() {
+                var date = $(this).data('date');
+                $.easyAjax({
+                    url: "{{ route('dashboard.week_timelog') }}",
+                    container: '#weekly-timelogs',
+                    blockUI: true,
+                    type: "POST",
+                    redirect: true,
                     data: {
-                        currentLatitude: currentLatitude,
-                        currentLongitude: currentLongitude,
-                        _token: token,
-                        id: '{{ $currentClockIn->id }}'
+                        'date': date,
+                        '_token': "{{ csrf_token() }}"
                     },
                     success: function(response) {
-                        if (response.status == 'success') {
-                            window.location.reload();
-                        }
+                        $('#weekly-timelogs').html(response.html)
                     }
-                });
+                })
             });
-        @endif
 
-        $('.keep-open .dropdown-menu').on({
-            "click": function(e) {
-                e.stopPropagation();
-            }
-        });
+            @if (attendance_setting()->radius_check == 'yes' || attendance_setting()->save_current_location)
+                var getLocation = function() {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(function(position) {
+                            var lat = document.getElementById("current-latitude");
+                            var lon = document.getElementById("current-longitude");
+                            if (lat) lat.value = position.coords.latitude;
+                            if (lon) lon.value = position.coords.longitude;
+                        });
+                    }
+                };
+                getLocation();
+            @endif
 
-        $('#weekly-timelogs').on('click', '.week-timelog-day', function() {
-            var date = $(this).data('date');
-
-            $.easyAjax({
-                url: "{{ route('dashboard.week_timelog') }}",
-                container: '#weekly-timelogs',
-                blockUI: true,
-                type: "POST",
-                redirect: true,
-                data: {
-                    'date': date,
-                    '_token': "{{ csrf_token() }}"
-                },
-                success: function(response) {
-                    $('#weekly-timelogs').html(response.html)
-                }
-            })
-        });
-
+            document.addEventListener("turbo:before-cache", function() {
+                $body.off('.empDashboard');
+            }, { once: true });
+        })();
     </script>
-
-    @if (attendance_setting()->radius_check == 'yes' || attendance_setting()->save_current_location)
-    <script>
-        const currentLatitude = document.getElementById("current-latitude");
-        const currentLongitude = document.getElementById("current-longitude");
-        const x = document.getElementById("current-latitude");
-
-        function getLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(showPosition);
-            }
-        }
-
-        function showPosition(position) {
-            currentLatitude.value = position.coords.latitude;
-            currentLongitude.value = position.coords.longitude;
-        }
-        getLocation();
-
-    </script>
-
-    @endif
 @endpush

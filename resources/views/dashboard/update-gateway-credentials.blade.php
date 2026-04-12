@@ -89,57 +89,69 @@
 @push('scripts')
     <script src="{{ asset('vendor/jquery/clipboard.min.js') }}"></script>
     <script>
-        var clipboard = new ClipboardJS('.btn-copy');
+        (function() {
+            if (window.gatewayClipboard) {
+                window.gatewayClipboard.destroy();
+            }
+            window.gatewayClipboard = new ClipboardJS('.btn-copy');
 
-        clipboard.on('success', function (e) {
-            Swal.fire({
-                icon: 'success',
-                text: '@lang("app.webhookUrlCopied") ' + e.text,
-                toast: true,
-                position: 'top-end',
-                timer: 3000,
-                timerProgressBar: true,
-                showConfirmButton: false,
-
-                showClass: {
-                    popup: 'swal2-noanimation',
-                },
-            })
-        });
-
-
-        $('body').on('click', '.close-webhook-message', function () {
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "You have configured the new webhook to the payment gateways",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "Yes, Please hide the message",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const url = "{{ route('hideWebhookAlert') }}";
-
-                    $.easyAjax({
-                        type: 'GET',
-                        url: url,
-                        success: function () {
-                            $('#webhook-message-box').remove()
-                        }
-                    });
-                }
+            window.gatewayClipboard.on('success', function (e) {
+                Swal.fire({
+                    icon: 'success',
+                    text: '@lang("app.webhookUrlCopied") ' + e.text,
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                    showClass: {
+                        popup: 'swal2-noanimation',
+                    },
+                })
             });
-        });
+
+            var $body = $('body');
+            $body.off('click.gatewayAlert').on('click.gatewayAlert', '.close-webhook-message', function () {
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "You have configured the new webhook to the payment gateways",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "Yes, Please hide the message",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: {
+                        confirmButton: 'btn btn-primary mr-3',
+                        cancelButton: 'btn btn-secondary'
+                    },
+                    showClass: {
+                        popup: 'swal2-noanimation',
+                        backdrop: 'swal2-noanimation'
+                    },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        var url = "{{ route('hideWebhookAlert') }}";
+
+                        $.easyAjax({
+                            type: 'GET',
+                            url: url,
+                            success: function () {
+                                $('#webhook-message-box').remove()
+                            }
+                        });
+                    }
+                });
+            });
+
+            document.addEventListener("turbo:before-cache", function() {
+                if (window.gatewayClipboard) {
+                    window.gatewayClipboard.destroy();
+                    window.gatewayClipboard = null;
+                }
+                $body.off('.gatewayAlert');
+            }, { once: true });
+        })();
     </script>
 @endpush
 

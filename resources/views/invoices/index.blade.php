@@ -164,116 +164,144 @@ $manageRecurringInvoicesPermission = user()->permission('manage_recurring_invoic
     @include('sections.datatable_js')
     <script src="{{ asset('vendor/jquery/clipboard.min.js') }}"></script>
     <script>
-        $(function() {
-        var clipboard = new ClipboardJS('.btn-copy');
+        (function() {
+            var $body = $('body');
+            var $table = $('#invoices-table');
+            var namespace = '.invoicesIndex';
+            var clipboard = null;
 
-        clipboard.on('success', function(e) {
-            Swal.fire({
-                icon: 'success',
-                text: '@lang("app.copied")',
-                toast: true,
-                position: 'top-end',
-                timer: 3000,
-                timerProgressBar: true,
-                showConfirmButton: false,
-                customClass: {
-                    confirmButton: 'btn btn-primary',
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-            })
-        });
-
-        $('#invoices-table').on('preXhr.dt', function(e, settings, data) {
-
-            var dateRangePicker = $('#datatableRange').data('daterangepicker');
-            var startDate = $('#datatableRange').val();
-
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
-            }
-
-            var projectID = $('#filter_project_id').val();
-            if (!projectID) {
-                projectID = 0;
-            }
-            var clientID = $('#clientID').val();
-            var status = $('#status').val();
-
-            var searchText = $('#search-text-field').val();
-
-            data['clientID'] = clientID;
-            data['projectID'] = projectID;
-            data['status'] = status;
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['searchText'] = searchText;
-        });
-
-        const showTable = () => {
-            window.LaravelDataTables["invoices-table"].draw(false);
-        }
-
-        $('#clientID, #filter_project_id, #status')
-            .on('change keyup',
-                function() {
-                    if ($('#filter_project_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#status').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#clientID').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else {
-                        $('#reset-filters').addClass('d-none');
-                        showTable();
-                    }
+            // ── ClipboardJS ──────────────────────────────────────────────
+            // Prevent duplicate bindings on Turbo revisits
+            if (typeof ClipboardJS !== 'undefined' && document.querySelector('.btn-copy')) {
+                clipboard = new ClipboardJS('.btn-copy');
+                clipboard.on('success', function(e) {
+                    Swal.fire({
+                        icon: 'success',
+                        text: '@lang("app.copied")',
+                        toast: true,
+                        position: 'top-end',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                        customClass: { confirmButton: 'btn btn-primary' },
+                        showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    });
                 });
-
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
             }
-        });
 
-            $('#reset-filters,#reset-filters-2').click(function () {
+            // ── DataTable preXhr ─────────────────────────────────────────
+            $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+                var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                var startDate = $('#datatableRange').val();
+                var endDate = null;
+
+                if (startDate == '') {
+                    startDate = null;
+                } else if (dateRangePicker) {
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                }
+
+                data['clientID']    = $('#clientID').val();
+                data['projectID']   = $('#filter_project_id').val() || 0;
+                data['status']      = $('#status').val();
+                data['startDate']   = startDate;
+                data['endDate']     = endDate;
+                data['searchText']  = $('#search-text-field').val();
+            });
+
+            // ── showTable (module-scoped + window alias for DataTable callbacks) ──
+            var showTable = function() {
+                var table = window.LaravelDataTables["invoices-table"];
+                if (table) {
+                    table.draw(false);
+                }
+            }
+            window.showTable = showTable;
+
+            // ── Event delegation ─────────────────────────────────────────
+            $body.off(namespace);
+
+            $body.on('change' + namespace + ' keyup' + namespace,
+                '#clientID, #filter_project_id, #status', function() {
+                var filtersActive = ($('#filter_project_id').val() != "all") ||
+                                    ($('#status').val() != "all") ||
+                                    ($('#clientID').val() != "all");
+                $('#reset-filters').toggleClass('d-none', !filtersActive);
+                showTable();
+            });
+
+            $body.on('keyup' + namespace, '#search-text-field', function() {
+                if ($(this).val() != '') { $('#reset-filters').removeClass('d-none'); }
+                showTable();
+            });
+
+            $body.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
                 $('#filter-form')[0].reset();
-
-                $('.filter-box .select-picker').selectpicker("refresh");
+                $('.filter-box .select-picker').selectpicker('refresh');
                 $('#reset-filters').addClass('d-none');
                 showTable();
             });
 
-
-        $('#quick-action-type').change(function() {
-            const actionValue = $(this).val();
-            if (actionValue != '') {
-                $('#quick-action-apply').removeAttr('disabled');
-
-                if (actionValue == 'change-status') {
+            $body.on('change' + namespace, '#quick-action-type', function() {
+                var actionValue = $(this).val();
+                if (actionValue != '') {
+                    $('#quick-action-apply').removeAttr('disabled');
                     $('.quick-action-field').addClass('d-none');
-                    $('#change-status-action').removeClass('d-none');
+                    if (actionValue == 'change-status') {
+                        $('#change-status-action').removeClass('d-none');
+                    }
                 } else {
+                    $('#quick-action-apply').attr('disabled', true);
                     $('.quick-action-field').addClass('d-none');
                 }
-            } else {
-                $('#quick-action-apply').attr('disabled', true);
-                $('.quick-action-field').addClass('d-none');
-            }
-        });
+            });
 
-        $('#quick-action-apply').click(function() {
-            const actionValue = $('#quick-action-type').val();
-            if (actionValue == 'delete') {
+            function applyQuickAction() {
+                var rowdIds = $("#invoices-table input:checkbox:checked").map(function() {
+                    return $(this).val();
+                }).get();
+
+                $.easyAjax({
+                    url: "{{ route('invoices.apply_quick_action') }}?row_ids=" + rowdIds,
+                    container: '#quick-action-form',
+                    type: "POST",
+                    disableButton: true,
+                    buttonSelector: "#quick-action-apply",
+                    data: $('#quick-action-form').serialize(),
+                    blockUI: true,
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                        }
+                    }
+                });
+            }
+            window.applyQuickAction = applyQuickAction;
+
+            $body.on('click' + namespace, '#quick-action-apply', function() {
+                var actionValue = $('#quick-action-type').val();
+                if (actionValue == 'delete') {
+                    Swal.fire({
+                        title: "@lang('messages.sweetAlertTitle')",
+                        text: "@lang('messages.recoverRecord')",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        focusConfirm: false,
+                        confirmButtonText: "@lang('messages.confirmDelete')",
+                        cancelButtonText: "@lang('app.cancel')",
+                        customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                        showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                        buttonsStyling: false
+                    }).then((result) => { if (result.isConfirmed) { applyQuickAction(); } });
+                } else {
+                    applyQuickAction();
+                }
+            });
+
+            $body.on('click' + namespace, '.delete-table-row', function() {
+                var id = $(this).data('invoice-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
                     text: "@lang('messages.recoverRecord')",
@@ -282,261 +310,146 @@ $manageRecurringInvoicesPermission = user()->permission('manage_recurring_invoic
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        applyQuickAction();
+                        $.easyAjax({
+                            type: 'POST',
+                            url: "{{ route('invoices.destroy', ':id') }}".replace(':id', id),
+                            blockUI: true,
+                            data: { '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
+                            success: function(response) {
+                                if (response.status == "success") { showTable(); }
+                            }
+                        });
                     }
                 });
+            });
 
-            } else {
-                applyQuickAction();
-            }
-        });
+            $body.on('click' + namespace, '.unpaidAndPartialPaidCreditNote', function() {
+                var id = $(this).data('invoice-id');
+                Swal.fire({
+                    title: "@lang('messages.confirmation.createCreditNotes')",
+                    text: "@lang('messages.creditText')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('app.yes')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        location.href = "{{ route('creditnotes.create') }}?invoice=:id".replace(':id', id);
+                    }
+                });
+            });
 
-        $('body').on('click', '.delete-table-row', function() {
-            var id = $(this).data('invoice-id');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.recoverRecord')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmDelete')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('invoices.destroy', ':id') }}";
-                    url = url.replace(':id', id);
+            $body.on('click' + namespace, '.sendButton', function() {
+                var id       = $(this).data('invoice-id');
+                var dataType = $(this).data('type');
+                $.easyAjax({
+                    type: 'POST',
+                    url: "{{ route('invoices.send_invoice', ':id') }}".replace(':id', id),
+                    container: '#invoices-table',
+                    blockUI: true,
+                    data: { '_token': "{{ csrf_token() }}", 'data_type': dataType },
+                    success: function(response) {
+                        if (response.status == "success") { showTable(); }
+                    }
+                });
+            });
 
-                    var token = "{{ csrf_token() }}";
+            $body.on('click' + namespace, '.reminderButton', function() {
+                var id = $(this).data('invoice-id');
+                $.easyAjax({
+                    type: 'GET',
+                    container: '#invoices-table',
+                    blockUI: true,
+                    url: "{{ route('invoices.payment_reminder', ':id') }}".replace(':id', id),
+                    success: function(response) {
+                        if (response.status == "success") { showTable(); }
+                    }
+                });
+            });
 
-                    $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        blockUI: true,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
-                        success: function(response) {
-                            if (response.status == "success") {
-                                showTable();
+            $body.on('click' + namespace, '.invoice-upload', function() {
+                var invoiceId = $(this).data('invoice-id');
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG, "{{ route('invoices.file_upload') }}?invoice_id=" + invoiceId);
+            });
+
+            $body.on('click' + namespace, '.cancel-invoice', function() {
+                var id = $(this).data('invoice-id');
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.invoiceText')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('app.yes')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.easyAjax({
+                            type: 'GET',
+                            url: "{{ route('invoices.update_status', ':id') }}".replace(':id', id),
+                            container: '#invoices-table',
+                            blockUI: true,
+                            success: function(response) {
+                                if (response.status == "success") { showTable(); }
                             }
-                        }
-                    });
-                }
-            });
-        });
-
-        $('body').on('click', '.unpaidAndPartialPaidCreditNote', function() {
-            var id = $(this).data('invoice-id');
-
-            Swal.fire({
-                title: "@lang('messages.confirmation.createCreditNotes')",
-                text: "@lang('messages.creditText')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('app.yes')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('creditnotes.create') }}?invoice=:id";
-                    url = url.replace(':id', id);
-
-                    location.href = url;
-                }
-            });
-        });
-
-        const applyQuickAction = () => {
-            var rowdIds = $("#invoices-table input:checkbox:checked").map(function() {
-                return $(this).val();
-            }).get();
-
-            var url = "{{ route('invoices.apply_quick_action') }}?row_ids=" + rowdIds;
-
-            $.easyAjax({
-                url: url,
-                container: '#quick-action-form',
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#quick-action-apply",
-                data: $('#quick-action-form').serialize(),
-                blockUI: true,
-                success: function(response) {
-                    if (response.status == 'success') {
-                        showTable();
-                        resetActionButtons();
+                        });
                     }
-                }
-            })
-        };
+                });
+            });
 
-        $('body').on('click', '.sendButton', function() {
-            var id = $(this).data('invoice-id');
-            var dataType = $(this).data('type');
-            var url = "{{ route('invoices.send_invoice', ':id') }}";
-            url = url.replace(':id', id);
-
-            var token = "{{ csrf_token() }}";
-
-            $.easyAjax({
-                type: 'POST',
-                url: url,
-                container: '#invoices-table',
-                blockUI: true,
-                data: {
-                    '_token': token,
-                    'data_type' : dataType
-                },
-                success: function(response) {
-                    if (response.status == "success") {
-                        showTable();
+            $body.on('click' + namespace, '.toggle-shipping-address', function() {
+                var invoiceId = $(this).data('invoice-id');
+                $.easyAjax({
+                    url: "{{ route('invoices.toggle_shipping_address', ':id') }}".replace(':id', invoiceId),
+                    type: 'GET',
+                    container: '#invoices-table',
+                    blockUI: true,
+                    success: function(response) {
+                        if (response.status === 'success') { showTable(); }
                     }
-                }
-            });
-        });
-
-        $('body').on('click', '.reminderButton', function() {
-            var id = $(this).data('invoice-id');
-            var url = "{{ route('invoices.payment_reminder', ':id') }}";
-            url = url.replace(':id', id);
-
-            var token = "{{ csrf_token() }}";
-
-            $.easyAjax({
-                type: 'GET',
-                container: '#invoices-table',
-                blockUI: true,
-                url: url,
-                success: function(response) {
-                    if (response.status == "success") {
-                        $.unblockUI();
-                        showTable();
-                    }
-                }
-            });
-        });
-
-        $('body').on('click', '.invoice-upload', function() {
-            var invoiceId = $(this).data('invoice-id');
-            const url = "{{ route('invoices.file_upload') }}?invoice_id=" + invoiceId;
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
-
-        $('body').on('click', '#recurring-invoice', function() {
-            window.location.href = "{{ route('recurring-invoices.index') }} ";
-        });
-
-
-        $('body').on('click', '.cancel-invoice', function() {
-            var id = $(this).data('invoice-id');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.invoiceText')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('app.yes')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-
-                    var url = "{{ route('invoices.update_status', ':id') }}";
-                    url = url.replace(':id', id);
-
-                    var token = "{{ csrf_token() }}";
-
-                    $.easyAjax({
-                        type: 'GET',
-                        url: url,
-                        container: '#invoices-table',
-                        blockUI: true,
-                        success: function(response) {
-                            if (response.status == "success") {
-                                showTable();
-                            }
-                        }
-                    });
-                }
-            });
-        });
-
-        $('body').on('click', '.toggle-shipping-address', function() {
-            let invoiceId = $(this).data('invoice-id');
-
-            let url = "{{ route('invoices.toggle_shipping_address', ':id') }}";
-            url = url.replace(':id', invoiceId);
-
-            $.easyAjax({
-                url: url,
-                type: 'GET',
-                container: '#invoices-table',
-                blockUI: true,
-                success: function(response) {
-                    if (response.status === 'success') {
-                        window.LaravelDataTables["invoices-table"].draw(false);
-                    }
-                }
+                });
             });
 
-        });
+            $body.on('click' + namespace, '.add-shipping-address', function() {
+                var invoiceId = $(this).data('invoice-id');
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG,
+                    "{{ route('invoices.shipping_address_modal', [':id']) }}".replace(':id', invoiceId));
+            });
 
-        $('body').on('click', '.add-shipping-address', function() {
-            let invoiceId = $(this).data('invoice-id');
+            @if (request('start') && request('end'))
+                $('#datatableRange').val('{{ request('start') }}' + ' @lang("app.to") ' + '{{ request('end') }}');
+                var drp = $('#datatableRange').data('daterangepicker');
+                if (drp) {
+                    drp.setStartDate("{{ request('start') }}");
+                    drp.setEndDate("{{ request('end') }}");
+                }
+                showTable();
+            @endif
 
-            var url = "{{ route('invoices.shipping_address_modal', [':id']) }}";
-            url = url.replace(':id', invoiceId);
+            // ── Turbo cleanup ─────────────────────────────────────────────
+            document.addEventListener("turbo:before-cache", function cleanup() {
+                $body.off(namespace);
+                $table.off('preXhr.dt');
+                if (clipboard) { clipboard.destroy(); clipboard = null; }
+                delete window.showTable;
+                delete window.applyQuickAction;
+                document.removeEventListener("turbo:before-cache", cleanup);
+            }, { once: true });
 
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
-
-        @if (request('start') && request('end'))
-            $('#datatableRange').val('{{ request('start') }}' +
-            ' @lang("app.to") ' + '{{ request('end') }}');
-            $('#datatableRange').data('daterangepicker').setStartDate("{{ request('start') }}");
-            $('#datatableRange').data('daterangepicker').setEndDate("{{ request('end') }}");
-            showTable();
-        @endif
-    });
+        })();
     </script>
 @endpush

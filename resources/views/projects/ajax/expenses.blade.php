@@ -89,69 +89,107 @@ $addExpensesPermission = user()->permission('add_expenses');
 
 
 <script>
-    $('#expenses-table').on('preXhr.dt', function(e, settings, data) {
+    (function() {
+        var $body = $('body');
+        var $table = $('#expenses-table');
+        var namespace = '.projectExpenses';
 
-        var status = $('#filter-status').val();
-        var searchText = $('#search-text-field').val();
-        var employee = $('#employee2').val();
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
+            var status = $('#filter-status').val();
+            var searchText = $('#search-text-field').val();
+            var employee = $('#employee2').val();
 
+            data['status'] = status;
+            data['employee'] = employee;
+            data['projectId'] = "{{ $project->id }}";
+            data['searchText'] = searchText;
+        });
 
-        data['status'] = status;
-        data['employee'] = employee;
-        data['projectId'] = "{{ $project->id }}";
-        data['searchText'] = searchText;
-    });
-    const showTable = () => {
-        window.LaravelDataTables["expenses-table"].draw(false);
-    }
+        function showTable() {
+            if (window.LaravelDataTables && window.LaravelDataTables["expenses-table"]) {
+                window.LaravelDataTables["expenses-table"].draw(false);
+            }
+        }
+        window.showTable = showTable;
 
-    $('#filter-status, #employee2').on('change keyup',
-        function() {
+        $body.off(namespace);
+
+        $body.on('change' + namespace + ' keyup' + namespace, '#filter-status, #employee2', function() {
             if ($('#filter-status').val() != "all") {
                 $('#reset-filters').removeClass('d-none');
-                showTable();
             } else {
                 $('#reset-filters').addClass('d-none');
-                showTable();
+            }
+            showTable();
+        });
+
+        $body.on('keyup' + namespace, '#search-text-field', function() {
+            if ($(this).val() != "") {
+                $('#reset-filters').removeClass('d-none');
+            }
+            showTable();
+        });
+
+        $body.on('click' + namespace, '#reset-filters', function() {
+            $('#filter-form')[0].reset();
+            $('.filter-box .select-picker').selectpicker("refresh");
+            $('#reset-filters').addClass('d-none');
+            showTable();
+        });
+
+        $body.on('change' + namespace, '#quick-action-type', function() {
+            const actionValue = $(this).val();
+            if (actionValue != '') {
+                $('#quick-action-apply').removeAttr('disabled');
+                $('.quick-action-field').addClass('d-none');
+                if (actionValue == 'change-status') {
+                    $('#change-status-action').removeClass('d-none');
+                }
+            } else {
+                $('#quick-action-apply').attr('disabled', true);
+                $('.quick-action-field').addClass('d-none');
             }
         });
 
-    $('#search-text-field').on('keyup', function() {
-        if ($('#search-text-field').val() != "") {
-            $('#reset-filters').removeClass('d-none');
-            showTable();
-        }
-    });
-
-    $('#reset-filters').click(function() {
-        $('#filter-form')[0].reset();
-
-        $('.filter-box .select-picker').selectpicker("refresh");
-        $('#reset-filters').addClass('d-none');
-        showTable();
-    });
-
-
-    $('#quick-action-type').change(function() {
-        const actionValue = $(this).val();
-        if (actionValue != '') {
-            $('#quick-action-apply').removeAttr('disabled');
-
-            if (actionValue == 'change-status') {
-                $('.quick-action-field').addClass('d-none');
-                $('#change-status-action').removeClass('d-none');
+        $body.on('click' + namespace, '#quick-action-apply', function() {
+            const actionValue = $('#quick-action-type').val();
+            if (actionValue == 'delete') {
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.recoverRecord')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) { applyQuickAction(); }
+                });
             } else {
-                $('.quick-action-field').addClass('d-none');
+                applyQuickAction();
             }
-        } else {
-            $('#quick-action-apply').attr('disabled', true);
-            $('.quick-action-field').addClass('d-none');
-        }
-    });
+        });
 
-    $('#quick-action-apply').click(function() {
-        const actionValue = $('#quick-action-type').val();
-        if (actionValue == 'delete') {
+        $body.on('change' + namespace, '.change-expense-status', function() {
+            var id = $(this).data('expense-id');
+            var token = "{{ csrf_token() }}";
+            var status = $(this).val();
+
+            if (typeof id !== 'undefined') {
+                $.easyAjax({
+                    url: "{{ route('expenses.change_status') }}",
+                    type: "POST",
+                    data: { '_token': token, expenseId: id, status: status },
+                    success: function() { showTable(); }
+                });
+            }
+        });
+
+        $body.on('click' + namespace, '.delete-table-row', function() {
+            var id = $(this).data('expense-id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
                 text: "@lang('messages.recoverRecord')",
@@ -160,116 +198,57 @@ $addExpensesPermission = user()->permission('add_expenses');
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    applyQuickAction();
-                }
-            });
-
-        } else {
-            applyQuickAction();
-        }
-    });
-
-    $('body').on('change', '.change-expense-status', function() {
-        var id = $(this).data('expense-id');
-        var url = "{{ route('expenses.change_status') }}";
-
-        var token = "{{ csrf_token() }}";
-        var status = $(this).val();
-
-        if (typeof id !== 'undefined') {
-            $.easyAjax({
-                url: "{{ route('expenses.change_status') }}",
-                type: "POST",
-                data: {
-                    '_token': token,
-                    expenseId: id,
-                    status: status
-                },
-
-                success: function(response) {
-                    if (response.status == "success") {
-                        window.LaravelDataTables["expenses-table"].draw(false);
-                    }
-                }
-            });
-        }
-    });
-
-    $('body').on('click', '.delete-table-row', function() {
-        var id = $(this).data('expense-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('expenses.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            showTable();
+                    var url = "{{ route('expenses.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { showTable(); }
                         }
-                    }
-                });
-            }
-        });
-    });
-
-    const applyQuickAction = () => {
-        var rowdIds = $("#expenses-table input:checkbox:checked").map(function() {
-            return $(this).val();
-        }).get();
-
-        var url = "{{ route('expenses.apply_quick_action') }}?row_ids=" + rowdIds;
-
-        $.easyAjax({
-            url: url,
-            container: '#quick-action-form',
-            type: "POST",
-            disableButton: true,
-            buttonSelector: "#quick-action-apply",
-            data: $('#quick-action-form').serialize(),
-            success: function(response) {
-                if (response.status == 'success') {
-                    showTable();
-                    resetActionButtons();
+                    });
                 }
-            }
-        })
-    };
+            });
+        });
+
+        function applyQuickAction() {
+            var rowdIds = $("#expenses-table input:checkbox:checked").map(function() {
+                return $(this).val();
+            }).get();
+
+            var url = "{{ route('expenses.apply_quick_action') }}?row_ids=" + rowdIds;
+
+            $.easyAjax({
+                url: url,
+                container: '#quick-action-form',
+                type: "POST",
+                disableButton: true,
+                buttonSelector: "#quick-action-apply",
+                data: $('#quick-action-form').serialize(),
+                success: function(response) {
+                    if (response.status == 'success') {
+                        showTable();
+                        if (typeof resetActionButtons === 'function') resetActionButtons();
+                    }
+                }
+            });
+        }
+        window.applyQuickAction = applyQuickAction;
+
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            delete window.applyQuickAction;
+            document.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
+</script>
 
 </script>

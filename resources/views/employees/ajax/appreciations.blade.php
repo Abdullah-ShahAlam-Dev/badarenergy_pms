@@ -86,47 +86,42 @@ $showAppreciationPermission = user()->permission('view_appreciation');
 <!-- TAB CONTENT END -->
 
 <script>
-    $('body').on('click', '.delete-table-row', function() {
-        var id = $(this).data('user-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('appreciations.destroy', ':id') }}";
-                url = url.replace(':id', id);
+    (function() {
+        var $body = $('body');
+        var namespace = '.employeeAppreciations';
 
-                var token = "{{ csrf_token() }}";
+        $body.off(namespace);
 
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            window.location.reload();
+        $body.on('click' + namespace, '.delete-table-row', function() {
+            var id = $(this).data('user-id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('appreciations.destroy', ':id') }}".replace(':id', id);
+                    $.easyAjax({
+                        type: 'POST', url: url,
+                        data: { '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { window.location.reload(); }
                         }
-                    }
-                });
-            }
+                    });
+                }
+            });
         });
-    });
 
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

@@ -87,94 +87,97 @@ $addPaymentPermission = user()->permission('add_payments');
 @include('sections.datatable_js')
 
 <script>
-    $('#payments-table').on('preXhr.dt', function(e, settings, data) {
+    (function() {
+        var $body = $('body');
+        var $table = $('#payments-table');
+        var namespace = '.projectPayments';
 
-        var startDate = $('#start-date').val();
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
+            var startDate = $('#start-date').val() || null;
+            var endDate = $('#end-date').val() || null;
+            var projectID = "{{ $project->id }}";
+            var clientID = $('#clientID').val();
+            var status = $('#status').val();
+            var searchText = $('#search-text-field').val();
 
-        if (startDate == '') {
-            startDate = null;
+            data['clientID'] = clientID;
+            data['projectID'] = projectID;
+            data['status'] = status;
+            data['startDate'] = startDate;
+            data['endDate'] = endDate;
+            data['searchText'] = searchText;
+        });
+
+        function showTable() {
+            if (window.LaravelDataTables && window.LaravelDataTables["payments-table"]) {
+                window.LaravelDataTables["payments-table"].draw(false);
+            }
         }
+        window.showTable = showTable;
 
-        var endDate = $('#end-date').val();
+        $body.off(namespace);
 
-        if (endDate == '') {
-            endDate = null;
-        }
-
-        var projectID = $('#project_id').val();
-        if (!projectID) {
-            projectID = 0;
-        }
-        var clientID = $('#clientID').val();
-        var status = $('#status').val();
-
-        var searchText = $('#search-text-field').val();
-
-        data['clientID'] = clientID;
-        data['projectID'] = "{{ $project->id }}";
-        data['status'] = status;
-        data['startDate'] = startDate;
-        data['endDate'] = endDate;
-        data['searchText'] = searchText;
-    });
-
-    const showTable = () => {
-        window.LaravelDataTables["payments-table"].draw(false);
-    }
-
-    $('#clientID, #project_id, #status')
-        .on('change keyup',
-            function() {
-                if ($('#project_id').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#status').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#clientID').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else {
-                    $('#reset-filters').addClass('d-none');
-                    showTable();
-                }
-            });
-
-    $('#search-text-field').on('keyup', function() {
-        if ($('#search-text-field').val() != "") {
-            $('#reset-filters').removeClass('d-none');
-            showTable();
-        }
-    });
-
-    $('#reset-filters,#reset-filters-2').click(function() {
-        $('#filter-form')[0].reset();
-
-        $('.filter-box .select-picker').selectpicker("refresh");
-        $('#reset-filters').addClass('d-none');
-        showTable();
-    });
-
-    $('#quick-action-type').change(function() {
-        const actionValue = $(this).val();
-        if (actionValue != '') {
-            $('#quick-action-apply').removeAttr('disabled');
-
-            if (actionValue == 'change-status') {
-                $('.quick-action-field').addClass('d-none');
-                $('#change-status-action').removeClass('d-none');
+        $body.on('change' + namespace + ' keyup' + namespace, '#status', function() {
+            if ($(this).val() != "all") {
+                $('#reset-filters').removeClass('d-none');
             } else {
+                $('#reset-filters').addClass('d-none');
+            }
+            showTable();
+        });
+
+        $body.on('keyup' + namespace, '#search-text-field', function() {
+            if ($(this).val() != "") {
+                $('#reset-filters').removeClass('d-none');
+            }
+            showTable();
+        });
+
+        $body.on('click' + namespace, '#reset-filters,#reset-filters-2', function() {
+            $('#filter-form')[0].reset();
+            $('.filter-box .select-picker').selectpicker("refresh");
+            $('#reset-filters').addClass('d-none');
+            showTable();
+        });
+
+        $body.on('change' + namespace, '#quick-action-type', function() {
+            const actionValue = $(this).val();
+            if (actionValue != '') {
+                $('#quick-action-apply').removeAttr('disabled');
+                $('.quick-action-field').addClass('d-none');
+                if (actionValue == 'change-status') {
+                    $('#change-status-action').removeClass('d-none');
+                }
+            } else {
+                $('#quick-action-apply').attr('disabled', true);
                 $('.quick-action-field').addClass('d-none');
             }
-        } else {
-            $('#quick-action-apply').attr('disabled', true);
-            $('.quick-action-field').addClass('d-none');
-        }
-    });
+        });
 
-    $('#quick-action-apply').click(function() {
-        const actionValue = $('#quick-action-type').val();
-        if (actionValue == 'delete') {
+        $body.on('click' + namespace, '#quick-action-apply', function() {
+            const actionValue = $('#quick-action-type').val();
+            if (actionValue == 'delete') {
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.recoverRecord')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) { applyQuickAction(); }
+                });
+            } else {
+                applyQuickAction();
+            }
+        });
+
+        $body.on('click' + namespace, '.delete-table-row', function() {
+            var id = $(this).data('payment-id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
                 text: "@lang('messages.recoverRecord')",
@@ -183,90 +186,55 @@ $addPaymentPermission = user()->permission('add_payments');
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    applyQuickAction();
+                    var url = "{{ route('payments.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { showTable(); }
+                        }
+                    });
                 }
             });
-
-        } else {
-            applyQuickAction();
-        }
-    });
-
-    $('body').on('click', '.delete-table-row', function() {
-        var id = $(this).data('payment-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('payments.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            showTable();
-                        }
-                    }
-                });
-            }
         });
-    });
 
-    const applyQuickAction = () => {
-        var rowdIds = $("#payments-table input:checkbox:checked").map(function() {
-            return $(this).val();
-        }).get();
+        function applyQuickAction() {
+            var rowdIds = $("#payments-table input:checkbox:checked").map(function() {
+                return $(this).val();
+            }).get();
 
-        var url = "{{ route('payments.apply_quick_action') }}?row_ids=" + rowdIds;
+            var url = "{{ route('payments.apply_quick_action') }}?row_ids=" + rowdIds;
 
-        $.easyAjax({
-            url: url,
-            container: '#quick-action-form',
-            type: "POST",
-            disableButton: true,
-            buttonSelector: "#quick-action-apply",
-            data: $('#quick-action-form').serialize(),
-            success: function(response) {
-                if (response.status == 'success') {
-                    showTable();
-                    resetActionButtons();
+            $.easyAjax({
+                url: url,
+                container: '#quick-action-form',
+                type: "POST",
+                disableButton: true,
+                buttonSelector: "#quick-action-apply",
+                data: $('#quick-action-form').serialize(),
+                success: function(response) {
+                    if (response.status == 'success') {
+                        showTable();
+                        if (typeof resetActionButtons === 'function') resetActionButtons();
+                    }
                 }
-            }
-        })
-    };
+            });
+        }
+        window.applyQuickAction = applyQuickAction;
 
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            delete window.applyQuickAction;
+            document.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

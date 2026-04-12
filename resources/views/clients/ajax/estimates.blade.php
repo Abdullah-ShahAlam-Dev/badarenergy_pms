@@ -29,56 +29,133 @@ $addEstimatePermission = user()->permission('add_estimates');
 @include('sections.datatable_js')
 <script src="{{ asset('vendor/jquery/clipboard.min.js') }}"></script>
 <script>
-    var clipboard = new ClipboardJS('.btn-copy');
+    (function() {
+        var $body = $('body');
+        var namespace = '.clientsEstimates';
+        var $table = $('#invoices-table');
+        var clipboard = new ClipboardJS('.btn-copy');
 
-    clipboard.on('success', function(e) {
-        Swal.fire({
-            icon: 'success',
-            text: '@lang("app.copied")',
-            toast: true,
-            position: 'top-end',
-            timer: 3000,
-            timerProgressBar: true,
-            showConfirmButton: false,
-            customClass: {
-                confirmButton: 'btn btn-primary',
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-        })
-    });
+        clipboard.on('success', function(e) {
+            Swal.fire({
+                icon: 'success',
+                text: '@lang("app.copied")',
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                customClass: { confirmButton: 'btn btn-primary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+            });
+        });
 
-    $('#invoices-table').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
+            var clientID = "{{ $client->id }}";
+            data['clientID'] = clientID;
+        });
 
-        var clientID = "{{ $client->id }}";
-        data['clientID'] = clientID;
-    });
-    const showTable = () => {
-        window.LaravelDataTables["invoices-table"].draw(false);
-    }
+        var showTable = function() {
+            if (window.LaravelDataTables["invoices-table"]) {
+                window.LaravelDataTables["invoices-table"].draw(false);
+            }
+        };
 
-    $('#quick-action-type').change(function() {
-        const actionValue = $(this).val();
-        if (actionValue != '') {
-            $('#quick-action-apply').removeAttr('disabled');
+        $body.off('.clientsEstimates');
 
-            if (actionValue == 'change-status') {
-                $('.quick-action-field').addClass('d-none');
-                $('#change-status-action').removeClass('d-none');
+        $body.on('change.clientsEstimates', '#quick-action-type', function() {
+            var actionValue = $(this).val();
+            if (actionValue != '') {
+                $('#quick-action-apply').removeAttr('disabled');
+                if (actionValue == 'change-status') {
+                    $('.quick-action-field').addClass('d-none');
+                    $('#change-status-action').removeClass('d-none');
+                } else {
+                    $('.quick-action-field').addClass('d-none');
+                }
             } else {
+                $('#quick-action-apply').attr('disabled', true);
                 $('.quick-action-field').addClass('d-none');
             }
-        } else {
-            $('#quick-action-apply').attr('disabled', true);
-            $('.quick-action-field').addClass('d-none');
-        }
-    });
+        });
 
-    $('#quick-action-apply').click(function() {
-        const actionValue = $('#quick-action-type').val();
-        if (actionValue == 'delete') {
+        var applyQuickAction = function() {
+            var rowdIds = $("#invoices-table input:checkbox:checked").map(function() {
+                return $(this).val();
+            }).get();
+
+            var url = "{{ route('invoices.apply_quick_action') }}?row_ids=" + rowdIds;
+
+            $.easyAjax({
+                url: url,
+                container: '#quick-action-form',
+                type: "POST",
+                disableButton: true,
+                buttonSelector: "#quick-action-apply",
+                data: $('#quick-action-form').serialize(),
+                blockUI: true,
+                success: function(response) {
+                    if (response.status == 'success') {
+                        showTable();
+                        if (typeof resetActionButtons === 'function') resetActionButtons();
+                    }
+                }
+            });
+        };
+
+        $body.on('click.clientsEstimates', '#quick-action-apply', function() {
+            var actionValue = $('#quick-action-type').val();
+            if (actionValue == 'delete') {
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.recoverRecord')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) { applyQuickAction(); }
+                });
+            } else {
+                applyQuickAction();
+            }
+        });
+
+        $body.on('click.clientsEstimates', '.change-status', function() {
+            var id = $(this).data('estimate-id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.estimateCancelText')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmCancel')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('estimates.change_status', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'GET',
+                        url: url,
+                        container: '#invoices-table',
+                        blockUI: true,
+                        success: function(response) {
+                            if (response.status == "success") { showTable(); }
+                        }
+                    });
+                }
+            });
+        });
+
+        $body.on('click.clientsEstimates', '.delete-table-row', function() {
+            var id = $(this).data('estimate-id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
                 text: "@lang('messages.recoverRecord')",
@@ -87,155 +164,47 @@ $addEstimatePermission = user()->permission('add_estimates');
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    applyQuickAction();
+                    var url = "{{ route('estimates.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        blockUI: true,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { showTable(); }
+                        }
+                    });
                 }
             });
-
-        } else {
-            applyQuickAction();
-        }
-    });
-
-    $('body').on('click', '.change-status', function() {
-        var id = $(this).data('estimate-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.estimateCancelText')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmCancel')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('estimates.change_status', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'GET',
-                    url: url,
-                    container: '#invoices-table',
-                    blockUI: true,
-                    success: function(response) {
-                        if (response.status == "success") {
-                            window.LaravelDataTables["invoices-table"].draw(false);
-                        }
-                    }
-                });
-            }
         });
-    });
 
-    $('body').on('click', '.delete-table-row', function() {
-        var id = $(this).data('estimate-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('estimates.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    blockUI: true,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            showTable();
-                        }
-                    }
-                });
-            }
-        });
-    });
-
-    const applyQuickAction = () => {
-        var rowdIds = $("#invoices-table input:checkbox:checked").map(function() {
-            return $(this).val();
-        }).get();
-
-        var url = "{{ route('invoices.apply_quick_action') }}?row_ids=" + rowdIds;
-
-        $.easyAjax({
-            url: url,
-            container: '#quick-action-form',
-            type: "POST",
-            disableButton: true,
-            buttonSelector: "#quick-action-apply",
-            data: $('#quick-action-form').serialize(),
-            blockUI: true,
-            success: function(response) {
-                if (response.status == 'success') {
-                    showTable();
-                    resetActionButtons();
+        $body.on('click.clientsEstimates', '.sendButton', function() {
+            var id = $(this).data('estimate-id');
+            var url = "{{ route('estimates.send_estimate', ':id') }}".replace(':id', id);
+            var token = "{{ csrf_token() }}";
+            $.easyAjax({
+                type: 'POST',
+                url: url,
+                container: '#invoices-table',
+                blockUI: true,
+                data: { '_token': token },
+                success: function(response) {
+                    if (response.status == "success") { showTable(); }
                 }
-            }
-        })
-    };
-
-    $('body').on('click', '.sendButton', function() {
-        var id = $(this).data('estimate-id');
-        var url = "{{ route('estimates.send_estimate', ':id') }}";
-        url = url.replace(':id', id);
-
-        var token = "{{ csrf_token() }}";
-
-        $.easyAjax({
-            type: 'POST',
-            url: url,
-            container: '#invoices-table',
-            blockUI: true,
-            data: {
-                '_token': token
-            },
-            success: function(response) {
-                if (response.status == "success") {
-                    window.LaravelDataTables["invoices-table"].draw(false);
-                }
-            }
+            });
         });
-    });
+
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            if (clipboard) clipboard.destroy();
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

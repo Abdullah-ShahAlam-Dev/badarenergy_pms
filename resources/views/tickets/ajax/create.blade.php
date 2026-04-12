@@ -5,6 +5,8 @@
     $manageGroupPermission = user()->permission('manage_ticket_groups');
 @endphp
 
+<meta name="turbo-cache-control" content="no-cache">
+
 <link rel="stylesheet" href="{{ asset('vendor/css/dropzone.min.css') }}">
 <link rel="stylesheet" href="{{ asset('vendor/css/tagify.css') }}">
 
@@ -266,41 +268,42 @@
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script src="{{ asset('vendor/jquery/tagify.min.js') }}"></script>
 <script>
-    $(document).ready(function () {
+    (function() {
+        var $body = $('body');
+        var namespace = '.ticketsCreate';
+        var ticketDropzone;
+        var tagify;
 
-        $('#add-file').click(function () {
+        // Cleanup before re-binding
+        $body.off(namespace);
+
+        $body.on('click' + namespace, '#add-file', function () {
             $('.upload-section').removeClass('d-none');
-            $('#add-file').addClass('d-none');
+            $(this).addClass('d-none');
             window.scrollTo(0, document.body.scrollHeight);
         });
 
-        getAgents($('#ticket_group').val());
-
-        function getAgents(groupId){
-            var url = "{{ route('tickets.agent_group', ':id')}}";
-            url = url.replace(':id', groupId);
+        function getAgents(groupId) {
+            var url = "{{ route('tickets.agent_group', ':id')}}".replace(':id', groupId);
             $.easyAjax({
                 url: url,
                 type: "GET",
-                success: function(response)
-                {
-                    var userValues = (response.groupData);
-                    destory_editor('#description');
-                    quillMention(userValues, '#description');
+                success: function(response) {
+                    var userValues = response.groupData;
+                    if (typeof destroy_editor === 'function') destroy_editor('#description');
+                    else if (typeof destory_editor === 'function') destory_editor('#description');
+
+                    if (typeof quillMention === 'function') {
+                        quillMention(userValues, '#description');
+                    }
+
                     var options = [];
-                    var rData = [];
-                    if($.isArray(response.data))
-                    {
-                        rData = response.data;
-                        $.each(rData, function(index, value) {
-                            var selectData = '';
+                    if ($.isArray(response.data)) {
+                        $.each(response.data, function(index, value) {
                             options.push(value);
                         });
-
                         $('#ticket_agent_id').html('<option value="">--</option>' + options);
-                    }
-                    else
-                    {
+                    } else {
                         $('#ticket_agent_id').html(response.data);
                     }
                     $('#ticket_agent_id').selectpicker('refresh');
@@ -308,18 +311,20 @@
             });
         }
 
-        $('#ticket_group').change(function(){
-            var id = $(this).val();
-            getAgents(id)
-        })
+        $body.on('change' + namespace, '#ticket_group', function() {
+            getAgents($(this).val());
+        });
 
-        //Dropzone class
-        var ticketDropzone = new Dropzone("div#ticket-file-upload-dropzone", {
+        if (Dropzone.instances.length > 0) {
+            Dropzone.instances.forEach(function(dz) {
+                if (dz.element.id === 'ticket-file-upload-dropzone') dz.destroy();
+            });
+        }
+
+        ticketDropzone = new Dropzone("div#ticket-file-upload-dropzone", {
             dictDefaultMessage: "{{ __('app.dragDrop') }}",
             url: "{{ route('ticket-files.store') }}",
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
             paramName: "file",
             maxFilesize: DROPZONE_MAX_FILESIZE,
             maxFiles: DROPZONE_MAX_FILES,
@@ -332,83 +337,59 @@
                 ticketDropzone = this;
             }
         });
+
         ticketDropzone.on('sending', function (file, xhr, formData) {
             var ids = $('#replyID').val();
             formData.append('ticket_reply_id', ids);
             $.easyBlockUI();
         });
-        ticketDropzone.on('uploadprogress', function () {
-            $.easyBlockUI();
-        });
+
         ticketDropzone.on('queuecomplete', function () {
-            var msgs = "@lang('messages.addDiscussion')";
             window.location.href = "{{ route('tickets.index') }}";
         });
-        ticketDropzone.on('removedfile', function () {
-            var grp = $('div#file-upload-dropzone').closest(".form-group");
-            var label = $('div#file-upload-box').siblings("label");
-            $(grp).removeClass("has-error");
-            $(label).removeClass("is-invalid");
-        });
+
         ticketDropzone.on('error', function (file, message) {
-            ticketDropzone.removeFile(file);
-            var grp = $('div#file-upload-dropzone').closest(".form-group");
-            var label = $('div#file-upload-box').siblings("label");
-            $(grp).find(".help-block").remove();
-            var helpBlockContainer = $(grp);
-
-            if (helpBlockContainer.length == 0) {
-                helpBlockContainer = $(grp);
-            }
-
-            helpBlockContainer.append('<div class="help-block invalid-feedback">' + message + '</div>');
-            $(grp).addClass("has-error");
-            $(label).addClass("is-invalid");
-
+            this.removeFile(file);
+            var grp = $(this.element).closest(".form-group");
+            grp.find(".help-block").remove();
+            grp.append('<div class="help-block invalid-feedback">' + message + '</div>');
+            grp.addClass("has-error");
+            grp.find("label").addClass("is-invalid");
         });
 
-        var input = document.querySelector('input[name=tags]'),
-            // init Tagify script on the above inputs
-            tagify = new Tagify(input);
+        var tagInput = document.querySelector('input[name=tags]');
+        if (tagInput) tagify = new Tagify(tagInput);
 
-
-        $("input[name=requester_type]").click(function () {
+        $body.on('click' + namespace, "input[name=requester_type]", function () {
             $('#client-requester, #employee-requester').toggleClass('d-none');
         });
 
-        /* open add agent modal */
-        $('body').on('click', '#add-agent', function () {
-            var url = "{{ route('ticket-agents.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
+        $body.on('click' + namespace, '#add-agent', function () {
+            $.ajaxModal(MODAL_LG, "{{ route('ticket-agents.create') }}");
         });
 
-        /* open add agent modal */
-        $('body').on('click', '#add-channel', function () {
-            var url = "{{ route('ticketChannels.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
+        $body.on('click' + namespace, '#add-channel', function () {
+            $.ajaxModal(MODAL_LG, "{{ route('ticketChannels.create') }}");
         });
 
-        /* open add agent modal */
-        $('body').on('click', '#add-type', function () {
-            var url = "{{ route('ticketTypes.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
+        $body.on('click' + namespace, '#add-type', function () {
+            $.ajaxModal(MODAL_LG, "{{ route('ticketTypes.create') }}");
         });
 
-        $('#save-ticket-form').click(function () {
-            var note = document.getElementById('description').children[0].innerHTML;
-            document.getElementById('description-text').value = note;
-            var mention_user_id = $('#description span[data-id]').map(function(){
-                            return $(this).attr('data-id')
-                        }).get();
-            $('#mentionUserId').val(mention_user_id.join(','));
-
-            const url = "{{ route('tickets.store') }}";
+        $body.on('click' + namespace, '#save-ticket-form', function () {
+            var $description = $('#description');
+            if ($description.length > 0 && $description[0].children[0]) {
+                var note = $description[0].children[0].innerHTML;
+                $('#description-text').val(note);
+                
+                var mention_user_id = $description.find('span[data-id]').map(function(){
+                    return $(this).attr('data-id');
+                }).get();
+                $('#mentionUserId').val(mention_user_id.join(','));
+            }
 
             $.easyAjax({
-                url: url,
+                url: "{{ route('tickets.store') }}",
                 container: '#save-ticket-data-form',
                 type: "POST",
                 disableButton: true,
@@ -425,94 +406,41 @@
                             window.location.href = response.redirectUrl;
                         }
                     }
-
                 }
             });
         });
 
-        $('#create_task_category').click(function () {
-            const url = "{{ route('taskCategory.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
+        $body.on('click' + namespace, '#create_task_category', function () {
+            $.ajaxModal(MODAL_LG, "{{ route('taskCategory.create') }}");
         });
 
-        $('#department-setting').click(function () {
-            const url = "{{ route('departments.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
+        $body.on('click' + namespace, '#department-setting', function () {
+            $.ajaxModal(MODAL_LG, "{{ route('departments.create') }}");
         });
 
-        $('#client_view_task').change(function () {
+        $body.on('change' + namespace, '#client_view_task', function () {
             $('#clientNotification').toggleClass('d-none');
         });
 
-        $('#set_time_estimate').change(function () {
-            $('#set-time-estimate-fields').toggleClass('d-none');
-        });
-
-        $('#repeat-task').change(function () {
-            $('#repeat-fields').toggleClass('d-none');
-        });
-
-        $('#dependent-task').change(function () {
-            $('#dependent-fields').toggleClass('d-none');
-        });
-
-        $('.toggle-other-details').click(function () {
+        $body.on('click' + namespace, '.toggle-other-details', function () {
             $(this).find('svg').toggleClass('fa-chevron-down fa-chevron-up');
             $('#other-details').toggleClass('d-none');
         });
 
-        $('#createTaskLabel').click(function () {
-            const url = "{{ route('task-label.create') }}";
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_XL, url);
+        $body.on('click' + namespace, '#manage-groups', function() {
+            $.ajaxModal(MODAL_LG, "{{ route('ticket-groups.create') }}");
         });
 
-        $('#add-project').click(function () {
-            $(MODAL_XL).modal('show');
+        getAgents($('#ticket_group').val());
+        if (typeof init === 'function') init(RIGHT_MODAL);
 
-            const url = "{{ route('projects.create') }}";
-
-            $.easyAjax({
-                url: url,
-                blockUI: true,
-                container: MODAL_XL,
-                success: function (response) {
-                    if (response.status == "success") {
-                        $(MODAL_XL + ' .modal-body').html(response.html);
-                        $(MODAL_XL + ' .modal-title').html(response.title);
-                        init(MODAL_XL);
-                    }
-                }
-            });
-        });
-
-        $('#add-employee').click(function () {
-            $(MODAL_XL).modal('show');
-
-            const url = "{{ route('employees.create') }}";
-
-            $.easyAjax({
-                url: url,
-                blockUI: true,
-                container: MODAL_XL,
-                success: function (response) {
-                    if (response.status == "success") {
-                        $(MODAL_XL + ' .modal-body').html(response.html);
-                        $(MODAL_XL + ' .modal-title').html(response.title);
-                        init(MODAL_XL);
-                    }
-                }
-            });
-        });
-
-        $('#manage-groups').click(function() {
-            var url = "{{ route('ticket-groups.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
-
-        init(RIGHT_MODAL);
-    });
+        window.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            if (ticketDropzone) ticketDropzone.destroy();
+            if (tagify) tagify.destroy();
+            if (typeof destroy_editor === 'function') destroy_editor('#description');
+            else if (typeof destory_editor === 'function') destory_editor('#description');
+            window.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

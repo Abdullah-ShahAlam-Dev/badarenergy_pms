@@ -42,7 +42,7 @@
         "color": "#ff0000"
     });
 
-    $('#save-board-column').click(function() {
+    $('#save-board-column').off('click.saveCol').on('click.saveCol', function() {
         var url = "{{ route('taskboards.store') }}";
         $.easyAjax({
             url: url,

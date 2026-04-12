@@ -1,10 +1,13 @@
 @php
-$addTaskCategoryPermission = user()->permission('add_task_category');
-$addEmployeePermission = user()->permission('add_employees');
-$addTaskFilePermission = user()->permission('add_task_files');
-$editTaskPermission = user()->permission('edit_tasks');
-$viewTaskCategoryPermission = user()->permission('view_task_category');
+    $addTaskCategoryPermission = user()->permission('add_task_category');
+    $viewTaskCategoryPermission = user()->permission('view_task_category');
+    $addEmployeePermission = user()->permission('add_employees');
+    $addTaskFilePermission = user()->permission('add_task_files');
+    $addTaskPermission = user()->permission('add_tasks');
+    $viewMilestonePermission = user()->permission('view_project_milestones');
 @endphp
+
+<meta name="turbo-cache-control" content="no-cache">
 
 <link rel="stylesheet" href="{{ asset('vendor/css/dropzone.min.css') }}">
 
@@ -12,8 +15,11 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
     <div class="col-sm-12">
         <x-form id="save-task-data-form" method="PUT">
             <div class="add-client bg-white rounded">
-                <h4 class="mb-0 p-20 f-21 font-weight-normal text-capitalize border-bottom-grey">
-                    @lang('modules.tasks.taskInfo')</h4>
+                @if(request()->ajax())
+                    <h4 class="mb-0 p-20 f-21 font-weight-normal text-capitalize border-bottom-grey">
+                        @lang('modules.tasks.taskInfo')
+                    </h4>
+                @endif
                 <div class="row p-20">
 
                     <div class="col-lg-6 col-md-6">
@@ -423,13 +429,33 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
 
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script>
-    var add_task_files = "{{ $addTaskFilePermission }}";
+    (function() {
+        var $body = $('body');
+        var namespace = '.taskEdit';
+        var dp1, dp2;
+        var taskDropzone;
 
-    $(document).ready(function() {
+        function checkLeaves() {
+            var startDate = $('#task_start_date').val();
+            var dueDate = $('#due_date').val();
+            var userId = $('#selectAssignee').val();
 
-        let projectId = document.getElementById('project-id').value;
-
-        (projectId != 'all' && projectId != '') ? projectClient(projectId) : '';
+            $.easyAjax({
+                url: "{{ route('tasks.checkLeaves') }}",
+                type: 'GET',
+                data: { due_date: dueDate, start_date: startDate, user_id: userId },
+                success: function(response) {
+                    $('.show-leave').removeClass('d-none');
+                    var leaveData = [];
+                    $.each(response.data, function(index, value) {
+                        leaveData.push(index + " {{ __('modules.tasks.leaveOn') }} " + value + "\n");
+                    });
+                    var label = '<label id="leave-date"> {{ __("modules.tasks.leaveMessage") }} <i class="fa fa-question-circle" data-toggle="tooltip" data-original-title="' + leaveData.join('') + '" id="leave-tooltip"></i></label>';
+                    $(".show-leave").html(label);
+                    $('#leave-tooltip').tooltip();
+                }
+            });
+        }
 
         $(".select-picker").selectpicker();
 
@@ -440,44 +466,80 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
             });
         });
 
-        $(document).on('change', '#project-id', function () {
-
-            ($(this).val() != '') ? $('#clientDetails').show() : $('#clientDetails').hide();
-
-            let id = $(this).val();
-            if (id === '') {
-                return '';
+        $body.on('change' + namespace, '#project-id, #project_id', function() {
+            var id = $(this).val();
+            if (!id) {
+                $('#clientDetails').hide();
+                return;
             }
-            projectClient(id);
-
-        });
-
-        function projectClient(id) {
-
-            let url = "{{ route('tasks.clientDetail') }}";
+            $('#clientDetails').show();
 
             $.easyAjax({
-                url: url,
+                url: "{{ route('tasks.clientDetail') }}",
                 type: "GET",
-                data: {
-                    id: id,
-                },
-                success: function (response) {
+                data: { id: id },
+                success: function(response) {
                     $('#clientDetails').html(response.data);
                 }
             });
-        }
 
-        if (add_task_files == "all" || add_task_files == "added") {
+            // Milestones
+            $.easyAjax({
+                url: "{{ route('milestones.by_project', ':id') }}".replace(':id', id),
+                container: '#save-task-data-form',
+                type: "GET",
+                blockUI: true,
+                success: function(response) {
+                    if (response.status == 'success') {
+                        $('#milestone-id').html(response.data).selectpicker('refresh');
+                    }
+                }
+            });
 
+            // Members and Quill
+            $.easyAjax({
+                url: "{{ route('projects.members', ':id') }}".replace(':id', id),
+                type: "GET",
+                container: '#save-task-data-form',
+                blockUI: true,
+                success: function (data) {
+                    destory_editor('#description');
+                    quillMention(data.userData, '#description');
+                    $('#selectAssignee').html(data.data).selectpicker('refresh');
+                    $('.projectId').text(data.unique_id);
+                }
+            });
+
+            // Dependent Tasks
+            $.easyAjax({
+                url: "{{ route('tasks.project_tasks', ':id') }}".replace(':id', id),
+                type: "GET",
+                container: '#save-task-data-form',
+                blockUI: true,
+                success: function (data) {
+                    $('#dependent_task_id').html(data.data).selectpicker('refresh');
+                    $('.projectId').text(data.unique_id);
+                }
+            });
+
+            // Labels
+            $.easyAjax({
+                url: "{{ route('projects.labels', ':id') }}".replace(':id', id),
+                type: "GET",
+                container: '#save-task-data-form',
+                blockUI: true,
+                success: function (data) {
+                    $('#task_labels').html(data.data).selectpicker('refresh');
+                }
+            });
+        });
+
+        if ("{{ $addTaskFilePermission }}" == "all" || "{{ $addTaskFilePermission }}" == "added") {
             Dropzone.autoDiscover = false;
-            //Dropzone class
             taskDropzone = new Dropzone("div#task-files-upload-dropzone", {
                 dictDefaultMessage: "{{ __('app.dragDrop') }}",
                 url: "{{ route('task-files.store') }}",
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 paramName: "file",
                 maxFilesize: DROPZONE_MAX_FILESIZE,
                 maxFiles: DROPZONE_MAX_FILES,
@@ -487,45 +549,27 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
                 parallelUploads: DROPZONE_MAX_FILES,
                 acceptedFiles: DROPZONE_FILE_ALLOW,
                 init: function() {
-                    taskDropzone = this;
+                    window.taskDropzone = this;
                 }
             });
+
             taskDropzone.on('sending', function(file, xhr, formData) {
-                var ids = "{{ $task->id }}";
-                formData.append('task_id', ids);
+                formData.append('task_id', "{{ $task->id }}");
                 $.easyBlockUI();
             });
-            taskDropzone.on('uploadprogress', function() {
-                $.easyBlockUI();
-            });
+
             taskDropzone.on('queuecomplete', function() {
-                var msgs = "@lang('messages.recordSaved')";
-                window.location.href = "{{ route('tasks.index') }}"
+                window.location.href = "{{ route('tasks.index') }}";
             });
-            taskDropzone.on('removedfile', function () {
-                var grp = $('div#file-upload-dropzone').closest(".form-group");
-                var label = $('div#file-upload-box').siblings("label");
-                $(grp).removeClass("has-error");
-                $(label).removeClass("is-invalid");
-            });
+
             taskDropzone.on('error', function (file, message) {
                 taskDropzone.removeFile(file);
-                var grp = $('div#file-upload-dropzone').closest(".form-group");
-                var label = $('div#file-upload-box').siblings("label");
-                $(grp).find(".help-block").remove();
-                var helpBlockContainer = $(grp);
-
-                if (helpBlockContainer.length == 0) {
-                    helpBlockContainer = $(grp);
-                }
-
-                helpBlockContainer.append('<div class="help-block invalid-feedback">' + message + '</div>');
-                $(grp).addClass("has-error");
-                $(label).addClass("is-invalid");
-
+                var $grp = $('div#task-files-upload-dropzone').closest(".form-group");
+                $grp.find(".help-block").remove();
+                $grp.append('<div class="help-block invalid-feedback">' + message + '</div>').addClass("has-error");
+                $grp.siblings("label").addClass("is-invalid");
             });
         }
-
 
         $("#selectAssignee").selectpicker({
             actionsBox: true,
@@ -533,129 +577,48 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
             deselectAllText: "{{ __('modules.permission.deselectAll') }}",
             multipleSeparator: " ",
             selectedTextFormat: "count > 8",
-            countSelectedText: function(selected, total) {
-                return selected + " {{ __('app.membersSelected') }} ";
-            }
+            countSelectedText: (selected, total) => selected + " {{ __('app.membersSelected') }} "
         });
-        const atValues = @json($userData);
 
-        quillMention(atValues, '#description');
+        quillMention(@json($userData), '#description');
 
-        const dp1 = datepicker('#task_start_date', {
+        dp1 = datepicker('#task_start_date', {
             position: 'bl',
             dateSelected: new Date("{{ $task->start_date ? str_replace('-', '/', $task->start_date) : str_replace('-', '/', now()) }}"),
             onSelect: (instance, date) => {
-                if (typeof dp2.dateSelected !== 'undefined' && dp2.dateSelected.getTime() < date
-                    .getTime()) {
-                    dp2.setDate(date, true)
+                if (dp2) {
+                    if (!dp2.dateSelected || dp2.dateSelected.getTime() < date.getTime()) {
+                        dp2.setDate(date, true);
+                    }
+                    dp2.setMin(date);
                 }
-                if (typeof dp2.dateSelected === 'undefined') {
-                    dp2.setDate(date, true)
-                }
-                dp2.setMin(date);
-
-                var dueDate = $('#due_date').val();
-                var startDate = $('#task_start_date').val();
-                var userId = $('#selectAssignee').val();
-
-                $.easyAjax({
-                    url:"{{ route('tasks.checkLeaves')}}",
-                    type:'GET',
-                    data:{due_date:dueDate, start_date:startDate, user_id:userId},
-                    success:function(response) {
-                    $('.show-leave').removeClass('d-none');
-                    var rData = [];
-                    var leaveData = [];
-                        rData = response.data;
-                        $.each(rData, function(index, value) {
-                            var data = '';
-                            data = index + " {{ __('modules.tasks.leaveOn') }} "  + value + "\n";
-                            leaveData.push(data);
-                            var label = '<label id="leave-date"> {{ __("modules.tasks.leaveMessage") }} <i class="fa fa-question-circle" title="'+leaveData+'" id="leave-tooltip"></i></label>'
-                            $(".show-leave").html(label);
-                        });
-                }
-                });
+                checkLeaves();
             },
             ...datepickerConfig
         });
 
-        const dp2 = datepicker('#due_date', {
+        dp2 = datepicker('#due_date', {
             position: 'bl',
             dateSelected: new Date("{{ $task->due_date ? str_replace('-', '/', $task->due_date) : str_replace('-', '/', now()) }}"),
             onSelect: (instance, date) => {
-                dp1.setMax(date);
-
-                var dueDate = $('#due_date').val();
-                var startDate = $('#task_start_date').val();
-                var userId = $('#selectAssignee').val();
-
-                $.easyAjax({
-                    url:"{{ route('tasks.checkLeaves')}}",
-                    type:'GET',
-                    data:{start_date:startDate, due_date:dueDate, user_id:userId},
-                    success:function(response) {
-                    $('.show-leave').removeClass('d-none');
-                    var rData = [];
-                    var leaveData = [];
-                        rData = response.data;
-                        $.each(rData, function(index, value) {
-                            var data = '';
-                            data = index + " {{ __('modules.tasks.leaveOn') }} "  + value + "\n";
-                            leaveData.push(data);
-                            var label = '<label id="leave-date"> {{ __("modules.tasks.leaveMessage") }} <i class="fa fa-question-circle" title="'+leaveData+'" id="leave-tooltip"></i></label>'
-                            $(".show-leave").html(label);
-                        });
-                }
-                });
+                if (dp1) dp1.setMax(date);
+                checkLeaves();
             },
             ...datepickerConfig
         });
 
-        $('#selectAssignee').change(function(){
-            var dueDate = $('#due_date').val();
-            var startDate = $('#task_start_date').val();
-            var userId = $('#selectAssignee').val();
+        $body.on('change' + namespace, '#selectAssignee', checkLeaves);
 
-            $.easyAjax({
-                url:"{{ route('tasks.checkLeaves')}}",
-                type:'GET',
-                data:{start_date:startDate, due_date:dueDate, user_id:userId},
-                success:function(response) {
-                    $('.show-leave').removeClass('d-none');
-                    var rData = [];
-                    var leaveData = [];
-                        rData = response.data;
-                        $.each(rData, function(index, value) {
-                            var data = '';
-                            data = index + " {{ __('modules.tasks.leaveOn') }} "  + value + "\n";
-                            leaveData.push(data);
-                            var label = '<label id="leave-date"> {{ __("modules.tasks.leaveMessage") }} <i class="fa fa-question-circle" title="'+leaveData+'" id="leave-tooltip"></i></label>'
-                            $(".show-leave").html(label);
-                        });
-                }
-            });
-        })
-
-        $('#save-task-form').click(function() {
+        $body.on('click' + namespace, '#save-task-form', function() {
             var note = document.getElementById('description').children[0].innerHTML;
-
             document.getElementById('description-text').value = note;
-            var usesr = $('#description span[data-id]').map(function(){
-                            return $(this).attr('data-id')
-                        }).get();
+            var users = $('#description span[data-id]').map(function(){ return $(this).attr('data-id'); }).get();
+            $('#mentionUserId').val(users.join(','));
 
-            var mention_user_id  =  $.makeArray(usesr);
-            $('#mentionUserId').val(mention_user_id.join(','));
-
-            var taskData = $('#save-task-data-form').serialize();
-
-            var data = taskData+='&mention_user_id=' + mention_user_id;
-
-            const url = "{{ route('tasks.update', $task->id) }}";
+            var data = $('#save-task-data-form').serialize() + '&mention_user_id=' + users.join(',');
 
             $.easyAjax({
-                url: url,
+                url: "{{ route('tasks.update', $task->id) }}",
                 container: '#save-task-data-form',
                 type: "POST",
                 disableButton: true,
@@ -664,12 +627,11 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
                 buttonSelector: "#save-task-form",
                 data: data,
                 success: function(response) {
-                    if ((add_task_files == "all" || add_task_files == "added") &&
-                        taskDropzone.getQueuedFiles().length > 0) {
+                    if (taskDropzone && taskDropzone.getQueuedFiles().length > 0) {
                         taskDropzone.processQueue();
                     } else if ($(RIGHT_MODAL).hasClass('in')) {
                         document.getElementById('close-task-detail').click();
-                        if ($('#allTasks-table').length) {
+                        if (window.LaravelDataTables && window.LaravelDataTables["allTasks-table"]) {
                             window.LaravelDataTables["allTasks-table"].draw(false);
                         } else {
                             window.location.href = response.redirectUrl;
@@ -677,145 +639,48 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
                     } else {
                         window.location.href = response.redirectUrl;
                     }
-
                 }
             });
         });
 
-        $('#create_task_category').click(function() {
-            const url = "{{ route('taskCategory.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
+        $body.on('click' + namespace, '#create_task_category', function() {
+            $.ajaxModal(MODAL_LG, "{{ route('taskCategory.create') }}");
         });
 
-        $('#department-setting').click(function() {
-            const url = "{{ route('departments.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
+        $body.on('click' + namespace, '#department-setting', function() {
+            $.ajaxModal(MODAL_LG, "{{ route('departments.create') }}");
         });
 
-        $('#client_view_task').change(function() {
+        $body.on('change' + namespace, '#client_view_task', function() {
             $('#clientNotification').toggleClass('d-none');
         });
 
-        $('#without_duedate').click(function() {
+        $body.on('click' + namespace, '#without_duedate', function() {
             $('.dueDateBox').toggle();
         });
 
-        $('#set_time_estimate').change(function() {
+        $body.on('change' + namespace, '#set_time_estimate', function() {
             $('#set-time-estimate-fields').toggleClass('d-none');
         });
 
-        $('#repeat-task').change(function() {
+        $body.on('change' + namespace, '#repeat-task', function() {
             $('#repeat-fields').toggleClass('d-none');
         });
 
-        $('#dependent-task').change(function() {
+        $body.on('change' + namespace, '#dependent-task', function() {
             $('#dependent-fields').toggleClass('d-none');
         });
 
-
-        $('#project-id').change(function() {
-            var id = $(this).val();
-            if (id == '') {
-                id = 0;
-            }
-            var url = "{{ route('milestones.by_project', ':id') }}";
-            url = url.replace(':id', id);
-
-            $.easyAjax({
-                url: url,
-                container: '#save-task-data-form',
-                type: "GET",
-                blockUI: true,
-                success: function(response) {
-                    if (response.status == 'success') {
-                        $('#milestone-id').html(response.data);
-                        $('#milestone-id').selectpicker('refresh');
-                    }
-                }
-            });
-        });
-
-        $('#project-id').change(function() {
-            let id = $(this).val();
-            if (id === '') {
-                id = 0;
-            }
-            let url = "{{ route('projects.members', ':id') }}";
-            url = url.replace(':id', id);
-            $.easyAjax({
-                url: url,
-                type: "GET",
-                container: '#save-task-data-form',
-                blockUI: true,
-                redirect: true,
-                success: function (data) {
-                    $('#selectAssignee').html(data.data);
-                    $('.projectId').text(data.unique_id);
-                    $('#selectAssignee').selectpicker('refresh');
-                }
-            })
-        });
-
-        $('#project-id').change(function() {
-            let id = $(this).val();
-            if (id === '') {
-                id = 0;
-            }
-            let url = "{{ route('tasks.project_tasks', ':id') }}";
-            url = url.replace(':id', id);
-            $.easyAjax({
-                url: url,
-                type: "GET",
-                container: '#save-task-data-form',
-                blockUI: true,
-                redirect: true,
-                success: function (data) {
-                    $('#dependent_task_id').html(data.data);
-                    $('.projectId').text(data.unique_id);
-                    $('#dependent_task_id').selectpicker('refresh');
-                }
-            })
-        });
-
-        $('#save-task-data-form').on('change', '#project_id', function () {
-            let id = $(this).val();
-            if (id === '') {
-                id = 0;
-            }
-            let url = "{{ route('projects.labels', ':id') }}";
-            url = url.replace(':id', id);
-            $.easyAjax({
-                url: url,
-                type: "GET",
-                container: '#save-task-data-form',
-                blockUI: true,
-                redirect: true,
-                success: function (data) {
-                    var atValues = data.userData;
-                    destory_editor('#description')
-                    quillMention(atValues, '#description');
-                    $('#task_labels').html(data.data);
-                    $('#task_labels').selectpicker('refresh');
-                }
-            })
-        });
-
-
-        $('#createTaskLabel').click(function() {
-            const url = "{{ route('task-label.create') }}?task_id={{$task->id}}";
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+        $body.on('click' + namespace, '#createTaskLabel', function() {
+            var projectID = $('#project-id').val() || $('#project_id').val();
+            var url = "{{ route('task-label.create') }}?task_id={{ $task->id }}&project_id=" + projectID;
             $.ajaxModal(MODAL_XL, url);
         });
 
-        $('#add-project').click(function() {
+        $body.on('click' + namespace, '#add-project', function() {
             $(MODAL_XL).modal('show');
-
-            const url = "{{ route('projects.create') }}";
-
             $.easyAjax({
-                url: url,
+                url: "{{ route('projects.create') }}",
                 blockUI: true,
                 container: MODAL_XL,
                 success: function(response) {
@@ -828,13 +693,10 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
             });
         });
 
-        $('#add-employee').click(function() {
+        $body.on('click' + namespace, '#add-employee', function() {
             $(MODAL_XL).modal('show');
-
-            const url = "{{ route('employees.create') }}";
-
             $.easyAjax({
-                url: url,
+                url: "{{ route('employees.create') }}",
                 blockUI: true,
                 container: MODAL_XL,
                 success: function(response) {
@@ -850,13 +712,25 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
         <x-forms.custom-field-filejs/>
 
         init(RIGHT_MODAL);
-    });
 
-    function checkboxChange(parentClass, id){
-        var checkedData = '';
-        $('.'+parentClass).find("input[type= 'checkbox']:checked").each(function () {
-            checkedData = (checkedData !== '') ? checkedData+', '+$(this).val() : $(this).val();
+        window.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            if (dp1) dp1.destroy();
+            if (dp2) dp2.destroy();
+            if (taskDropzone) {
+                taskDropzone.destroy();
+                window.taskDropzone = undefined;
+            }
+            destory_editor('#description');
+            window.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
+
+    function checkboxChange(parentClass, id) {
+        let checkedData = '';
+        $('.' + parentClass).find("input[type= 'checkbox']:checked").each(function () {
+            checkedData = (checkedData !== '') ? checkedData + ', ' + $(this).val() : $(this).val();
         });
-        $('#'+id).val(checkedData);
+        $('#' + id).val(checkedData);
     }
 </script>

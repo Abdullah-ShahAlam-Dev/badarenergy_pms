@@ -42,75 +42,76 @@ $addLeadFilePermission = user()->permission('add_lead_files');
 
 
 <script>
-    var fileLayout = 'listview';
-    function leadFilesView(layout) {
-        $('#layout').html('');
-        var leadID = "{{ $lead->id }}";
-        fileLayout = layout;
-        $.easyAjax({
-            type: 'GET',
-            url: "{{ route('lead-files.layout') }}",
-            disableButton: true,
-            blockUI: true,
-            data: {
-                id: leadID,
-                layout: layout
-            },
-            success: function(response) {
-                $('#layout').html(response.html);
-                if (layout == 'gridview') {
-                    $('#list-tabs').removeClass('btn-active');
-                    $('#thumbnail').addClass('btn-active');
-                } else {
-                    $('#list-tabs').addClass('btn-active');
-                    $('#thumbnail').removeClass('btn-active');
-                }
-            }
-        });
-    }
+    (function() {
+        var $body = $('body');
+        var namespace = '.leadsFiles';
+        var fileLayout = 'listview';
 
-    $('body').on('click', '.delete-lead-file', function() {
-        var id = $(this).data('file-id');
-        var deleteView = $(this).data('pk');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.removeFileText')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('lead-files.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    blockUI: true,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            leadFilesView(fileLayout);
-                        }
+        function leadFilesView(layout) {
+            $('#layout').html('');
+            var leadID = "{{ $lead->id }}";
+            fileLayout = layout;
+            $.easyAjax({
+                type: 'GET',
+                url: "{{ route('lead-files.layout') }}",
+                disableButton: true,
+                blockUI: true,
+                data: { id: leadID, layout: layout },
+                success: function(response) {
+                    $('#layout').html(response.html);
+                    if (layout == 'gridview') {
+                        $('#list-tabs').removeClass('btn-active');
+                        $('#thumbnail').addClass('btn-active');
+                    } else {
+                        $('#list-tabs').addClass('btn-active');
+                        $('#thumbnail').removeClass('btn-active');
                     }
-                });
-            }
+                }
+            });
+        }
+        window.leadFilesView = leadFilesView;
+
+        $body.off(namespace);
+
+        $body.on('click' + namespace, '.layout', function() {
+            var layout = $(this).data('tab-name');
+            leadFilesView(layout);
         });
-    });
+
+        $body.on('click' + namespace, '.delete-lead-file', function() {
+            var id = $(this).data('file-id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.removeFileText')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('lead-files.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        blockUI: true,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { leadFilesView(fileLayout); }
+                        }
+                    });
+                }
+            });
+        });
+
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            delete window.leadFilesView;
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

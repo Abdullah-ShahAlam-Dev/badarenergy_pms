@@ -265,7 +265,9 @@ $addProductPermission = user()->permission('add_product');
 
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script>
-    $(document).ready(function() {
+    (function() {
+        var $body = $('body');
+        var namespace = '.leadsEdit';
 
         $('.custom-date-picker').each(function(ind, el) {
             datepicker(el, {
@@ -274,8 +276,10 @@ $addProductPermission = user()->permission('add_product');
             });
         });
 
-        $('#save-lead-form').click(function() {
-            const url = "{{ route('leads.update', [$lead->id]) }}";
+        $body.off(namespace);
+
+        $body.on('click' + namespace, '#save-lead-form', function() {
+            var url = "{{ route('leads.update', [$lead->id]) }}";
             $.easyAjax({
                 url: url,
                 container: '#save-lead-data-form',
@@ -291,66 +295,60 @@ $addProductPermission = user()->permission('add_product');
             });
         });
 
-        $('body').on('click', '.add-lead-agent', function() {
-            const url = '{{ route('lead-agent-settings.create') }}';
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+        $body.on('click' + namespace, '.add-lead-agent', function() {
+            var url = '{{ route('lead-agent-settings.create') }}';
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('body').on('click', '.add-lead-source', function() {
-            const url = '{{ route('lead-source-settings.create') }}';
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+        $body.on('click' + namespace, '.add-lead-source', function() {
+            var url = '{{ route('lead-source-settings.create') }}';
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('body').on('click', '.add-lead-category', function() {
+        $body.on('click' + namespace, '.add-lead-category', function() {
             var url = '{{ route('leadCategory.create') }}';
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('#create_task_category').click(function() {
-            const url = "{{ route('taskCategory.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+        $body.on('click' + namespace, '#create_task_category', function() {
+            var url = "{{ route('taskCategory.create') }}";
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('#department-setting').click(function() {
-            const url = "{{ route('departments.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+        $body.on('click' + namespace, '#department-setting', function() {
+            var url = "{{ route('departments.create') }}";
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('#client_view_task').change(function() {
+        $body.on('change' + namespace, '#client_view_task', function() {
             $('#clientNotification').toggleClass('d-none');
         });
 
-        $('#set_time_estimate').change(function() {
+        $body.on('change' + namespace, '#set_time_estimate', function() {
             $('#set-time-estimate-fields').toggleClass('d-none');
         });
 
-        $('#repeat-task').change(function() {
+        $body.on('change' + namespace, '#repeat-task', function() {
             $('#repeat-fields').toggleClass('d-none');
         });
 
-        $('#dependent-task').change(function() {
+        $body.on('change' + namespace, '#dependent-task', function() {
             $('#dependent-fields').toggleClass('d-none');
         });
 
-        $('.toggle-other-details').click(function() {
+        $body.on('click' + namespace, '.toggle-other-details', function() {
             $(this).find('svg').toggleClass('fa-chevron-down fa-chevron-up');
             $('#other-details').toggleClass('d-none');
         });
 
-        $('#createTaskLabel').click(function() {
-            const url = "{{ route('task-label.create') }}";
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+        $body.on('click' + namespace, '#createTaskLabel', function() {
+            var url = "{{ route('task-label.create') }}";
             $.ajaxModal(MODAL_XL, url);
         });
 
-        $('#add-project').click(function() {
+        $body.on('click' + namespace, '#add-project', function() {
             $(MODAL_XL).modal('show');
-            const url = "{{ route('projects.create') }}";
+            var url = "{{ route('projects.create') }}";
             $.easyAjax({
                 url: url,
                 blockUI: true,
@@ -365,11 +363,9 @@ $addProductPermission = user()->permission('add_product');
             });
         });
 
-        $('#add-employee').click(function() {
+        $body.on('click' + namespace, '#add-employee', function() {
             $(MODAL_XL).modal('show');
-
-            const url = "{{ route('employees.create') }}";
-
+            var url = "{{ route('employees.create') }}";
             $.easyAjax({
                 url: url,
                 blockUI: true,
@@ -383,17 +379,21 @@ $addProductPermission = user()->permission('add_product');
                 }
             });
         });
+
+        var checkboxChange = function(parentClass, id) {
+            var checkedData = '';
+            $('.' + parentClass).find("input[type= 'checkbox']:checked").each(function() {
+                checkedData = (checkedData !== '') ? checkedData + ', ' + $(this).val() : $(this).val();
+            });
+            $('#' + id).val(checkedData);
+        };
 
         <x-forms.custom-field-filejs/>
-
         init(RIGHT_MODAL);
-    });
 
-    function checkboxChange(parentClass, id){
-        let checkedData = '';
-        $('.'+parentClass).find("input[type= 'checkbox']:checked").each(function () {
-            checkedData = (checkedData !== '') ? checkedData+', '+$(this).val() : $(this).val();
-        });
-        $('#'+id).val(checkedData);
-    }
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

@@ -7,6 +7,8 @@
     $addProjectNotePermission = user()->permission('add_project_note');
 @endphp
 
+<meta name="turbo-cache-control" content="no-cache">
+
 <link rel="stylesheet" href="{{ asset('vendor/css/dropzone.min.css') }}">
 
 <div class="row">
@@ -314,40 +316,22 @@
 
 
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
-
 <script>
+    (function() {
+        var $body = $('body');
+        var namespace = '.projectCreate';
+        var projectCreateDropzone;
+        var add_project_files = "{{ $addProjectFilePermission }}";
+        var add_project_note_permission = "{{ $addProjectNotePermission }}";
 
-    var add_project_files = "{{ $addProjectFilePermission }}";
-    var add_project_note_permission = "{{ $addProjectNotePermission }}";
-
-    $(document).ready(function () {
-
-        $('.custom-date-picker').each(function(ind, el) {
-            datepicker(el, {
-                position: 'bl',
-                ...datepickerConfig
-            });
-        });
-
-        $('#without_deadline').click(function() {
-            var check = $('#without_deadline').is(":checked") ? true : false;
-            if (check == true) {
-                $('#deadlineBox').hide();
-            } else {
-                $('#deadlineBox').show();
-            }
-        });
+        $body.off(namespace);
 
         if (add_project_files == "all") {
-
             Dropzone.autoDiscover = false;
-            //Dropzone class
-            myDropzone = new Dropzone("div#file-upload-dropzone", {
+            projectCreateDropzone = new Dropzone("div#file-upload-dropzone", {
                 dictDefaultMessage: "{{ __('app.dragDrop') }}",
                 url: "{{ route('files.multiple_upload') }}",
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 paramName: "file",
                 maxFilesize: DROPZONE_MAX_FILESIZE,
                 maxFiles: DROPZONE_MAX_FILES,
@@ -357,48 +341,65 @@
                 parallelUploads: DROPZONE_MAX_FILES,
                 acceptedFiles: DROPZONE_FILE_ALLOW,
                 init: function () {
-                    myDropzone = this;
+                    window.projectCreateDropzone = this;
                 }
             });
-            myDropzone.on('sending', function (file, xhr, formData) {
+
+            projectCreateDropzone.on('sending', function (file, xhr, formData) {
                 var ids = $('#projectID').val();
                 formData.append('project_id', ids);
             });
-            myDropzone.on('uploadprogress', function () {
+
+            projectCreateDropzone.on('uploadprogress', function () {
                 $.easyBlockUI();
             });
-            myDropzone.on('queuecomplete', function () {
-                var msgs = "@lang('messages.updateSuccess')";
+
+            projectCreateDropzone.on('queuecomplete', function () {
                 var redirect_url = $('#redirect_url').val();
                 if (redirect_url != '') {
                     window.location.href = decodeURIComponent(redirect_url);
+                } else {
+                    window.location.href = "{{ route('projects.index') }}";
                 }
-                window.location.href = "{{ route('projects.index') }}"
             });
-            myDropzone.on('removedfile', function () {
-                var grp = $('div#file-upload-dropzone').closest(".form-group");
-                var label = $('div#file-upload-box').siblings("label");
-                $(grp).removeClass("has-error");
-                $(label).removeClass("is-invalid");
+
+            projectCreateDropzone.on('removedfile', function () {
+                var $grp = $('div#file-upload-dropzone').closest(".form-group");
+                var $label = $('div#file-upload-box').siblings("label");
+                $grp.removeClass("has-error");
+                $label.removeClass("is-invalid");
             });
-            myDropzone.on('error', function (file, message) {
-                myDropzone.removeFile(file);
-                var grp = $('div#file-upload-dropzone').closest(".form-group");
-                var label = $('div#file-upload-box').siblings("label");
-                $(grp).find(".help-block").remove();
-                var helpBlockContainer = $(grp);
 
-                if (helpBlockContainer.length == 0) {
-                    helpBlockContainer = $(grp);
-                }
-
-                helpBlockContainer.append('<div class="help-block invalid-feedback">' + message + '</div>');
-                $(grp).addClass("has-error");
-                $(label).addClass("is-invalid");
-
+            projectCreateDropzone.on('error', function (file, message) {
+                projectCreateDropzone.removeFile(file);
+                var $grp = $('div#file-upload-dropzone').closest(".form-group");
+                var $label = $('div#file-upload-box').siblings("label");
+                $grp.find(".help-block").remove();
+                $grp.append('<div class="help-block invalid-feedback">' + message + '</div>').addClass("has-error");
+                $label.addClass("is-invalid");
             });
         }
 
+        // Initialize plugins
+        $('.custom-date-picker').each(function(ind, el) {
+            datepicker(el, { position: 'bl', ...datepickerConfig });
+        });
+
+        const dp1 = datepicker('#start_date', {
+            position: 'bl',
+            onSelect: (instance, date) => {
+                if (typeof dp2 !== 'undefined') dp2.setMin(date);
+            },
+            ...datepickerConfig
+        });
+
+        const dp2 = datepicker('#deadline', {
+            position: 'bl',
+            onSelect: (instance, date) => {
+                if (typeof dp1 !== 'undefined') dp1.setMax(date);
+            },
+            ...datepickerConfig
+        });
 
         $("#selectEmployee").selectpicker({
             actionsBox: true,
@@ -410,57 +411,43 @@
                 return selected + " {{ __('app.membersSelected') }} ";
             }
         });
+
         var userValues = @json($userData);
         quillMention(userValues, '#project_summary');
 
         if (add_project_note_permission == 'all' || add_project_note_permission == 'added') {
-
             quillImageLoad('#notes');
         }
 
-
-        const dp1 = datepicker('#start_date', {
-            position: 'bl',
-            onSelect: (instance, date) => {
-                dp2.setMin(date);
-            },
-            ...datepickerConfig
-        });
-
-        const dp2 = datepicker('#deadline', {
-            position: 'bl',
-            onSelect: (instance, date) => {
-                dp1.setMax(date);
-            },
-            ...datepickerConfig
-        });
-
-        @if ($project && $project->deadline == null)
+        if ($('#without_deadline').is(":checked")) {
             $('#deadlineBox').hide();
-        @endif
+        }
 
-        $('#without_deadline').click(function () {
-            const check = $('#without_deadline').is(":checked") ? true : false;
-            if (check == true) {
-                $('#deadlineBox').hide();
-            } else {
-                $('#deadlineBox').show();
-            }
+        // Events
+        $body.on('click' + namespace, '#without_deadline', function() {
+            var check = $(this).is(":checked");
+            $('#deadlineBox').toggle(!check);
         });
 
-        $('#save-project-form').click(function () {
-            let note = document.getElementById('project_summary').children[0].innerHTML;
-            document.getElementById('project_summary-text').value = note;
-            var mention_user_id = $('#project_summary span[data-id]').map(function(){
-                            return $(this).attr('data-id')
-                        }).get();
-            $('#mentionUserId').val(mention_user_id.join(','));
+        $body.on('click' + namespace, '#save-project-form', function () {
+            var $summary = $('#project_summary');
+            if ($summary.length) {
+                let note = $summary[0].children[0].innerHTML;
+                document.getElementById('project_summary-text').value = note;
+                var mention_user_id = $summary.find('span[data-id]').map(function(){
+                    return $(this).attr('data-id');
+                }).get();
+                $('#mentionUserId').val(mention_user_id.join(','));
+            }
 
             if (add_project_note_permission == 'all' || add_project_note_permission == 'added') {
-
-                note = document.getElementById('notes').children[0].innerHTML;
-                document.getElementById('notes-text').value = note;
+                var $notes = $('#notes');
+                if ($notes.length) {
+                    let note = $notes[0].children[0].innerHTML;
+                    document.getElementById('notes-text').value = note;
+                }
             }
+
             const url = "{{ route('projects.store') }}";
             var data = $('#save-project-data-form').serialize() + "&projectID={{$project ? $project->id : ''}}";
 
@@ -474,10 +461,9 @@
                 buttonSelector: "#save-project-form",
                 data: data,
                 success: function (response) {
-                    if ((add_project_files === "all") &&
-                        myDropzone.getQueuedFiles().length > 0) {
+                    if ((add_project_files === "all") && projectCreateDropzone && projectCreateDropzone.getQueuedFiles().length > 0) {
                         $('#projectID').val(response.projectID);
-                        myDropzone.processQueue();
+                        projectCreateDropzone.processQueue();
                     } else if (typeof response.redirectUrl !== 'undefined') {
                         window.location.href = response.redirectUrl;
                     }
@@ -485,38 +471,37 @@
             });
         });
 
-        $('#addProjectCategory').click(function () {
+        $body.on('click' + namespace, '#addProjectCategory', function () {
             const url = "{{ route('projectCategory.create') }}";
             $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('#department-setting').click(function () {
+        $body.on('click' + namespace, '#department-setting', function () {
             const url = "{{ route('departments.create') }}";
             $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('#client_view_task').change(function () {
+        $body.on('change' + namespace, '#client_view_task', function () {
             $('#clientNotification').toggleClass('d-none');
         });
 
-        $('.toggle-project-other-details').click(function () {
+        $body.on('click' + namespace, '.toggle-project-other-details', function () {
             $(this).find('svg').toggleClass('fa-chevron-down fa-chevron-up');
             $('#other-project-details').toggleClass('d-none');
         });
 
-        $('#is_public').change(function () {
+        $body.on('change' + namespace, '#is_public', function () {
             $('#add_members').toggleClass('d-none');
         });
 
-        $('#miroboard_checkbox').change(function () {
+        $body.on('change' + namespace, '#miroboard_checkbox', function () {
             $('#miroboard_detail').toggleClass('d-none');
         });
 
-        $('#add-employee').click(function () {
+        $body.on('click' + namespace, '#add-employee', function () {
             $(MODAL_XL).modal('show');
-
             const url = "{{ route('employees.create') }}";
 
             $.easyAjax({
@@ -533,8 +518,81 @@
             });
         });
 
+        $body.on('change' + namespace, '#employee_department', function () {
+            var selectedIds = $(this).val();
+            if (!selectedIds || selectedIds.length === 0) {
+                var url = "{{ route('departments.members', 0) }}";
+                $.easyAjax({
+                    url: url,
+                    type: "GET",
+                    container: '#save-project-data-form',
+                    blockUI: true,
+                    success: function (data) {
+                        if (typeof destory_editor === 'function') destory_editor('#project_summary');
+                        else if (typeof destroy_editor === 'function') destroy_editor('#project_summary');
+                        quillMention(data.userData, '#project_summary');
+                        $('#selectEmployee').html(data.data).selectpicker('refresh');
+                    }
+                });
+                return;
+            }
+
+            var requests = selectedIds.map(function (id) {
+                var url = "{{ route('departments.members', ':id') }}".replace(':id', id);
+                return $.ajax({ url: url, type: 'GET' });
+            });
+
+            $.when.apply($, requests).done(function () {
+                var results = (selectedIds.length === 1) ? [arguments[0]] : $.map(arguments, function (a) { return a[0]; });
+                var seen = {};
+                var mergedOptions = '';
+                var mergedUserData = [];
+
+                results.forEach(function (data) {
+                    if (data && data.userData) {
+                        data.userData.forEach(function (user) {
+                            if (!seen[user.id]) {
+                                seen[user.id] = true;
+                                mergedUserData.push(user);
+                            }
+                        });
+                    }
+                    if (data && data.data) {
+                        $($.parseHTML('<select>' + data.data + '</select>')).find('option').each(function () {
+                            var val = $(this).val();
+                            if (!seen['opt_' + val]) {
+                                seen['opt_' + val] = true;
+                                mergedOptions += this.outerHTML;
+                            }
+                        });
+                    }
+                });
+
+                if (typeof destory_editor === 'function') destory_editor('#project_summary');
+                else if (typeof destroy_editor === 'function') destroy_editor('#project_summary');
+                quillMention(mergedUserData, '#project_summary');
+                $('#selectEmployee').html(mergedOptions).selectpicker('refresh');
+            });
+        });
+
         init(RIGHT_MODAL);
-    });
+
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            if (projectCreateDropzone) {
+                projectCreateDropzone.destroy();
+                delete window.projectCreateDropzone;
+            }
+            if (typeof destory_editor === 'function') {
+                destory_editor('#project_summary');
+                destory_editor('#notes');
+            } else if (typeof destroy_editor === 'function') {
+                destroy_editor('#project_summary');
+                destroy_editor('#notes');
+            }
+            document.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 
     function checkboxChange(parentClass, id) {
         let checkedData = '';
@@ -543,69 +601,4 @@
         });
         $('#' + id).val(checkedData);
     }
-
-    $('#save-project-data-form').on('change', '#employee_department', function () {
-        var selectedIds = $(this).val(); // array of selected department IDs
-
-        if (!selectedIds || selectedIds.length === 0) {
-            // No department selected — load all employees
-            var url = "{{ route('departments.members', 0) }}";
-            $.easyAjax({
-                url: url,
-                type: "GET",
-                container: '#save-project-data-form',
-                blockUI: true,
-                success: function (data) {
-                    var atValues = data.userData;
-                    destory_editor('#project_summary');
-                    quillMention(atValues, '#project_summary');
-                    $('#selectEmployee').html(data.data);
-                    $('#selectEmployee').selectpicker('refresh');
-                }
-            });
-            return;
-        }
-
-        // Fetch members for each selected department in parallel and merge results
-        var requests = selectedIds.map(function (id) {
-            var url = "{{ route('departments.members', ':id') }}".replace(':id', id);
-            return $.ajax({ url: url, type: 'GET' });
-        });
-
-        $.when.apply($, requests).done(function () {
-            // Normalize: single request returns the object directly; multiple returns arguments
-            var results = (selectedIds.length === 1) ? [arguments[0]] : $.map(arguments, function (a) { return a[0]; });
-
-            var seen = {};
-            var mergedOptions = '';
-            var mergedUserData = [];
-
-            results.forEach(function (data) {
-                if (data && data.userData) {
-                    data.userData.forEach(function (user) {
-                        if (!seen[user.id]) {
-                            seen[user.id] = true;
-                            mergedUserData.push(user);
-                        }
-                    });
-                }
-                if (data && data.data) {
-                    // Parse options HTML and skip duplicates by value
-                    $($.parseHTML('<select>' + data.data + '</select>')).find('option').each(function () {
-                        var val = $(this).val();
-                        if (!seen['opt_' + val]) {
-                            seen['opt_' + val] = true;
-                            mergedOptions += this.outerHTML;
-                        }
-                    });
-                }
-            });
-
-            destory_editor('#project_summary');
-            quillMention(mergedUserData, '#project_summary');
-            $('#selectEmployee').html(mergedOptions);
-            $('#selectEmployee').selectpicker('refresh');
-        });
-    });
-
 </script>

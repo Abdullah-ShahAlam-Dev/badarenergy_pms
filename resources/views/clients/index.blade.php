@@ -235,63 +235,67 @@
     @include('sections.datatable_js')
 
     <script>
-        $('#clients-table').on('preXhr.dt', function(e, settings, data) {
+        (function() {
+            var $body = $('body');
+            var $table = $('#clients-table');
+            var namespace = '.clientsIndex';
 
-            const dateRangePicker = $('#datatableRange').data('daterangepicker');
-            let startDate = $('#datatableRange').val();
+            $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+                var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                var startDate = $('#datatableRange').val();
+                var endDate = null;
 
-            let endDate;
+                if (startDate == '') {
+                    startDate = null;
+                } else if (dateRangePicker) {
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                }
 
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                var status = $('#status').val() || 'all';
+                var client = $('#client').val() || 'all';
+                var category_id = $('#filter_category_id').val() || 'all';
+                var sub_category_id = $('#filter_sub_category_id').val() || 'all';
+                var project_id = $('#project_id').val() || 'all';
+                var contract_type_id = $('#contract_type_id').val() || 'all';
+                var country_id = $('#country_id').val() || 'all';
+                var verification = $('#verification').val() || 'all';
+                var searchText = $('#search-text-field').val();
+
+                data['startDate'] = startDate;
+                data['endDate'] = endDate;
+                data['status'] = status;
+                data['client'] = client;
+                data['category_id'] = category_id;
+                data['sub_category_id'] = sub_category_id;
+                data['project_id'] = project_id;
+                data['contract_type_id'] = contract_type_id;
+                data['country_id'] = country_id;
+                data['verification'] = verification;
+                data['searchText'] = searchText;
+            });
+
+            var showTable = function() {
+                var table = window.LaravelDataTables["clients-table"];
+                if (table) {
+                    table.draw(false);
+                }
             }
+            window.showTable = showTable;
 
-            const status = $('#status').val();
-            const client = $('#client').val();
-            const category_id = $('#filter_category_id').val();
-            const sub_category_id = $('#filter_sub_category_id').val();
-            const project_id = $('#project_id').val();
-            const contract_type_id = $('#contract_type_id').val();
-            const country_id = $('#country_id').val();
-            const verification = $('#verification').val();
-            const searchText = $('#search-text-field').val();
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['status'] = status;
-            data['client'] = client;
-            data['category_id'] = category_id;
-            data['sub_category_id'] = sub_category_id;
-            data['project_id'] = project_id;
-            data['contract_type_id'] = contract_type_id;
-            data['country_id'] = country_id;
-            data['verification'] = verification;
-            data['searchText'] = searchText;
-        });
-        const showTable = () => {
-            window.LaravelDataTables["clients-table"].draw(false);
-        }
+            $body.off(namespace);
 
-        $('#client, #status, #filter_category_id, #filter_sub_category_id, #project_id, #contract_type_id, #country_id, #verification')
-            .on('change keyup', function() {
-                if ($('#status').val() !== "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#client').val() !== "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#filter_category_id').val() !== "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#filter_sub_category_id').val() !== "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#project_id').val() !== "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#contract_type_id').val() !== "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#country_id').val() !== "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#verification').val() != 'all') {
+            $body.on('change' + namespace + ' keyup' + namespace, '#client, #status, #filter_category_id, #filter_sub_category_id, #project_id, #contract_type_id, #country_id, #verification', function() {
+                var hasFilters = ($('#status').val() !== "all") ||
+                                 ($('#client').val() !== "all") ||
+                                 ($('#filter_category_id').val() !== "all") ||
+                                 ($('#filter_sub_category_id').val() !== "all") ||
+                                 ($('#project_id').val() !== "all") ||
+                                 ($('#contract_type_id').val() !== "all") ||
+                                 ($('#country_id').val() !== "all") ||
+                                 ($('#verification').val() !== 'all');
+
+                if (hasFilters) {
                     $('#reset-filters').removeClass('d-none');
                 } else {
                     $('#reset-filters').addClass('d-none');
@@ -299,214 +303,197 @@
                 showTable();
             });
 
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
+            $body.on('keyup' + namespace, '#search-text-field', function() {
+                if ($(this).val() != "") {
+                    $('#reset-filters').removeClass('d-none');
+                }
                 showTable();
-            }
-        });
+            });
 
-        $('#reset-filters,#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('.show-unverified').removeClass("btn-active");
-            $('.show-clients').addClass("btn-active");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
+            $body.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
+                $('#filter-form')[0].reset();
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('.show-unverified').removeClass("btn-active");
+                $('.show-clients').addClass("btn-active");
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            });
 
-
-        $('#quick-action-type').change(function() {
-            const actionValue = $(this).val();
-            if (actionValue !== '') {
-                $('#quick-action-apply').removeAttr('disabled');
-
-                if (actionValue === 'change-status') {
+            $body.on('change' + namespace, '#quick-action-type', function() {
+                var actionValue = $(this).val();
+                if (actionValue !== '') {
+                    $('#quick-action-apply').removeAttr('disabled');
                     $('.quick-action-field').addClass('d-none');
-                    $('#change-status-action').removeClass('d-none');
+                    if (actionValue === 'change-status') {
+                        $('#change-status-action').removeClass('d-none');
+                    }
                 } else {
+                    $('#quick-action-apply').attr('disabled', true);
                     $('.quick-action-field').addClass('d-none');
                 }
-            } else {
-                $('#quick-action-apply').attr('disabled', true);
-                $('.quick-action-field').addClass('d-none');
-            }
-        });
+            });
 
-        $('#quick-action-apply').click(function() {
-            const actionValue = $('#quick-action-type').val();
-            if (actionValue == 'delete') {
+            $body.on('click' + namespace, '#quick-action-apply', function() {
+                var actionValue = $('#quick-action-type').val();
+                if (actionValue == 'delete') {
+                    Swal.fire({
+                        title: "@lang('messages.sweetAlertTitle')",
+                        text: "@lang('messages.recoverRecord')",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        focusConfirm: false,
+                        confirmButtonText: "@lang('messages.confirmDelete')",
+                        cancelButtonText: "@lang('app.cancel')",
+                        customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                        showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            applyQuickAction();
+                        }
+                    });
+                } else {
+                    applyQuickAction();
+                }
+            });
+
+            $body.on('click' + namespace, '.verify-user', function() {
+                var id = $(this).data('user-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
-                    text: "@lang('messages.recoverRecord')",
+                    text: "@lang('messages.approvalWarning')",
                     icon: 'warning',
                     showCancelButton: true,
                     focusConfirm: false,
-                    confirmButtonText: "@lang('messages.confirmDelete')",
+                    confirmButtonText: "@lang('app.approve')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        applyQuickAction();
-                    }
-                });
-
-            } else {
-                applyQuickAction();
-            }
-        });
-
-        $('body').on('click', '.verify-user', function() {
-            const id = $(this).data('user-id');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.approvalWarning')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('app.approve')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('clients.approve', ':id') }}";
-                    url = url.replace(':id', id);
-
-                    var token = "{{ csrf_token() }}";
-
-                    $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        data: {
-                            '_token': token
-                        },
-                        success: function(response) {
-                            if (response.status == "success") {
-                                showTable();
-                            }
-                        }
-                    });
-                }
-            });
-        });
-
-        $('body').on('click', '.delete-table-row', function() {
-            const id = $(this).data('user-id');
-            var url = "{{ route('clients.finance_count', ':id') }}";
-            url = url.replace(':id', id)
-            var token = "{{ csrf_token() }}";
-            $.easyAjax({
-                type: 'GET',
-                url: url,
-                data: {
-                    '_token': token
-                },
-                success: function(response) {
-                    if (response.status == "success") {
-                        Swal.fire({
-                            title: "@lang('messages.sweetAlertTitle')",
-                            text: response.deleteClient + "@lang('messages.recoverRecord')",
-                            icon: 'warning',
-                            showCancelButton: true,
-                            focusConfirm: false,
-                            confirmButtonText: "@lang('messages.confirmDelete')",
-                            cancelButtonText: "@lang('app.cancel')",
-                            customClass: {
-                                confirmButton: 'btn btn-primary mr-3',
-                                cancelButton: 'btn btn-secondary'
-                            },
-                            showClass: {
-                                popup: 'swal2-noanimation',
-                                backdrop: 'swal2-noanimation'
-                            },
-                            buttonsStyling: false
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                var url = "{{ route('clients.destroy', ':id') }}";
-                                url = url.replace(':id', id);
-                                $.easyAjax({
-                                    type: 'POST',
-                                    url: url,
-                                    data: {
-                                        '_token': token,
-                                        '_method': 'DELETE'
-                                    },
-                                    success: function(response) {
-                                        if (response.status == "success") {
-                                            showTable();
-                                        }
+                        var url = "{{ route('clients.approve', ':id') }}".replace(':id', id);
+                        var token = "{{ csrf_token() }}";
+                        $.easyAjax({
+                            type: 'POST',
+                            url: url,
+                            data: { '_token': token },
+                            success: function(response) {
+                                if (response.status == "success") {
+                                    showTable();
+                                    if (typeof syncGlobalStats === "function") {
+                                        syncGlobalStats();
                                     }
-                                });
+                                }
                             }
                         });
                     }
-                }
+                });
             });
-        });
 
-        const applyQuickAction = () => {
-            var rowdIds = $("#clients-table input:checkbox:checked").map(function() {
-                return $(this).val();
-            }).get();
-
-            const url = "{{ route('clients.apply_quick_action') }}?row_ids=" + rowdIds;
-
-            $.easyAjax({
-                url: url,
-                container: '#quick-action-form',
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#quick-action-apply",
-                data: $('#quick-action-form').serialize(),
-                success: function(response) {
-                    if (response.status == 'success') {
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
-                        $('#quick-action-form').hide();
+            $body.on('click' + namespace, '.delete-table-row', function() {
+                var id = $(this).data('user-id');
+                var url = "{{ route('clients.finance_count', ':id') }}".replace(':id', id);
+                var token = "{{ csrf_token() }}";
+                $.easyAjax({
+                    type: 'GET',
+                    url: url,
+                    data: { '_token': token },
+                    success: function(response) {
+                        if (response.status == "success") {
+                            Swal.fire({
+                                title: "@lang('messages.sweetAlertTitle')",
+                                text: response.deleteClient + "@lang('messages.recoverRecord')",
+                                icon: 'warning',
+                                showCancelButton: true,
+                                focusConfirm: false,
+                                confirmButtonText: "@lang('messages.confirmDelete')",
+                                cancelButtonText: "@lang('app.cancel')",
+                                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                                buttonsStyling: false
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    var destroyUrl = "{{ route('clients.destroy', ':id') }}".replace(':id', id);
+                                    $.easyAjax({
+                                        type: 'POST',
+                                        url: destroyUrl,
+                                        data: { '_token': token, '_method': 'DELETE' },
+                                        success: function(response) {
+                                            if (response.status == "success") {
+                                                showTable();
+                                                if (typeof syncGlobalStats === "function") {
+                                                    syncGlobalStats();
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            });
+                        }
                     }
-                }
-            })
-        };
+                });
+            });
 
-        $('.show-unverified').click(function() {
-            $('#verification').val('no');
+            function applyQuickAction() {
+                var rowdIds = $("#clients-table input:checkbox:checked").map(function() {
+                    return $(this).val();
+                }).get();
 
-            $('#verification').selectpicker('refresh');
-            $(this).addClass('btn-active')
-            $('#reset-filters').removeClass('d-none');
-            showTable();
-        });
+                var url = "{{ route('clients.apply_quick_action') }}?row_ids=" + rowdIds;
 
-        $( document ).ready(function() {
+                $.easyAjax({
+                    url: url,
+                    container: '#quick-action-form',
+                    type: "POST",
+                    disableButton: true,
+                    buttonSelector: "#quick-action-apply",
+                    data: $('#quick-action-form').serialize(),
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                            $('#quick-action-form').hide();
+                            if (typeof syncGlobalStats === 'function') {
+                                syncGlobalStats();
+                            }
+                        }
+                    }
+                });
+            }
+            window.applyQuickAction = applyQuickAction;
+
+            $body.on('click' + namespace, '.show-unverified', function() {
+                $('#verification').val('no');
+                $('#verification').selectpicker('refresh');
+                $(this).addClass('btn-active');
+                $('#reset-filters').removeClass('d-none');
+                showTable();
+            });
+
+            $body.on('click' + namespace, '.btn-group .btn-secondary', function() {
+                $('.btn-secondary').removeClass('btn-active');
+                $(this).addClass('btn-active');
+            });
+
             @if (!is_null(request('start')) && !is_null(request('end')))
-            $('#datatableRange').val('{{ request('start') }}' +
-            ' @lang("app.to") ' + '{{ request('end') }}');
-            $('#datatableRange').data('daterangepicker').setStartDate("{{ request('start') }}");
-            $('#datatableRange').data('daterangepicker').setEndDate("{{ request('end') }}");
+                $('#datatableRange').val('{{ request('start') }}' + ' @lang("app.to") ' + '{{ request('end') }}');
+                var drp = $('#datatableRange').data('daterangepicker');
+                if (drp) {
+                    drp.setStartDate("{{ request('start') }}");
+                    drp.setEndDate("{{ request('end') }}");
+                }
                 showTable();
             @endif
-        });
 
-        $('.btn-group .btn-secondary').click(function() {
-            $('.btn-secondary').removeClass('btn-active');
-            $(this).addClass('btn-active');
-        });
+            document.addEventListener("turbo:before-cache", function cleanup() {
+                $body.off(namespace);
+                $table.off('preXhr.dt' + namespace);
+                delete window.showTable;
+                delete window.applyQuickAction;
+                document.removeEventListener("turbo:before-cache", cleanup);
+            }, { once: true });
+        })();
     </script>
 @endpush

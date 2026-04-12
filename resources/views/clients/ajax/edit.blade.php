@@ -340,33 +340,30 @@ $addClientSubCategoryPermission = user()->permission('manage_client_subcategory'
 
 
 <script>
-    $(document).ready(function() {
-
-        $('#random_password').click(function() {
-            const randPassword = Math.random().toString(36).substr(2, 8);
-
-            $('#password').val(randPassword);
-        });
+    (function() {
+        var $body = $('body');
+        var namespace = '.clientsEdit';
 
         $('.custom-date-picker').each(function(ind, el) {
-            datepicker(el, {
-                position: 'bl',
-                ...datepickerConfig
-            });
+            datepicker(el, { position: 'bl', ...datepickerConfig });
         });
 
-        $('#country').change(function(){
+        init(RIGHT_MODAL);
+
+        $body.off(namespace);
+
+        $body.on('click' + namespace, '#random_password', function() {
+            $('#password').val(Math.random().toString(36).substr(2, 8));
+        });
+
+        $body.on('change' + namespace, '#country', function() {
             var phonecode = $(this).find(':selected').data('phonecode');
-            $('#country_phonecode').val(phonecode);
-            $('.select-picker').selectpicker('refresh');
+            $('#country_phonecode').val(phonecode).selectpicker('refresh');
         });
 
-        $('#category_id').change(function(e) {
-
-            let categoryId = $(this).val();
-
-            var url = "{{ route('get_client_sub_categories', ':id') }}";
-            url = url.replace(':id', categoryId);
+        $body.on('change' + namespace, '#category_id', function() {
+            var categoryId = $(this).val();
+            var url = "{{ route('get_client_sub_categories', ':id') }}".replace(':id', categoryId);
 
             $.easyAjax({
                 url: url,
@@ -374,28 +371,17 @@ $addClientSubCategoryPermission = user()->permission('manage_client_subcategory'
                 success: function(response) {
                     if (response.status == 'success') {
                         var options = [];
-                        var rData = [];
-                        rData = response.data;
-                        $.each(rData, function(index, value) {
-                            var selectData = '';
-                            selectData = '<option value="' + value.id + '">' + value
-                                .category_name + '</option>';
-                            options.push(selectData);
+                        $.each(response.data, function(index, value) {
+                            options.push('<option value="' + value.id + '">' + value.category_name + '</option>');
                         });
-
-                        $('#sub_category_id').html('<option value="">--</option>' +
-                            options);
-                        $('#sub_category_id').selectpicker('refresh');
+                        $('#sub_category_id').html('<option value="">--</option>' + options.join('')).selectpicker('refresh');
                     }
                 }
-            })
-
+            });
         });
 
-
-        $('#save-form').click(function() {
-            const url = "{{ route('clients.update', $client->id) }}";
-
+        $body.on('click' + namespace, '#save-form', function() {
+            var url = "{{ route('clients.update', $client->id) }}";
             $.easyAjax({
                 url: url,
                 container: '#save-data-form',
@@ -407,33 +393,37 @@ $addClientSubCategoryPermission = user()->permission('manage_client_subcategory'
                 data: $('#save-data-form').serialize(),
                 success: function(response) {
                     if (response.status == 'success') {
-                        window.location.href = response.redirectUrl;
+                        if (typeof response.redirectUrl !== 'undefined') {
+                            window.location.href = response.redirectUrl;
+                        } else if (typeof showTable === 'function') {
+                            showTable();
+                        }
                     }
                 }
-            })
+            });
         });
 
-        $('#addClientCategory').click(function() {
-            const url = "{{ route('clientCategory.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        })
-        $('#addClientSubCategory').click(function() {
-            const url = "{{ route('clientSubCategory.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        })
+        $body.on('click' + namespace, '#addClientCategory', function() {
+            $.ajaxModal(MODAL_LG, "{{ route('clientCategory.create') }}");
+        });
+
+        $body.on('click' + namespace, '#addClientSubCategory', function() {
+            $.ajaxModal(MODAL_LG, "{{ route('clientSubCategory.create') }}");
+        });
+
+        window.checkboxChange = function(parentClass, id) {
+            var checkedData = '';
+            $('.' + parentClass).find("input[type='checkbox']:checked").each(function() {
+                checkedData = (checkedData !== '') ? checkedData + ', ' + $(this).val() : $(this).val();
+            });
+            $('#' + id).val(checkedData);
+        };
 
         <x-forms.custom-field-filejs/>
 
-        init(RIGHT_MODAL);
-    });
-
-    function checkboxChange(parentClass, id) {
-        var checkedData = '';
-        $('.' + parentClass).find("input[type= 'checkbox']:checked").each(function() {
-            checkedData = (checkedData !== '') ? checkedData + ', ' + $(this).val() : $(this).val();
-        });
-        $('#' + id).val(checkedData);
-    }
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

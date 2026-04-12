@@ -44,26 +44,38 @@
 @include('sections.datatable_js')
 
 <script>
+    (function() {
+        var $body = $('body');
+        var $table = $('#leads-gdpr-table');
+        var namespace = '.leadsGdpr';
 
-    $('#leads-gdpr-table').on('preXhr.dt', function(e, settings, data) {
-        var leadID = "{{ $lead->id }}";
+        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
+            var leadID = "{{ $lead->id }}";
+            data['leadID'] = leadID;
+        });
 
-        data['leadID'] = leadID;
-    });
+        function showTable() {
+            if (window.LaravelDataTables && window.LaravelDataTables["leads-gdpr-table"]) {
+                window.LaravelDataTables["leads-gdpr-table"].draw(false);
+            }
+        }
+        window.showTable = showTable;
 
+        $body.off(namespace);
 
-    const showTable = () => {
-        window.LaravelDataTables["leads-gdpr-table"].draw(false);
-    }
+        $body.on('click' + namespace, '.consent-details', function() {
+            var consentId = $(this).data('consent-id');
+            var leadId = "{{ $lead->id }}";
+            var url = `{{ route('leads.gdpr_consent') }}?consentId=${consentId}&leadId=${leadId}`;
 
-    $(document).on('click', '.consent-details', function(){
-        let consentId = $(this).data('consent-id');
-        let leadId = "{{ $lead->id }}";
+            $.ajaxModal(MODAL_LG, url);
+        });
 
-        let url = `{{ route('leads.gdpr_consent') }}?consentId=${consentId}&leadId=${leadId}`;
-
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    })
-
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

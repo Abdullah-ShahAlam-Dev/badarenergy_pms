@@ -53,7 +53,7 @@
         "color": "{{ $boardColumn->label_color }}"
     });
 
-    $('#update-board-column').click(function() {
+    $('#update-board-column').off('click.updateCol').on('click.updateCol', function() {
         var url = "{{ route('taskboards.update', $boardColumn->id) }}";
 
         $.easyAjax({

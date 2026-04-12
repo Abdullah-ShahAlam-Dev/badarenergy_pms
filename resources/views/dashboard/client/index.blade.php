@@ -135,9 +135,9 @@
 
 @push('scripts')
     <script>
-        $('body').on('click', '.milestone-detail', function () {
-            const id = $(this).data('milestone-id');
-            let url = "{{ route('milestones.show', ':id') }}";
+        $('body').off('click.clientDashboard').on('click.clientDashboard', '.milestone-detail', function () {
+            var id = $(this).data('milestone-id');
+            var url = "{{ route('milestones.show', ':id') }}";
             url = url.replace(':id', id);
             $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_XL, url);

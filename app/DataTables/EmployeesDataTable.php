@@ -278,17 +278,33 @@ class EmployeesDataTable extends BaseDataTable
             });
         }
 
-        if ($request->startDate != '' && $request->endDate != '') {
-            $startDate = Carbon::createFromFormat($this->company->date_format, $request->startDate)->toDateString();
-            $endDate = Carbon::createFromFormat($this->company->date_format, $request->endDate)->toDateString();
+        $safeStartDate = (isset($request->startDate) && $request->startDate !== '' && $request->startDate !== 'null') ? $request->startDate : null;
+        $safeEndDate   = (isset($request->endDate)   && $request->endDate   !== '' && $request->endDate   !== 'null') ? $request->endDate   : null;
 
-            $users = $users->whereRaw('Date(employee_details.joining_date) >= ?', [$startDate])->whereRaw('Date(employee_details.joining_date) <= ?', [$endDate]);
+        if ($safeStartDate && $safeEndDate) {
+            try {
+                $startDate = Carbon::createFromFormat($this->company->date_format, $safeStartDate)->toDateString();
+                $endDate   = Carbon::createFromFormat($this->company->date_format, $safeEndDate)->toDateString();
+                $users = $users->whereRaw('Date(employee_details.joining_date) >= ?', [$startDate])
+                               ->whereRaw('Date(employee_details.joining_date) <= ?', [$endDate]);
+            } catch (\Exception $e) {
+                // Silently skip invalid date range — prevents 500 errors from malformed date strings
+            }
         }
 
-        if ($request->status == 'ex_employee' && isset($request->lastStartDate) && isset($request->lastEndDate) && $request->lastStartDate != '' && $request->lastEndDate != '') {
-            $startDate = Carbon::createFromFormat($this->company->date_format, $request->lastStartDate)->toDateString();
-            $endDate = Carbon::createFromFormat($this->company->date_format, $request->lastEndDate)->toDateString();
-            $users = $users->whereNotNull('last_date')->whereRaw('Date(employee_details.last_date) >= ?', [$startDate])->whereRaw('Date(employee_details.last_date) <= ?', [$endDate]);
+        $safeLastStart = (isset($request->lastStartDate) && $request->lastStartDate !== '' && $request->lastStartDate !== 'null') ? $request->lastStartDate : null;
+        $safeLastEnd   = (isset($request->lastEndDate)   && $request->lastEndDate   !== '' && $request->lastEndDate   !== 'null') ? $request->lastEndDate   : null;
+
+        if ($request->status == 'ex_employee' && $safeLastStart && $safeLastEnd) {
+            try {
+                $lastStart = Carbon::createFromFormat($this->company->date_format, $safeLastStart)->toDateString();
+                $lastEnd   = Carbon::createFromFormat($this->company->date_format, $safeLastEnd)->toDateString();
+                $users = $users->whereNotNull('last_date')
+                               ->whereRaw('Date(employee_details.last_date) >= ?', [$lastStart])
+                               ->whereRaw('Date(employee_details.last_date) <= ?', [$lastEnd]);
+            } catch (\Exception $e) {
+                // Silently skip invalid date range
+            }
         }
 
         if ($request->searchText != '') {
@@ -317,6 +333,9 @@ class EmployeesDataTable extends BaseDataTable
                  }',
                 'fnDrawCallback' => 'function( oSettings ) {
                    $(".select-picker").selectpicker();
+                   if (typeof syncGlobalStats === "function") {
+                        syncGlobalStats(oSettings.json);
+                   }
                  }',
             ])
             ->buttons(Button::make(['extend' => 'excel', 'text' => '<i class="fa fa-file-export"></i> ' . trans('app.exportExcel')]));

@@ -214,83 +214,9 @@
     @csrf
 </form>
 
+@push('scripts')
 <script>
-    $(document).ready(function () {
-        var runTimeClock = true;
-
-        @if(isset($activeTimerCount))
-        const activeTimerCount = parseInt("{{ $activeTimerCount }}");
-
-        if (activeTimerCount > 0) {
-
-            $('#show-active-timer').click(function () {
-                const url = "{{ route('timelogs.show_active_timer') }}";
-                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-                $.ajaxModal(MODAL_XL, url);
-            });
-
-        }
-        @endif
-
-
-        $('#start-timer-modal').click(function () {
-            const url = "{{ route('timelogs.show_timer') }}";
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_XL, url);
-        });
-
-        $('.open-search').click(function () {
-            const url = "{{ route('search.index') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
-
-
-
-        $('.show-user-notifications').click(function () {
-            const openStatus = $(this).attr('aria-expanded');
-
-            if (typeof openStatus == "undefined" || openStatus == "false") {
-
-                const token = '{{ csrf_token() }}';
-                $.easyAjax({
-                    type: 'POST',
-                    url: "{{ route('show_notifications') }}",
-                    container: "#notification-list",
-                    blockUI: true,
-                    data: {
-                        '_token': token
-                    },
-                    success: function (data) {
-                        if (data.status === 'success') {
-                            $('#notification-list').html(data.html);
-                        }
-                    }
-                });
-
-            }
-
-        });
-
-        $('.mark-notification-read').click(function () {
-            const token = '{{ csrf_token() }}';
-            $.easyAjax({
-                type: 'POST',
-                url: "{{ route('mark_notification_read') }}",
-                blockUI: true,
-                data: {
-                    '_token': token
-                },
-                success: function (data) {
-                    if (data.status === 'success') {
-                        $('#notification-list').html('');
-                        $('.unread-notifications-count').remove();
-                        window.location.reload();
-                    }
-                }
-            });
-
-        });
-
-    });
+    // Component-specific scripts can go here if needed, 
+    // but global listeners have been moved to app.blade.php for Turbo stability.
 </script>
+@endpush

@@ -66,53 +66,53 @@
 </x-form>
 
 <script>
-    init(MODAL_DEFAULT);
+    (function() {
+        var $body = $('body');
+        if (typeof init === 'function') init(MODAL_DEFAULT);
 
-    $(document).ready(function () {
-        setTimeout(function () {
-            $('[data-toggle="popover"]').popover();
-        }, 500);
-    });
+        $body.off('.clientsQuickCreate');
 
-    $('#random_password').click(function() {
-        const randPassword = Math.random().toString(36).substr(2, 8);
+        $body.on('click.clientsQuickCreate', '#random_password', function() {
+            var randPassword = Math.random().toString(36).substr(2, 8);
+            $('#password').val(randPassword);
+        });
 
-        $('#password').val(randPassword);
-    });
-
-    $('input[type=radio][name=login]').change(function() {
-        if (this.value == 'enable') {
-            $('.password-section').removeClass('d-none');
-        } else {
-            $('.password-section').addClass('d-none');
-        }
-    });
-
-    $('#save-category').click(function() {
-        var url = "{{ route('clients.store') }}";
-        $.easyAjax({
-            url: url,
-            container: '#save-client-data-form',
-            type: "POST",
-            blockUI: true,
-            data: $('#save-client-data-form').serialize(),
-            success: function(response) {
-                if (response.status == 'success') {
-                    if ($('#client_list_id').length > 0) {
-                        $('#client_list_id').html('<option value="">--</option>' +
-                            response.teamData);
-                        $('#client_list_id').selectpicker('refresh');
-                        $('#project_id').html(response.project);
-                        $('#project_id').selectpicker('refresh');
-
-                    }
-                    $(MODAL_DEFAULT).modal('hide');
-                }
+        $body.on('change.clientsQuickCreate', 'input[type=radio][name=login]', function() {
+            if (this.value == 'enable') {
+                $('.password-section').removeClass('d-none');
+            } else {
+                $('.password-section').addClass('d-none');
             }
-        })
-    });
+        });
 
-    $(function () {
-        $('[data-toggle="popover"]').popover();
-    });
+        $body.on('click.clientsQuickCreate', '#save-category', function() {
+            var url = "{{ route('clients.store') }}";
+            $.easyAjax({
+                url: url,
+                container: '#save-client-data-form',
+                type: "POST",
+                blockUI: true,
+                data: $('#save-client-data-form').serialize(),
+                success: function(response) {
+                    if (response.status == 'success') {
+                        if ($('#client_list_id').length > 0) {
+                            $('#client_list_id').html('<option value="">--</option>' + response.teamData);
+                            $('#client_list_id').selectpicker('refresh');
+                            $('#project_id').html(response.project);
+                            $('#project_id').selectpicker('refresh');
+                        }
+                        $(MODAL_DEFAULT).modal('hide');
+                    }
+                }
+            });
+        });
+
+        $(function() {
+            $('[data-toggle="popover"]').popover();
+        });
+
+        document.addEventListener("turbo:before-cache", function() {
+            $body.off('.clientsQuickCreate');
+        }, { once: true });
+    })();
 </script>

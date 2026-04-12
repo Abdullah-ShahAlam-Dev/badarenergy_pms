@@ -937,7 +937,6 @@ class ProjectController extends AccountBaseController
         $this->view = 'projects.ajax.tasks';
 
         return $dataTable->render('projects.show', $this->data);
-
     }
 
     public function archivedTasks($projectAdmin = false)

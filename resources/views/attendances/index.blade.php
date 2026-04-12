@@ -183,138 +183,120 @@
 @push('scripts')
 
     <script>
+        (function() {
+            var $body = $('body');
+            var namespace = '.attendanceIndex';
 
-        $('#user_id, #department, #designation, #month, #year').on('change', function () {
-            if ($('#user_id').val() != "all") {
-                $('#reset-filters').removeClass('d-none');
+            $body.off(namespace);
+
+            $body.on('change' + namespace, '#user_id, #department, #designation, #month, #year', function() {
+                var hasFilters = ($('#user_id').val() != "all") ||
+                                 ($('#department').val() != "all") ||
+                                 ($('#designation').val() != "all") ||
+                                 ($('#month').val() != "all") ||
+                                 ($('#year').val() != "all");
+
+                $('#reset-filters').toggleClass('d-none', !hasFilters);
                 showTable();
-            } else if ($('#department').val() != "all") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else if ($('#designation').val() != "all") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else if ($('#month').val() != "all") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else if ($('#year').val() != "all") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else {
-                $('#reset-filters').addClass('d-none');
-                showTable();
-            }
-        });
-
-        $('#reset-filters').click(function () {
-            $('#filter-form')[0].reset();
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        function showTable(loading = true) {
-
-            var year = $('#year').val();
-            var month = $('#month').val();
-
-            var userId = $('#user_id').val();
-            var department = $('#department').val();
-            var designation = $('#designation').val();
-
-            //refresh counts
-            var url = "{{ route('attendances.index') }}";
-
-            var token = "{{ csrf_token() }}";
-
-            $.easyAjax({
-                data: {
-                    '_token': token,
-                    year: year,
-                    month: month,
-                    department: department,
-                    designation: designation,
-                    userId: userId
-                },
-                url: url,
-                blockUI: loading,
-                container: '.content-wrapper',
-                success: function (response) {
-                    $('#attendance-data').html(response.data);
-                }
             });
 
-        }
+            $body.on('click' + namespace, '#reset-filters', function() {
+                $('#filter-form')[0].reset();
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            });
 
+            function showTable(loading = true) {
+                var year = $('#year').val();
+                var month = $('#month').val();
+                var userId = $('#user_id').val();
+                var department = $('#department').val();
+                var designation = $('#designation').val();
+                var url = "{{ route('attendances.index') }}";
+                var token = "{{ csrf_token() }}";
 
-        $('#attendance-data').on('click', '.view-attendance', function () {
-            var attendanceID = $(this).data('attendance-id');
-            var url = "{{ route('attendances.show', ':attendanceID') }}";
-            url = url.replace(':attendanceID', attendanceID);
+                $.easyAjax({
+                    data: {
+                        '_token': token,
+                        year: year,
+                        month: month,
+                        department: department,
+                        designation: designation,
+                        userId: userId
+                    },
+                    url: url,
+                    blockUI: loading,
+                    container: '.content-wrapper',
+                    success: function (response) {
+                        $('#attendance-data').html(response.data);
+                    }
+                });
+            }
+            window.showTable = showTable;
 
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_XL, url);
-        });
+            $body.on('click' + namespace, '.view-attendance', function () {
+                var attendanceID = $(this).data('attendance-id');
+                var url = "{{ route('attendances.show', ':attendanceID') }}".replace(':attendanceID', attendanceID);
+                $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_XL, url);
+            });
 
-        $('#attendance-data').on('click', '.edit-attendance', function (event) {
-            var attendanceDate = $(this).data('attendance-date');
-            var userData = $(this).closest('tr').children('td:first');
-            var userID = $(this).data('user-id');
-            var year = $('#year').val();
-            var month = $('#month').val();
+            $body.on('click' + namespace, '.edit-attendance', function (event) {
+                var attendanceDate = $(this).data('attendance-date');
+                var userID = $(this).data('user-id');
+                var year = $('#year').val();
+                var month = $('#month').val();
+                var url = "{{ route('attendances.mark', [':userid', ':day', ':month', ':year']) }}";
+                url = url.replace(':userid', userID).replace(':day', attendanceDate).replace(':month', month).replace(':year', year);
+                $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_XL, url);
+            });
 
-            var url = "{{ route('attendances.mark', [':userid', ':day', ':month', ':year']) }}";
-            url = url.replace(':userid', userID);
-            url = url.replace(':day', attendanceDate);
-            url = url.replace(':month', month);
-            url = url.replace(':year', year);
+            function editAttendance(id) {
+                var url = "{{ route('attendances.edit', [':id']) }}".replace(':id', id);
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG, url);
+            }
+            window.editAttendance = editAttendance;
 
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_XL, url);
-        });
+            function addAttendance(userID) {
+                var date = $('#date').val();
+                const attendanceDate = date.split("-");
+                let dayTime = attendanceDate[2].split(' ');
+                let day = dayTime[0];
+                let month = attendanceDate[1];
+                let year = attendanceDate[0];
 
-        function editAttendance(id) {
-            var url = "{{ route('attendances.edit', [':id']) }}";
-            url = url.replace(':id', id);
+                var url = "{{ route('attendances.add-user-attendance', [':userid', ':day', ':month', ':year']) }}";
+                url = url.replace(':userid', userID).replace(':day', day).replace(':month', month).replace(':year', year);
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG, url);
+            }
+            window.addAttendance = addAttendance;
 
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        }
+            $body.on('click' + namespace, '#export-all', function () {
+                var year = $('#year').val();
+                var month = $('#month').val();
+                var department = $('#department').val();
+                var designation = $('#designation').val();
+                var userId = $('#user_id').val();
+                var url = "{{ route('attendances.export_all_attendance', [':year', ':month', ':userId', ':department', ':designation']) }}";
+                url = url.replace(':year', year).replace(':month', month).replace(':userId', userId).replace(':department', department).replace(':designation', designation);
+                window.location.href = url;
+            });
 
-        function addAttendance(userID) {
-            var date = $('#date').val();
-            const attendanceDate = date.split("-");
-            let dayTime = attendanceDate[2];
-            dayTime = dayTime.split(' ');
-            let day = dayTime[0];
-            let month = attendanceDate[1];
-            let year = attendanceDate[0];
+            showTable(false);
 
-            var url = "{{ route('attendances.add-user-attendance', [':userid', ':day', ':month', ':year']) }}";
-            url = url.replace(':userid', userID);
-            url = url.replace(':day', day);
-            url = url.replace(':month', month);
-            url = url.replace(':year', year);
-
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        }
-
-        showTable(false);
-
-        $('#export-all').click(function () {
-            var year = $('#year').val();
-            var month = $('#month').val();
-            var department = $('#department').val();
-            var designation = $('#designation').val();
-            var userId = $('#user_id').val();
-
-            var url =
-                "{{ route('attendances.export_all_attendance', [':year', ':month', ':userId', ':department', ':designation']) }}";
-            url = url.replace(':year', year).replace(':month', month).replace(':userId', userId).replace(':department', department).replace(':designation', designation);
-            window.location.href = url;
-
-        });
+            document.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                delete window.showTable;
+                delete window.editAttendance;
+                delete window.addAttendance;
+                document.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
     </script>
+
 
 @endpush

@@ -258,21 +258,6 @@ class TasksDataTable extends BaseDataTable
                 return $row->heading;
             }
         );
-        $datatables->addColumn(
-            'timeLogged', function ($row) {
-
-                $timeLog = '--';
-
-                if (count($row->timeLogged) > 0) {
-                    $totalMinutes = $row->timeLogged->sum('total_minutes');
-
-                    $breakMinutes = $row->breakMinutes();
-
-                    $timeLog = CarbonInterval::formatHuman($totalMinutes - $breakMinutes);
-                }
-            }
-        );
-
         $datatables->addColumn('task_project_name', function ($row) {
             return !is_null($row->project_id) ? $row->project_name : '--';
         });
@@ -419,7 +404,7 @@ class TasksDataTable extends BaseDataTable
         $model = $model->leftJoin('projects', 'projects.id', '=', 'tasks.project_id')
             ->leftJoin('users as client', 'client.id', '=', 'projects.client_id')
             ->join('taskboard_columns', 'taskboard_columns.id', '=', 'tasks.board_column_id')
-            ->leftJoin('mention_users', 'mention_users.task_id', 'tasks.id');
+            ->leftJoin('mention_users', 'mention_users.task_id', '=', 'tasks.id');
 
         if (($this->viewUnassignedTasksPermission == 'all'
             && !in_array('client', user_roles())
@@ -440,12 +425,12 @@ class TasksDataTable extends BaseDataTable
             ->selectRaw(
                 'tasks.id, tasks.completed_on, tasks.task_short_code, tasks.start_date, tasks.added_by, projects.project_name, projects.project_admin, tasks.heading, client.name as clientName, creator_user.name as created_by, creator_user.image as created_image, tasks.board_column_id,
              tasks.due_date, taskboard_columns.column_name as board_column, taskboard_columns.label_color,
-              tasks.project_id, tasks.is_private ,( select count("id") from pinned where pinned.task_id = tasks.id and pinned.user_id = ' . user()->id . ') as pinned_task'
+              tasks.project_id, tasks.is_private ,( select count(*) from pinned where pinned.task_id = tasks.id and pinned.user_id = ' . user()->id . ') as pinned_task'
             )
             ->addSelect('tasks.company_id') // Company_id is fetched so the we have fetch company relation with it)
             ->with('users', 'activeTimerAll', 'boardColumn', 'activeTimer', 'timeLogged', 'timeLogged.breaks', 'userActiveTimer', 'userActiveTimer.activeBreak', 'labels', 'taskUsers')
             ->withCount('activeTimerAll', 'completedSubtasks', 'subtasks')
-            ->groupBy('tasks.id');
+            ->groupBy('tasks.id', 'tasks.completed_on', 'tasks.task_short_code', 'tasks.start_date', 'tasks.added_by', 'projects.project_name', 'projects.project_admin', 'tasks.heading', 'client.name', 'creator_user.name', 'creator_user.image', 'tasks.board_column_id', 'tasks.due_date', 'taskboard_columns.column_name', 'taskboard_columns.label_color', 'tasks.project_id', 'tasks.is_private', 'tasks.company_id');
 
         if ($request->pinned == 'pinned') {
             $model->join('pinned', 'pinned.task_id', 'tasks.id');

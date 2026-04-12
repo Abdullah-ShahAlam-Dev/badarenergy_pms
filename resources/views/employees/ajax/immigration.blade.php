@@ -181,129 +181,93 @@ $editImmigrationPermission = user()->permission('edit_immigration');
 <!-- VISA ROW END -->
 
 <script>
+    (function() {
+        var $body = $('body');
+        var namespace = '.employeeImmigration';
 
-    // Visa Start
-    $('body').on('click', '.delete-visa', function() {
-        var id = $(this).data('id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('employee-visa.destroy', ':id') }}";
-                url = url.replace(':id', id);
+        $body.off(namespace);
 
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    blockUI: true,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            window.location.reload();
-                        }
-                    }
-                });
-            }
+        // Visa
+        $body.on('click' + namespace, '.delete-visa', function() {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('employee-visa.destroy', ':id') }}".replace(':id', id);
+                    $.easyAjax({
+                        type: 'POST', url: url, blockUI: true,
+                        data: { '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
+                        success: function(response) { if (response.status == "success") { window.location.reload(); } }
+                    });
+                }
+            });
         });
-    });
 
-    $('#add-visa').click(function() {
-        var url = "{{ route('employee-visa.create').'?empid='.$employee->id }}";
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    })
-
-    $('.edit-visa').click(function() {
-        var id = $(this).data('id');
-        var url = "{{ route('employee-visa.edit', ':id') }}";
-        url = url.replace(':id', id);
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    });
-
-    // Visa End
-
-    // Passport Start
-    $('.add-passport').click(function(){
-        var url = "{{ route('passport.create').'?empid='.$employee->id }}";
+        $body.on('click' + namespace, '#add-visa', function() {
+            var url = "{{ route('employee-visa.create').'?empid='.$employee->id }}";
             $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-    $('.edit-passport').click(function(){
-        var id = $(this).data('id');
-        var url = "{{ route('passport.edit', ':id').'?empid='.$employee->id }}";
-        url = url.replace(':id', id);
+        $body.on('click' + namespace, '.edit-visa', function() {
+            var id = $(this).data('id');
+            var url = "{{ route('employee-visa.edit', ':id') }}".replace(':id', id);
             $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
-    });
-
-    $('body').on('click', '.delete-passport', function () {
-
-        var id = $(this).data('id');
-
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-
-                var url = "{{ route('passport.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    blockUI: true,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function (response) {
-                        if (response.status == "success") {
-                            window.location.reload();
-                        }
-                    }
-                });
-            }
         });
-    });
-    // Passport End
 
+        // Passport
+        $body.on('click' + namespace, '.add-passport', function() {
+            var url = "{{ route('passport.create').'?empid='.$employee->id }}";
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
+        });
+
+        $body.on('click' + namespace, '.edit-passport', function() {
+            var id = $(this).data('id');
+            var url = "{{ route('passport.edit', ':id').'?empid='.$employee->id }}".replace(':id', id);
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
+        });
+
+        $body.on('click' + namespace, '.delete-passport', function() {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('passport.destroy', ':id') }}".replace(':id', id);
+                    $.easyAjax({
+                        type: 'POST', url: url, blockUI: true,
+                        data: { '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
+                        success: function(response) { if (response.status == "success") { window.location.reload(); } }
+                    });
+                }
+            });
+        });
+
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

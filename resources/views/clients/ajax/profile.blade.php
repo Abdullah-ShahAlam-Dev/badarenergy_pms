@@ -187,44 +187,50 @@
 <!-- ROW END -->
 
 <script>
-    $('body').on('click', '.verify-user', function() {
-        const id = $(this).data('user-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.approvalWarning')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('app.approve')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('clients.approve', $client->id) }}";
+    (function() {
+        var $body = $('body');
 
-                var token = "{{ csrf_token() }}";
+        $body.off('.clientsProfile');
 
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            window.location.reload();
+        $body.on('click.clientsProfile', '.verify-user', function() {
+            var id = $(this).data('user-id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.approvalWarning')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('app.approve')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('clients.approve', $client->id) }}";
+                    var token = "{{ csrf_token() }}";
+
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token },
+                        success: function(response) {
+                            if (response.status == "success") {
+                                if (typeof Turbo !== 'undefined') {
+                                    Turbo.visit(window.location.href, { action: "replace" });
+                                } else {
+                                    window.location.reload();
+                                }
+                            }
                         }
-                    }
-                });
-            }
+                    });
+                }
+            });
         });
-    });
+
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off('.clientsProfile');
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

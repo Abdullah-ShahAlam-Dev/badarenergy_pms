@@ -34,16 +34,21 @@
 </div>
 
 <script>
+    (function() {
+        var $body = $('body');
+        var namespace = '.projectImport';
+        var dropifyInstance = null;
 
-    $(document).ready(function() {
+        var $el = $("#project_import");
+        if ($el.length) {
+            $el.dropify({ messages: dropifyMessages });
+            dropifyInstance = $el.data('dropify');
+        }
 
-        $("#project_import").dropify({
-            messages: dropifyMessages
-        });
+        $body.off(namespace);
 
-        $('body').on('click', '#import-project-form', function() {
+        $body.on('click' + namespace, '#import-project-form', function() {
             const url = "{{ route('projects.import.store') }}";
-
             $.easyAjax({
                 url: url,
                 container: '#import-project-data-form',
@@ -60,5 +65,13 @@
                 }
             });
         });
-    });
+
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            if (dropifyInstance) {
+                dropifyInstance.destroy();
+            }
+            document.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

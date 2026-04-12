@@ -51,17 +51,19 @@ $addTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->p
 <script src="{{ asset('vendor/jquery/dragula.js') }}"></script>
 
 <script>
-    $(document).ready(function() {
-        function loadData() {
+    (function() {
+        var $body = $('body');
+        var namespace = '.projectTaskboard';
+        var channel = null;
 
+        function loadData() {
             var projectID = "{{ $project->id }}";
             var startDate = null;
             var endDate = null;
             var projectAdmin = "{{ ($project->project_admin == user()->id) ? 1 : 0 }}";
 
             var url = "{{ route('taskboards.index') }}?startDate=" + encodeURIComponent(startDate) +
-                '&endDate=' +
-                encodeURIComponent(endDate) + '&projectID=' + projectID + '&project_admin=' + projectAdmin;
+                '&endDate=' + encodeURIComponent(endDate) + '&projectID=' + projectID + '&project_admin=' + projectAdmin;
 
             $.easyAjax({
                 url: url,
@@ -70,31 +72,23 @@ $addTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->p
                 success: function(response) {
                     if (response.status == 'success') {
                         $('#taskboard-columns').html(response.view);
-                        $("body").tooltip({
-                            selector: '[data-toggle="tooltip"]'
-                        });
+                        $body.tooltip({ selector: '[data-toggle="tooltip"]' });
                     }
                 }
             });
         }
 
-        $('body').on('click', '.load-more-tasks', function() {
+        $body.off(namespace);
+
+        $body.on('click' + namespace, '.load-more-tasks', function() {
             var columnId = $(this).data('column-id');
             var totalTasks = $(this).data('total-tasks');
             var currentTotalTasks = $('#drag-container-' + columnId + ' .task-card').length;
             var projectAdmin = "{{ ($project->project_admin == user()->id) ? 1 : 0 }}";
-
             var projectID = "{{ $project->id }}";
-            var startDate = null;
-            var endDate = null;
 
-            var url = "{{ route('taskboards.load_more') }}?startDate=" + encodeURIComponent(
-                    startDate) +
-                '&endDate=' +
-                encodeURIComponent(endDate) + '&projectID=' + projectID + '&columnId=' + columnId +
-                '&currentTotalTasks=' +
-                currentTotalTasks +
-                '&totalTasks=' + totalTasks + '&project_admin=' + projectAdmin;
+            var url = "{{ route('taskboards.load_more') }}?projectID=" + projectID + '&columnId=' + columnId +
+                '&currentTotalTasks=' + currentTotalTasks + '&totalTasks=' + totalTasks + '&project_admin=' + projectAdmin;
 
             $.easyAjax({
                 url: url,
@@ -103,61 +97,30 @@ $addTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->p
                 type: "GET",
                 success: function(response) {
                     $('#drag-container-' + columnId).append(response.view);
-                    if (response.load_more == 'show') {
-                        $('#drag-container-' + columnId).closest('.b-p-body').find(
-                            '.load-more-tasks');
-
-                    } else {
-                        $('#drag-container-' + columnId).closest('.b-p-body').find(
-                                '.load-more-tasks')
-                            .remove();
+                    if (response.load_more != 'show') {
+                        $('#drag-container-' + columnId).closest('.b-p-body').find('.load-more-tasks').remove();
                     }
-
-                    $("body").tooltip({
-                        selector: '[data-toggle="tooltip"]'
-                    });
+                    $body.tooltip({ selector: '[data-toggle="tooltip"]' });
                 }
             });
-
         });
 
-        var elem = document.getElementById("fullscreen");
-
-        function openFullscreen() {
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen();
-                elem.classList.add("full");
-            } else if (elem.mozRequestFullScreen) {
-                /* Firefox */
-                elem.mozRequestFullScreen();
-            } else if (elem.webkitRequestFullscreen) {
-                /* Chrome, Safari & Opera */
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) {
-                /* IE/Edge */
-                elem.msRequestFullscreen();
-            }
-        }
-
-        $('#add-column').click(function() {
+        $body.on('click' + namespace, '#add-column', function() {
             const url = "{{ route('taskboards.create') }}";
             $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('body').on('click', '.edit-column', function() {
+        $body.on('click' + namespace, '.edit-column', function() {
             var id = $(this).data('column-id');
-            var url = "{{ route('taskboards.edit', ':id') }}";
-            url = url.replace(':id', id);
-
+            var url = "{{ route('taskboards.edit', ':id') }}".replace(':id', id);
             $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $('body').on('click', '.delete-column', function() {
+        $body.on('click' + namespace, '.delete-column', function() {
             var id = $(this).data('column-id');
-            var url = "{{ route('taskboards.destroy', ':id') }}";
-            url = url.replace(':id', id);
+            var url = "{{ route('taskboards.destroy', ':id') }}".replace(':id', id);
 
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
@@ -167,36 +130,24 @@ $addTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->p
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.easyAjax({
                         url: url,
                         type: 'POST',
-                        data: {
-                            '_token': '{{ csrf_token() }}',
-                            '_method': 'DELETE'
-                        },
+                        data: { '_token': '{{ csrf_token() }}', '_method': 'DELETE' },
                         success: function(response) {
-                            if (response.status == 'success') {
-                                window.location.reload();
-                            }
+                            if (response.status == 'success') { window.location.reload(); }
                         }
                     });
                 }
             });
-
         });
 
-        $('body').on('click', '.collapse-column', function() {
+        $body.on('click' + namespace, '.collapse-column', function() {
             var boardColumnId = $(this).data('column-id');
             var type = $(this).data('type');
 
@@ -205,28 +156,28 @@ $addTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->p
                 type: 'POST',
                 container: '#taskboard-columns',
                 blockUI: true,
-                data: {
-                    boardColumnId: boardColumnId,
-                    type: type,
-                    '_token': '{{ csrf_token() }}'
-                },
+                data: { boardColumnId: boardColumnId, type: type, '_token': '{{ csrf_token() }}' },
                 success: function(response) {
-                    if (response.status == 'success') {
-                        loadData();
-                    }
+                    if (response.status == 'success') { loadData(); }
                 }
             });
         });
 
-        //pusher
         if ((pusher_setting.status === 1 && pusher_setting.taskboard === 1) || (pusher_setting.status == "1" && pusher_setting.taskboard == "1")) {
-
-            var channel = pusher.subscribe('task-updated-channel');
-            channel.bind('task-updated', function(data) {
-                loadData()
-            });
+            channel = pusher.subscribe('task-updated-channel');
+            channel.bind('task-updated', function() { loadData(); });
         }
 
         loadData();
-    });
+
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            if (channel) {
+                channel.unbind('task-updated');
+                pusher.unsubscribe('task-updated-channel');
+            }
+            $('.tooltip').remove();
+            document.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

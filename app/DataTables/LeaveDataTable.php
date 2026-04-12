@@ -253,7 +253,7 @@ class LeaveDataTable extends BaseDataTable
             ->join('leave_types', 'leave_types.id', 'leaves.leave_type_id')
             ->join('users', 'leaves.user_id', 'users.id')
             ->join('employee_details', 'employee_details.user_id', 'users.id')
-            ->selectRaw('leaves.*, leave_types.color, leave_types.type_name, ( select count("lvs.id") from leaves as lvs where lvs.unique_id = leaves.unique_id and lvs.duration = \'multiple\') as count_multiple_leaves',
+            ->selectRaw('leaves.*, leave_types.color, leave_types.type_name, ( select count(lvs.id) from leaves as lvs where lvs.unique_id = leaves.unique_id and lvs.duration = \'multiple\') as count_multiple_leaves',
             )
             ->groupByRaw('ifnull(leaves.unique_id, leaves.id)');
 

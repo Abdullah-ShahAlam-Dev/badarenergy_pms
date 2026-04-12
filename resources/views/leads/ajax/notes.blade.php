@@ -39,35 +39,87 @@ $addLeadNotePermission = user()->permission('add_lead_note');
 @include('sections.datatable_js')
 
 <script>
-    $('#lead-notes-table').on('preXhr.dt', function(e, settings, data) {
-        var leadID = "{{ $lead->id }}";
-        data['leadID'] = leadID;
-    });
+    (function() {
+        var $body = $('body');
+        var $table = $('#lead-notes-table');
+        var namespace = '.leadsNotes';
 
-    const showTable = () => {
-        window.LaravelDataTables["lead-notes-table"].draw(false);
-    }
+        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
+            var leadID = "{{ $lead->id }}";
+            data['leadID'] = leadID;
+        });
 
-    $('#quick-action-type').change(function() {
-        const actionValue = $(this).val();
-        if (actionValue != '') {
-            $('#quick-action-apply').removeAttr('disabled');
+        function showTable() {
+            if (window.LaravelDataTables && window.LaravelDataTables["lead-notes-table"]) {
+                window.LaravelDataTables["lead-notes-table"].draw(false);
+            }
+        }
+        window.showTable = showTable;
 
-            if (actionValue == 'change-status') {
+        $body.off(namespace);
+
+        $body.on('change' + namespace, '#quick-action-type', function() {
+            var actionValue = $(this).val();
+            if (actionValue != '') {
+                $('#quick-action-apply').removeAttr('disabled');
                 $('.quick-action-field').addClass('d-none');
-                $('#change-status-action').removeClass('d-none');
+                if (actionValue == 'change-status') {
+                    $('#change-status-action').removeClass('d-none');
+                }
             } else {
+                $('#quick-action-apply').attr('disabled', true);
                 $('.quick-action-field').addClass('d-none');
             }
-        } else {
-            $('#quick-action-apply').attr('disabled', true);
-            $('.quick-action-field').addClass('d-none');
-        }
-    });
+        });
 
-    $('#quick-action-apply').click(function() {
-        const actionValue = $('#quick-action-type').val();
-        if (actionValue == 'delete') {
+        var applyQuickAction = function() {
+            var rowdIds = $("#lead-notes-table input:checkbox:checked").map(function() {
+                return $(this).val();
+            }).get();
+
+            var url = "{{ route('lead-notes.apply_quick_action') }}?row_ids=" + rowdIds;
+
+            $.easyAjax({
+                url: url,
+                container: '#quick-action-form',
+                type: "POST",
+                disableButton: true,
+                buttonSelector: "#quick-action-apply",
+                data: $('#quick-action-form').serialize(),
+                success: function(response) {
+                    if (response.status == 'success') {
+                        showTable();
+                        if (typeof resetActionButtons === 'function') resetActionButtons();
+                        if (typeof deSelectAll === 'function') deSelectAll();
+                    }
+                }
+            });
+        };
+
+        $body.on('click.leadsNotes', '#quick-action-apply', function() {
+            var actionValue = $('#quick-action-type').val();
+            if (actionValue == 'delete') {
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.recoverRecord')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) { applyQuickAction(); }
+                });
+            } else {
+                applyQuickAction();
+            }
+        });
+
+        $body.on('click.leadsNotes', '.delete-table-row-lead', function() {
+            var id = $(this).data('id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
                 text: "@lang('messages.recoverRecord')",
@@ -76,136 +128,59 @@ $addLeadNotePermission = user()->permission('add_lead_note');
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    applyQuickAction();
+                    var url = "{{ route('lead-notes.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { showTable(); }
+                        }
+                    });
                 }
             });
+        });
 
-        } else {
-            applyQuickAction();
-        }
-    });
+        $body.on('click.leadsNotes', '.ask-for-password', function() {
+            var leadNoteId = $(this).data('lead-note-id');
+            var url = "{{ route('lead_notes.ask_for_password', ':id') }}".replace(':id', leadNoteId);
+            $.ajaxModal(MODAL_LG, url);
+        });
 
-    $('body').on('click', '.delete-table-row-lead', function() {
-        var id = $(this).data('id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('lead-notes.destroy', ':id') }}";
-                url = url.replace(':id', id);
-                var token = "{{ csrf_token() }}";
+        $body.on('click.leadsNotes', '.get-note-detail', function() {
+            var id = $(this).data('note-id');
+            openTaskDetail();
+            var url = "{{ route('lead-notes.show', ':id') }}".replace(':id', id);
 
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            showTable();
-                        }
+            $.easyAjax({
+                url: url, blockUI: true, container: RIGHT_MODAL, historyPush: true,
+                success: function(response) {
+                    if (response.status == "success") {
+                        $(RIGHT_MODAL_CONTENT).html(response.html);
+                        $(RIGHT_MODAL_TITLE).html(response.title);
                     }
-                });
-            }
+                },
+                error: function(request) {
+                    var msg = "Something Went Wrong";
+                    if (request.status == 403) msg = "403 | Permission Denied";
+                    else if (request.status == 404) msg = "404 | Not Found";
+                    else if (request.status == 500) msg = "500 | Something Went Wrong";
+                    $(RIGHT_MODAL_CONTENT).html('<div class="align-content-between d-flex justify-content-center mt-105 f-21">' + msg + '</div>');
+                }
+            });
         });
-    });
 
-    const applyQuickAction = () => {
-        var rowdIds = $("#lead-notes-table input:checkbox:checked").map(function() {
-            return $(this).val();
-        }).get();
-
-        var url = "{{ route('lead-notes.apply_quick_action') }}?row_ids=" + rowdIds;
-
-        $.easyAjax({
-            url: url,
-            container: '#quick-action-form',
-            type: "POST",
-            disableButton: true,
-            buttonSelector: "#quick-action-apply",
-            data: $('#quick-action-form').serialize(),
-            success: function(response) {
-                if (response.status == 'success') {
-                    showTable();
-                    resetActionButtons();
-                    deSelectAll();
-                }
-            }
-        })
-    };
-
-    $('body').on('click', '.ask-for-password', function() {
-        let leadNoteId = $(this).data('lead-note-id');
-
-        var url = "{{ route('lead_notes.ask_for_password', ':id') }}";
-        url = url.replace(':id', leadNoteId);
-
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    });
-
-    // show note detail in right modal
-    var getNoteDetail = function(id) {
-        openTaskDetail();
-
-        var url = "{{ route('lead-notes.show', ':id') }}";
-        url = url.replace(':id', id);
-
-        $.easyAjax({
-            url: url,
-            blockUI: true,
-            container: RIGHT_MODAL,
-            historyPush: true,
-            success: function(response) {
-                if (response.status == "success") {
-                    $(RIGHT_MODAL_CONTENT).html(response.html);
-                    $(RIGHT_MODAL_TITLE).html(response.title);
-                }
-            },
-            error: function(request, status, error) {
-                if (request.status == 403) {
-                    $(RIGHT_MODAL_CONTENT).html(
-                        '<div class="align-content-between d-flex justify-content-center mt-105 f-21">403 | Permission Denied</div>'
-                    );
-                } else if (request.status == 404) {
-                    $(RIGHT_MODAL_CONTENT).html(
-                        '<div class="align-content-between d-flex justify-content-center mt-105 f-21">404 | Not Found</div>'
-                    );
-                } else if (request.status == 500) {
-                    $(RIGHT_MODAL_CONTENT).html(
-                        '<div class="align-content-between d-flex justify-content-center mt-105 f-21">500 | Something Went Wrong</div>'
-                    );
-                }
-            }
-        });
-    };
-
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

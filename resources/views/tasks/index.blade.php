@@ -2,6 +2,7 @@
 
 @push('datatable-styles')
     @include('sections.datatable_css')
+    <meta name="turbo-cache-control" content="no-cache">
 @endpush
 
 
@@ -412,152 +413,134 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
     @include('sections.datatable_js')
 
     <script>
-        $('#allTasks-table').on('preXhr.dt', function(e, settings, data) {
+        (function() {
+            var $doc = $(document);
+            var namespace = '.tasksIndex';
 
-            var dateRangePicker = $('#datatableRange').data('daterangepicker');
-            var startDate = $('#datatableRange').val();
+            $('#allTasks-table').on('preXhr.dt' + namespace, function(e, settings, data) {
+                var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                var startDate = $('#datatableRange').val();
 
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                if (startDate == '') {
+                    startDate = null;
+                    endDate = null;
+                } else {
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                }
+
+                var projectID = $('#project_id_filter').val();
+                if (!projectID) {
+                    projectID = 0;
+                }
+
+                var clientID = $('#clientID').val();
+                var assignedBY = $('#assignedBY').val();
+                var assignedTo = $('#assignedTo').val();
+                var status = $('#status').val();
+                var label = $('#label').val();
+                var category_id = $('#category_id').val();
+                var billable = $('#billable_task').val();
+                var pinned = $('#pinned').val();
+                var date_filter_on = $('#date_filter_on').val();
+                var searchText = $('#search-text-field').val();
+                var milestone_id = $('#milestone_id').val();
+
+                data['clientID'] = clientID;
+                data['assignedBY'] = assignedBY;
+                data['assignedTo'] = assignedTo;
+                data['status'] = status;
+                data['label'] = label;
+                data['category_id'] = category_id;
+                data['billable'] = billable;
+                data['projectId'] = projectID;
+                data['pinned'] = pinned;
+                data['date_filter_on'] = date_filter_on;
+                data['startDate'] = startDate;
+                data['endDate'] = endDate;
+                data['searchText'] = searchText;
+                data['milestone_id'] = milestone_id;
+            });
+
+            var showTable = function() {
+                var table = window.LaravelDataTables["allTasks-table"];
+                if (table) {
+                    table.draw(true);
+                }
             }
+            window.showTable = showTable;
 
-            var projectID = $('#project_id_filter').val();
-            if (!projectID) {
-                projectID = 0;
-            }
-
-
-            var clientID = $('#clientID').val();
-            var assignedBY = $('#assignedBY').val();
-            var assignedTo = $('#assignedTo').val();
-            var status = $('#status').val();
-            var label = $('#label').val();
-            var category_id = $('#category_id').val();
-            var billable = $('#billable_task').val();
-            var pinned = $('#pinned').val();
-            var date_filter_on = $('#date_filter_on').val();
-            var searchText = $('#search-text-field').val();
-            var milestone_id = $('#milestone_id').val();
-
-            data['clientID'] = clientID;
-            data['assignedBY'] = assignedBY;
-            data['assignedTo'] = assignedTo;
-            data['status'] = status;
-            data['status'] = status;
-            data['label'] = label;
-            data['category_id'] = category_id;
-            data['billable'] = billable;
-            data['projectId'] = projectID;
-            data['pinned'] = pinned;
-            data['date_filter_on'] = date_filter_on;
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['searchText'] = searchText;
-            data['milestone_id'] = milestone_id;
-        });
-        const showTable = () => {
-            window.LaravelDataTables["allTasks-table"].draw(true);
-        }
-
-        $('#milestone_id, #billable_task, #status, #clientID, #category_id, #assignedBY, #assignedTo, #label, #project_id_filter, #pinned, #date_filter_on')
-            .on('change keyup',
-                function() {
-                    if ($('#status').val() != "not finished") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#project_id_filter').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#clientID').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#category_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#assignedBY').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#assignedTo').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#label').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#billable_task').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    }else if ($('#milestone_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#pinned').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    }  else if ($('#date_filter_on').val() != "start_date") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else {
-                        $('#reset-filters').addClass('d-none');
-                        showTable();
-                    }
-                });
-
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
+            $doc.on('click' + namespace, '.show-pinned', function() {
+                $('.task').removeClass('btn-active');
+                if ($(this).hasClass('btn-active')) {
+                    $('#pinned').val('all');
+                } else {
+                    $('#pinned').val('pinned');
+                }
+                $('#pinned').selectpicker('refresh');
+                $(this).toggleClass('btn-active');
                 $('#reset-filters').removeClass('d-none');
                 showTable();
-            }
-        });
+            });
 
-        $('.show-pinned').click(function() {
-            $('.task').removeClass('btn-active');
+            $doc.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
+                $('#filter-form')[0].reset();
+                $('.filter-box #status').val('not finished');
+                $('.filter-box #date_filter_on').val('start_date');
+                $('.filter-box #assignedTo').val('all');
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            });
 
-            if ($(this).hasClass('btn-active')) {
-                $('#pinned').val('all');
-            } else {
-                $('#pinned').val('pinned');
-            }
-
-            $('#pinned').selectpicker('refresh');
-            $(this).toggleClass('btn-active');
-            $('#reset-filters').removeClass('d-none');
-            showTable();
-        });
-
-        $('#reset-filters,#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box #status').val('not finished');
-            $('.filter-box #date_filter_on').val('start_date');
-            $('.filter-box #assignedTo').val('all');
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        $('#quick-action-type').change(function() {
-            const actionValue = $(this).val();
-            if (actionValue != '') {
-                $('#quick-action-apply').removeAttr('disabled');
-
-                if (actionValue == 'change-status') {
-                    $('.quick-action-field').addClass('d-none');
-                    $('#change-status-action').removeClass('d-none');
+            $doc.on('change' + namespace, '#quick-action-type', function() {
+                var actionValue = $(this).val();
+                if (actionValue != '') {
+                    $('#quick-action-apply').removeAttr('disabled');
+                    if (actionValue == 'change-status') {
+                        $('.quick-action-field').addClass('d-none');
+                        $('#change-status-action').removeClass('d-none');
+                    } else {
+                        $('.quick-action-field').addClass('d-none');
+                    }
                 } else {
+                    $('#quick-action-apply').attr('disabled', true);
                     $('.quick-action-field').addClass('d-none');
                 }
-            } else {
-                $('#quick-action-apply').attr('disabled', true);
-                $('.quick-action-field').addClass('d-none');
-            }
-        });
+            });
 
-        $('#quick-action-apply').click(function() {
-            const actionValue = $('#quick-action-type').val();
-            if (actionValue == 'delete') {
+            $doc.on('click' + namespace, '#quick-action-apply', function() {
+                var actionValue = $('#quick-action-type').val();
+                if (actionValue == 'delete') {
+                    Swal.fire({
+                        title: "@lang('messages.sweetAlertTitle')",
+                        text: "@lang('messages.recoverRecord')",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        focusConfirm: false,
+                        confirmButtonText: "@lang('messages.confirmDelete')",
+                        cancelButtonText: "@lang('app.cancel')",
+                        customClass: {
+                            confirmButton: 'btn btn-primary mr-3',
+                            cancelButton: 'btn btn-secondary'
+                        },
+                        showClass: {
+                            popup: 'swal2-noanimation',
+                            backdrop: 'swal2-noanimation'
+                        },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            applyQuickAction();
+                        }
+                    });
+                } else {
+                    applyQuickAction();
+                }
+            });
+
+            $doc.on('click' + namespace, '.delete-table-row', function() {
+                var id = $(this).data('user-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
                     text: "@lang('messages.recoverRecord')",
@@ -577,369 +560,328 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        applyQuickAction();
+                        var url = "{{ route('tasks.destroy', ':id') }}";
+                        url = url.replace(':id', id);
+                        var token = "{{ csrf_token() }}";
+
+                        $.easyAjax({
+                            type: 'POST',
+                            url: url,
+                            data: {
+                                '_token': token,
+                                '_method': 'DELETE'
+                            },
+                            success: function(response) {
+                                if (response.status == "success") {
+                                    showTable();
+                                    if (typeof syncGlobalStats === "function") {
+                                        syncGlobalStats();
+                                    }
+                                }
+                            }
+                        });
                     }
                 });
+            });
 
-            } else {
-                applyQuickAction();
-            }
-        });
+            var applyQuickAction = function() {
+                var rowdIds = $("#allTasks-table input:checkbox:checked").map(function() {
+                    return $(this).val();
+                }).get();
 
-        $('body').on('click', '.delete-table-row', function() {
-            var id = $(this).data('user-id');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.recoverRecord')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmDelete')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('tasks.destroy', ':id') }}";
-                    url = url.replace(':id', id);
+                var url = "{{ route('tasks.apply_quick_action') }}?row_ids=" + rowdIds;
 
-                    var token = "{{ csrf_token() }}";
+                $.easyAjax({
+                    url: url,
+                    container: '#quick-action-form',
+                    type: "POST",
+                    disableButton: true,
+                    buttonSelector: "#quick-action-apply",
+                    data: $('#quick-action-form').serialize(),
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                            $('#quick-action-form').hide();
+                        }
+                    }
+                })
+            };
 
+            $('#allTasks-table').on('change' + namespace, '.change-status', function() {
+                var url = "{{ route('tasks.change_status') }}";
+                var token = "{{ csrf_token() }}";
+                var id = $(this).data('task-id');
+                var status = $(this).val();
+
+                if (id != "" && status != "") {
                     $.easyAjax({
-                        type: 'POST',
                         url: url,
+                        type: "POST",
+                        container: '.content-wrapper',
+                        blockUI: true,
                         data: {
                             '_token': token,
-                            '_method': 'DELETE'
+                            taskId: id,
+                            status: status,
+                            sortBy: 'id'
                         },
                         success: function(response) {
-                            if (response.status == "success") {
-                                showTable();
+                            if ($('#timer-clock').length) {
+                                $('#timer-clock').html(response.clockHtml);
                             }
+                            showTable();
                         }
                     });
                 }
             });
-        });
 
-        const applyQuickAction = () => {
-            var rowdIds = $("#allTasks-table input:checkbox:checked").map(function() {
-                return $(this).val();
-            }).get();
+            $doc.on('click' + namespace, '#filter-my-task', function () {
+                $('.filter-box #assignedTo').val('{{ user()->id }}');
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').removeClass('d-none');
+                showTable();
+            });
 
-            var url = "{{ route('tasks.apply_quick_action') }}?row_ids=" + rowdIds;
+            $('#allTasks-table').on('click' + namespace, '.start-timer', function() {
+                var url = "{{ route('timelogs.start_timer') }}";
+                var user_id = "{{ user()->id }}";
+                var token = "{{ csrf_token() }}";
+                var task_id = $(this).data('task-id');
+                var memo = "{{ __('app.task') }}#" + $(this).data('task-id');
 
-            $.easyAjax({
-                url: url,
-                container: '#quick-action-form',
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#quick-action-apply",
-                data: $('#quick-action-form').serialize(),
-                success: function(response) {
-                    if (response.status == 'success') {
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
-                        $('#quick-action-form').hide();
-                    }
-                }
-            })
-        };
-
-        $('#allTasks-table').on('change', '.change-status', function() {
-            var url = "{{ route('tasks.change_status') }}";
-            var token = "{{ csrf_token() }}";
-            var id = $(this).data('task-id');
-            var status = $(this).val();
-
-            if (id != "" && status != "") {
                 $.easyAjax({
                     url: url,
+                    container: '#allTasks-table',
                     type: "POST",
-                    container: '.content-wrapper',
                     blockUI: true,
                     data: {
+                        task_id: task_id,
+                        memo: memo,
                         '_token': token,
-                        taskId: id,
-                        status: status,
-                        sortBy: 'id'
+                        user_id: user_id
                     },
                     success: function(response) {
-                        $('#timer-clock').html(response.clockHtml);
-                        window.LaravelDataTables["allTasks-table"].draw(false);
-                    }
-                });
-
-            }
-        });
-
-        $('#filter-my-task').click(function () {
-            $('.filter-box #assignedTo').val('{{ user()->id }}');
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').removeClass('d-none');
-            showTable();
-        });
-
-        $('#allTasks-table').on('click', '.start-timer', function() {
-            var url = "{{ route('timelogs.start_timer') }}";
-            var user_id = "{{ user()->id }}";
-            var token = "{{ csrf_token() }}";
-            var task_id = $(this).data('task-id');
-            var memo = "{{ __('app.task') }}#" + $(this).data('task-id');
-
-            $.easyAjax({
-                url: url,
-                container: '#allTasks-table',
-                type: "POST",
-                blockUI: true,
-                data: {
-                    task_id: task_id,
-                    memo: memo,
-                    '_token': token,
-                    user_id: user_id
-                },
-                success: function(response) {
-                    if (response.status == 'success') {
-                        if (response.activeTimerCount > 0) {
-                            $('#show-active-timer .active-timer-count').html(response.activeTimerCount);
-                        } else {
-                            $('#show-active-timer .active-timer-count').addClass('d-none');
-                        }
-
-                        $('#timer-clock').html(response.clockHtml);
-                        if ($('#allTasks-table').length) {
-                            window.LaravelDataTables["allTasks-table"].draw(false);
-                        }
-                    }
-                }
-            })
-        });
-
-        $('#allTasks-table').on('click', '.stop-timer', function() {
-            var id = $(this).data('time-id');
-            var url = "{{ route('timelogs.stop_timer', ':id') }}";
-            url = url.replace(':id', id);
-            var token = '{{ csrf_token() }}';
-            $.easyAjax({
-                url: url,
-                blockUI: true,
-                container: '#allTasks-table',
-                type: "POST",
-                data: {
-                    timeId: id,
-                    _token: token
-                },
-                success: function(response) {
-                    if (response.activeTimerCount > 0) {
-                        $('#show-active-timer .active-timer-count').html(response.activeTimerCount);
-                    } else {
-                        $('#show-active-timer .active-timer-count').addClass('d-none');
-                    }
-
-                    if (response.activeTimer == null) {
-                        $('#timer-clock').html('');
-                        runTimeClock = false;
-                    }
-
-                    if ($('#allTasks-table').length) {
-                        window.LaravelDataTables["allTasks-table"].draw(false);
-                    }
-                }
-            })
-        });
-
-        $('#allTasks-table').on('click', '.resume-timer', function() {
-            var id = $(this).data('time-id');
-            var url = "{{ route('timelogs.resume_timer', ':id') }}";
-            url = url.replace(':id', id);
-            var token = '{{ csrf_token() }}';
-            $.easyAjax({
-                url: url,
-                blockUI: true,
-                type: "POST",
-                data: {
-                    timeId: id,
-                    _token: token
-                },
-                success: function(response) {
-                    if (response.status == 'success') {
-                        if (response.activeTimerCount > 0) {
-                            $('#show-active-timer .active-timer-count').html(response.activeTimerCount);
-                        } else {
-                            $('#show-active-timer .active-timer-count').addClass('d-none');
-                        }
-
-                        $('#timer-clock').html(response.clockHtml);
-                        if ($('#allTasks-table').length) {
-                            window.LaravelDataTables["allTasks-table"].draw(false);
-                        }
-                    }
-                }
-            })
-        });
-
-        $('#allTasks-table').on('click', '.pause-timer', function() {
-            var id = $(this).data('time-id');
-            var url = "{{ route('timelogs.pause_timer', ':id') }}";
-            url = url.replace(':id', id);
-            var token = '{{ csrf_token() }}';
-            $.easyAjax({
-                url: url,
-                blockUI: true,
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#pause-timer-btn",
-                data: {
-                    timeId: id,
-                    _token: token
-                },
-                success: function(response) {
-                    if (response.status == 'success') {
-                        if (response.activeTimerCount > 0) {
-                            $('#show-active-timer .active-timer-count').html(response.activeTimerCount);
-                        } else {
-                            $('#show-active-timer .active-timer-count').addClass('d-none');
-                        }
-
-                        $('#timer-clock').html(response.clockHtml);
-                        runTimeClock = false;
-
-                        if ($('#allTasks-table').length) {
-                            window.LaravelDataTables["allTasks-table"].draw(false);
-                        }
-                    }
-                }
-            })
-        });
-
-
-        // ----------------------------------------------------------------
-        // TASK FORMAT EXPORT
-        // ----------------------------------------------------------------
-        $('#taskFormatExportModal').on('show.bs.modal', function () {
-            $('#export_project_id').selectpicker('refresh');
-        });
-
-        $('#export_project_id').on('change', function () {
-            var pid = $(this).val();
-            if (pid) {
-                var url = '{{ route('task_format_export', ':pid') }}'.replace(':pid', pid);
-                $('#download-task-template-btn').attr('href', url);
-            } else {
-                $('#download-task-template-btn').attr('href', '#');
-            }
-        });
-
-        $('#download-task-template-btn').on('click', function (e) {
-            var pid = $('#export_project_id').val();
-            if (!pid) {
-                e.preventDefault();
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Project Required',
-                    text: 'Please select a project before downloading the template.',
-                    timer: 2500,
-                    showConfirmButton: false
-                });
-                return;
-            }
-            // href is already set — let the browser follow it as a normal download
-            $('#taskFormatExportModal').modal('hide');
-        });
-
-        // ----------------------------------------------------------------
-        // IMPORT CSV
-        // ----------------------------------------------------------------
-        $('#taskCsvImportModal').on('show.bs.modal', function () {
-            $('#import_project_id').selectpicker('refresh');
-            // Reset result area each time the modal opens
-            $('#import-result').addClass('d-none');
-            $('#import-success-msg, #import-error-msg').addClass('d-none').html('');
-            $('#task-csv-import-form')[0].reset();
-            $('.custom-file-label').text('Choose CSV file...');
-            $('#import-csv-submit-btn').prop('disabled', false)
-                .html('<i class="fa fa-upload mr-1"></i> Import Tasks');
-        });
-
-        // Update custom-file label with selected filename
-        $('#import_csv_file').on('change', function () {
-            var fileName = $(this).val().split('\\').pop();
-            $(this).siblings('.custom-file-label').text(fileName || 'Choose CSV file...');
-        });
-
-        $('#task-csv-import-form').on('submit', function (e) {
-            e.preventDefault();
-
-            var pid = $('#import_project_id').val();
-            if (!pid) {
-                Swal.fire({ icon: 'warning', title: 'Project Required',
-                    text: 'Please select a project before importing.', timer: 2500, showConfirmButton: false });
-                return;
-            }
-
-            var fileInput = document.getElementById('import_csv_file');
-            if (!fileInput.files.length) {
-                Swal.fire({ icon: 'warning', title: 'File Required',
-                    text: 'Please choose a CSV file to upload.', timer: 2500, showConfirmButton: false });
-                return;
-            }
-
-            var formData = new FormData(this);
-            var submitBtn = $('#import-csv-submit-btn');
-            submitBtn.prop('disabled', true)
-                .html('<i class="fa fa-spinner fa-spin mr-1"></i> Importing...');
-
-            $('#import-result').addClass('d-none');
-            $('#import-success-msg, #import-error-msg').addClass('d-none').html('');
-
-            $.ajax({
-                url: '{{ route('task_format_import') }}',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function (response) {
-                    submitBtn.prop('disabled', false)
-                        .html('<i class="fa fa-upload mr-1"></i> Import Tasks');
-                    $('#import-result').removeClass('d-none');
-
-                    if (response.status === 'success') {
-                        var msg = '<strong>' + response.successCount + ' task(s) imported successfully into the project!</strong>';
-                        $('#import-success-msg').removeClass('d-none').html(msg);
-
-                        if (response.errorRows && response.errorRows.length > 0) {
-                            var errHtml = '<strong>Some rows were skipped:</strong><ul class="mb-0 mt-1">';
-                            $.each(response.errorRows, function (i, err) {
-                                errHtml += '<li class="f-13">' + err + '</li>';
-                            });
-                            errHtml += '</ul>';
-                            $('#import-error-msg').removeClass('d-none').html(errHtml);
-                        }
-
-                        // Refresh the tasks DataTable so imported tasks appear immediately
-                        if (typeof showTable === 'function') {
+                        if (response.status == 'success') {
+                            if (response.activeTimerCount > 0) {
+                                $('#show-active-timer .active-timer-count').html(response.activeTimerCount).removeClass('d-none');
+                            } else {
+                                $('#show-active-timer .active-timer-count').addClass('d-none');
+                            }
+                            if ($('#timer-clock').length) {
+                                $('#timer-clock').html(response.clockHtml);
+                            }
                             showTable();
                         }
                     }
-                },
-                error: function (xhr) {
-                    submitBtn.prop('disabled', false)
-                        .html('<i class="fa fa-upload mr-1"></i> Import Tasks');
-                    var msg = (xhr.responseJSON && xhr.responseJSON.message)
-                        ? xhr.responseJSON.message
-                        : 'Import failed. Please check your CSV file and try again.';
-                    Swal.fire({ icon: 'error', title: 'Import Failed', text: msg });
+                })
+            });
+
+            $('#allTasks-table').on('click' + namespace, '.stop-timer', function() {
+                var id = $(this).data('time-id');
+                var url = "{{ route('timelogs.stop_timer', ':id') }}";
+                url = url.replace(':id', id);
+                var token = '{{ csrf_token() }}';
+                $.easyAjax({
+                    url: url,
+                    blockUI: true,
+                    container: '#allTasks-table',
+                    type: "POST",
+                    data: {
+                        timeId: id,
+                        _token: token
+                    },
+                    success: function(response) {
+                        if (response.activeTimerCount > 0) {
+                            $('#show-active-timer .active-timer-count').html(response.activeTimerCount).removeClass('d-none');
+                        } else {
+                            $('#show-active-timer .active-timer-count').addClass('d-none');
+                        }
+                        if (response.activeTimer == null) {
+                            if ($('#timer-clock').length) {
+                                $('#timer-clock').html('');
+                            }
+                            if (typeof runTimeClock !== 'undefined') runTimeClock = false;
+                        }
+                        showTable();
+                    }
+                })
+            });
+
+            $('#allTasks-table').on('click' + namespace, '.resume-timer', function() {
+                var id = $(this).data('time-id');
+                var url = "{{ route('timelogs.resume_timer', ':id') }}";
+                url = url.replace(':id', id);
+                var token = '{{ csrf_token() }}';
+                $.easyAjax({
+                    url: url,
+                    blockUI: true,
+                    type: "POST",
+                    data: {
+                        timeId: id,
+                        _token: token
+                    },
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            if (response.activeTimerCount > 0) {
+                                $('#show-active-timer .active-timer-count').html(response.activeTimerCount).removeClass('d-none');
+                            } else {
+                                $('#show-active-timer .active-timer-count').addClass('d-none');
+                            }
+                            if ($('#timer-clock').length) {
+                                $('#timer-clock').html(response.clockHtml);
+                            }
+                            showTable();
+                        }
+                    }
+                })
+            });
+
+            $('#allTasks-table').on('click' + namespace, '.pause-timer', function() {
+                var id = $(this).data('time-id');
+                var url = "{{ route('timelogs.pause_timer', ':id') }}";
+                url = url.replace(':id', id);
+                var token = '{{ csrf_token() }}';
+                $.easyAjax({
+                    url: url,
+                    blockUI: true,
+                    type: "POST",
+                    disableButton: true,
+                    buttonSelector: "#pause-timer-btn",
+                    data: {
+                        timeId: id,
+                        _token: token
+                    },
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            if (response.activeTimerCount > 0) {
+                                $('#show-active-timer .active-timer-count').html(response.activeTimerCount).removeClass('d-none');
+                            } else {
+                                $('#show-active-timer .active-timer-count').addClass('d-none');
+                            }
+                            if ($('#timer-clock').length) {
+                                $('#timer-clock').html(response.clockHtml);
+                            }
+                            if (typeof runTimeClock !== 'undefined') runTimeClock = false;
+                            showTable();
+                        }
+                    }
+                })
+            });
+
+            // Export Modal Logic
+            $body.on('show.bs.modal' + namespace, '#taskFormatExportModal', function () {
+                $('#export_project_id').selectpicker('refresh');
+            });
+
+            $body.on('change' + namespace, '#export_project_id', function () {
+                var pid = $(this).val();
+                if (pid) {
+                    var url = '{{ route('task_format_export', ':pid') }}'.replace(':pid', pid);
+                    $('#download-task-template-btn').attr('href', url);
+                } else {
+                    $('#download-task-template-btn').attr('href', '#');
                 }
             });
-        });
 
+            $body.on('click' + namespace, '#download-task-template-btn', function (e) {
+                var pid = $('#export_project_id').val();
+                if (!pid) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Project Required',
+                        text: 'Please select a project before downloading the template.',
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+                    return;
+                }
+                $('#taskFormatExportModal').modal('hide');
+            });
+
+            // Import Modal Logic
+            $body.on('show.bs.modal' + namespace, '#taskCsvImportModal', function () {
+                $('#import_project_id').selectpicker('refresh');
+                $('#import-result').addClass('d-none');
+                $('#import-success-msg, #import-error-msg').addClass('d-none').html('');
+                $('#task-csv-import-form')[0].reset();
+                $('.custom-file-label').text('Choose CSV file...');
+                $('#import-csv-submit-btn').prop('disabled', false)
+                    .html('<i class="fa fa-upload mr-1"></i> Import Tasks');
+            });
+
+            $body.on('change' + namespace, '#import_csv_file', function () {
+                var fileName = $(this).val().split('\\').pop();
+                $(this).siblings('.custom-file-label').text(fileName || 'Choose CSV file...');
+            });
+
+            $body.on('submit' + namespace, '#task-csv-import-form', function (e) {
+                e.preventDefault();
+                var pid = $('#import_project_id').val();
+                if (!pid) {
+                    Swal.fire({ icon: 'warning', title: 'Project Required',
+                        text: 'Please select a project before importing.', timer: 2500, showConfirmButton: false });
+                    return;
+                }
+
+                var fileInput = document.getElementById('import_csv_file');
+                if (!fileInput.files.length) {
+                    Swal.fire({ icon: 'warning', title: 'File Required',
+                        text: 'Please choose a CSV file to upload.', timer: 2500, showConfirmButton: false });
+                    return;
+                }
+
+                var formData = new FormData(this);
+                var submitBtn = $('#import-csv-submit-btn');
+                submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Importing...');
+
+                $('#import-result').addClass('d-none');
+                $('#import-success-msg, #import-error-msg').addClass('d-none').html('');
+
+                $.ajax({
+                    url: '{{ route('task_format_import') }}',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (response) {
+                        submitBtn.prop('disabled', false).html('<i class="fa fa-upload mr-1"></i> Import Tasks');
+                        $('#import-result').removeClass('d-none');
+                        if (response.status === 'success') {
+                            var msg = '<strong>' + response.successCount + ' task(s) imported successfully!</strong>';
+                            $('#import-success-msg').removeClass('d-none').html(msg);
+                            if (response.errorRows && response.errorRows.length > 0) {
+                                var errHtml = '<strong>Some rows were skipped:</strong><ul class="mb-0 mt-1">';
+                                $.each(response.errorRows, function (i, err) {
+                                    errHtml += '<li class="f-13">' + err + '</li>';
+                                });
+                                errHtml += '</ul>';
+                                $('#import-error-msg').removeClass('d-none').html(errHtml);
+                            }
+                            showTable();
+                        }
+                    },
+                    error: function (xhr) {
+                        submitBtn.prop('disabled', false).html('<i class="fa fa-upload mr-1"></i> Import Tasks');
+                        var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Import failed.';
+                        Swal.fire({ icon: 'error', title: 'Import Failed', text: msg });
+                    }
+                });
+            });
+
+            // Turbo Lifecycle Cleanup
+            document.addEventListener('turbo:before-cache', function cleanup() {
+                $doc.off(namespace);
+                $('#allTasks-table').off(namespace);
+                if (window.LaravelDataTables && window.LaravelDataTables["allTasks-table"]) {
+                    window.LaravelDataTables["allTasks-table"].destroy();
+                }
+                window.showTable = undefined;
+                window.applyQuickAction = undefined;
+                document.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
     </script>
 @endpush

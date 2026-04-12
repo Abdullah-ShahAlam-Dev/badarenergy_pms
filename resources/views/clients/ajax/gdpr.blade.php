@@ -40,22 +40,36 @@
 @include('sections.datatable_js')
 
 <script>
-    $('#client-gdpr-table').on('preXhr.dt', function(e, settings, data) {
-        var clientID = "{{ $client->id }}";
+    (function() {
+        var $body = $('body');
+        var namespace = '.clientsGdpr';
+        var $table = $('#client-gdpr-table');
 
-        data['clientID'] = clientID;
-    });
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
+            var clientID = "{{ $client->id }}";
+            data['clientID'] = clientID;
+        });
 
-    const showTable = () => {
-        window.LaravelDataTables["client-gdpr-table"].draw(false);
-    }
+        var showTable = function() {
+            if (window.LaravelDataTables["client-gdpr-table"]) {
+                window.LaravelDataTables["client-gdpr-table"].draw(false);
+            }
+        };
 
-    $(document).on('click', '.consent-details', function() {
-        let consentId = $(this).data('consent-id');
-        let clientId = "{{ $client->id }}";
-        let url = `{{ route('clients.gdpr_consent') }}?consentId=${consentId}&clientId=${clientId}`;
+        $body.off('.clientsGdpr');
 
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    })
+        $body.on('click.clientsGdpr', '.consent-details', function() {
+            var consentId = $(this).data('consent-id');
+            var clientId = "{{ $client->id }}";
+            var url = "{{ route('clients.gdpr_consent') }}?consentId=" + consentId + "&clientId=" + clientId;
+
+            $.ajaxModal(MODAL_LG, url);
+        });
+
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

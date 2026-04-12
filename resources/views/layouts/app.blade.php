@@ -98,6 +98,8 @@
         }
     </style>
 
+    {{-- Disable Turbo Caching globally to prevent zombie JS objects --}}
+    <meta name="turbo-cache-control" content="no-cache">
     <script src="https://unpkg.com/@hotwired/turbo@8.0.4/dist/turbo.es2017-umd.js"></script>
 
     <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
@@ -113,7 +115,7 @@
 
 
     <script>
-        const checkMiniSidebar = localStorage.getItem("mini-sidebar");
+        var checkMiniSidebar = localStorage.getItem("mini-sidebar");
     </script>
 
 </head>
@@ -170,13 +172,13 @@
     var RIGHT_MODAL = '#task-detail-1';
     var RIGHT_MODAL_CONTENT = '#right-modal-content';
     var RIGHT_MODAL_TITLE = '#right-modal-title';
-    const company = @json(companyOrGlobalSetting());
-    const pusher_setting = @json(pusher_settings());
-    const message_setting = @json(message_setting());
-    const SEARCH_KEYWORD = "{{ request('search_keyword') }}";
-    const MOMENTJS_TIME_FORMAT = "{{ (companyOrGlobalSetting()->time_format == 'h:i A') ? 'hh:mm A' : ( (companyOrGlobalSetting()->time_format == 'h:i a') ? 'hh:mm a' : 'H:mm') }}";
+    var company = @json(companyOrGlobalSetting());
+    var pusher_setting = @json(pusher_settings());
+    var message_setting = @json(message_setting());
+    var SEARCH_KEYWORD = "{{ request('search_keyword') }}";
+    var MOMENTJS_TIME_FORMAT = "{{ (companyOrGlobalSetting()->time_format == 'h:i A') ? 'hh:mm A' : ( (companyOrGlobalSetting()->time_format == 'h:i a') ? 'hh:mm a' : 'H:mm') }}";
 
-    const datepickerConfig = {
+    var datepickerConfig = {
         formatter: (input, date, instance) => {
             input.value = moment(date).format('{{ companyOrGlobalSetting()->moment_date_format }}')
         },
@@ -189,7 +191,7 @@
         startDay: parseInt("{{ attendance_setting()?->week_start_from }}")
     };
 
-    const daterangeConfig = {
+    var daterangeConfig = {
         "@lang('app.today')": [moment(), moment()],
         "@lang('app.last30Days')": [moment().subtract(29, 'days'), moment()],
         "@lang('app.thisMonth')": [moment().startOf('month'), moment().endOf('month')],
@@ -199,7 +201,7 @@
         "@lang('app.last1Year')": [moment().subtract(1, 'years'), moment()]
     };
 
-    const daterangeLocale = {
+    var daterangeLocale = {
         "format": "{{ companyOrGlobalSetting()->moment_date_format }}",
         "customRangeLabel": "@lang('app.customRange')",
         "separator": " @lang('app.to') ",
@@ -210,16 +212,16 @@
         "firstDay": parseInt("{{ attendance_setting()?->week_start_from }}")
     };
 
-    const dropifyMessages = {
+    var dropifyMessages = {
         default: "@lang('app.dragDrop')",
         replace: "@lang('app.dragDropReplace')",
         remove: "@lang('app.remove')",
         error: "@lang('messages.errorOccured')",
     };
 
-    const DROPZONE_FILE_ALLOW = "{{ global_setting()->allowed_file_types }}";
-    const DROPZONE_MAX_FILESIZE = "{{ global_setting()->allowed_file_size }}";
-    const DROPZONE_MAX_FILES = "{{ global_setting()->allow_max_no_of_files }}";
+    var DROPZONE_FILE_ALLOW = "{{ global_setting()->allowed_file_types }}";
+    var DROPZONE_MAX_FILESIZE = "{{ global_setting()->allowed_file_size }}";
+    var DROPZONE_MAX_FILES = "{{ global_setting()->allow_max_no_of_files }}";
 
     Dropzone.prototype.defaultOptions.dictFallbackMessage = "{{ __('modules.projectTemplate.dropFallbackMessage') }}";
     Dropzone.prototype.defaultOptions.dictFallbackText = "{{ __('modules.projectTemplate.dropFallbackText') }}";
@@ -296,18 +298,62 @@
             $('.main-sidebar .nav-item').removeClass('hover');
             $('.main-sidebar .accordionItemHeading').removeClass('hover');
 
+            // -------------------------------------------------------
+            // TURBO SIDEBAR ACTIVE STATE SYNC
+            // The sidebar is data-turbo-permanent so Laravel's server-
+            // rendered `active` class is never refreshed by Turbo.
+            // On every navigation we recompute it from the current URL.
+            // -------------------------------------------------------
+            (function syncSidebarActive() {
+                var currentPath = window.location.pathname;
+
+                // 1. Reset all active states
+                $('.main-sidebar .accordionItemHeading').removeClass('active');
+                $('.main-sidebar .accordionItemContent a').removeClass('active');
+                $('.main-sidebar .accordionItem').removeClass('open');
+                // Also reset direct nav-item links (non-accordion)
+                $('.main-sidebar a.nav-item').removeClass('active');
+
+                // 2. Mark matching direct links (single-item menu entries)
+                $('.main-sidebar a.nav-item[href]').each(function() {
+                    var linkPath = this.pathname; // browser parses full href automatically
+                    if (currentPath === linkPath || currentPath.startsWith(linkPath + '/')) {
+                        $(this).addClass('active');
+                    }
+                });
+
+                // 3. Mark matching sub-menu links and open their parent accordion
+                $('.main-sidebar .accordionItemContent a[href]').each(function() {
+                    var linkPath = this.pathname;
+                    if (currentPath === linkPath || currentPath.startsWith(linkPath + '/')) {
+                        $(this).addClass('active');
+                        // Open the parent accordion and mark heading active
+                        var $accordionItem = $(this).closest('.accordionItem');
+                        $accordionItem.addClass('open');
+                        $accordionItem.find('> .accordionItemHeading').addClass('active');
+                    }
+                });
+            })();
+
             // Robust closing of all mobile overlays
             const closeOverlays = () => {
                 $("#mobile_menu_collapse, #mobile_close_panel").removeClass("toggled");
                 $("#mob-admin-dash, #close-admin-overlay, #mob-settings-sidebar, #close-settings-overlay, #ticket-detail-contact, #close-tickets-overlay, #mob-client-detail, #close-client-overlay, #hide-project-menues, #mob-project-menu, #close-project-overlay, #more_filter").removeClass("in toggled");
                 
-                if (typeof closeMobileMenu === 'function') closeMobileMenu();
-                if (typeof closeMoreFilter === 'function') closeMoreFilter();
-                if (typeof closeAdminDashboard === 'function') closeAdminDashboard();
-                if (typeof closeSettingsSidebar === 'function') closeSettingsSidebar();
-                if (typeof closeTicketsSidebar === 'function') closeTicketsSidebar();
-                if (typeof closeClientDetail === 'function') closeClientDetail();
-                if (typeof closeProjectSidebar === 'function') closeProjectSidebar();
+                // Safety wrapper for global close functions
+                const callIfExists = (fnName) => {
+                    if (typeof window[fnName] === 'function') {
+                        try { window[fnName](); } catch (e) { console.warn("Overlay catch:", fnName, e); }
+                    }
+                };
+
+                callIfExists('closeMobileMenu');
+                callIfExists('closeMoreFilter');
+                callIfExists('closeAdminDashboard');
+                callIfExists('closeSettingsSidebar');
+                callIfExists('closeTicketsSidebar');
+                callIfExists('closeClientDetail');
+                callIfExists('closeProjectSidebar');
             };
 
             closeOverlays();
@@ -319,6 +365,21 @@
                 }
             }
         });
+
+        /* --- GLOBAL FILTER OVERRIDES (Fills gaps in main.js) --- */
+        window.openMoreFilter = function() {
+            var $filter = $("#more_filter");
+            if ($filter.length > 0) {
+                $filter.addClass("in");
+            }
+        };
+
+        window.closeMoreFilter = function() {
+            var $filter = $("#more_filter");
+            if ($filter.length > 0) {
+                $filter.removeClass("in");
+            }
+        };
 
         document.addEventListener("turbo:visit", function() {
             $(".preloader-container").addClass("d-flex").show();
@@ -332,17 +393,99 @@
             // This prevents the menu from appearing "open" when navigating back/forward
             $("#mobile_menu_collapse, #mobile_close_panel").removeClass("toggled");
             $("#mob-admin-dash, #close-admin-overlay, #mob-settings-sidebar, #close-settings-overlay, #ticket-detail-contact, #close-tickets-overlay, #mob-client-detail, #close-client-overlay, #hide-project-menues, #mob-project-menu, #close-project-overlay, #more_filter").removeClass("in toggled");
+
+            // DESTROY Select2 & Selectpicker to prevent double DOM wrapping
+            if ($.fn.selectpicker) {
+                $('.selectpicker').selectpicker('destroy');
+            }
+            if ($.fn.select2) {
+                $('.select2, .f-select2').select2('destroy');
+            }
+
+            // DESTROY DataTables memory leaks and DOM corruption
+            if ($.fn.dataTable) {
+                $('.dataTable').DataTable().destroy();
+                // CRITICAL: Clear the global DataTables registry to prevent "Processing" hangs on the next page
+                window.LaravelDataTables = {}; 
+            }
+
+            // DESTROY Dropzone instances
+            if (typeof Dropzone !== 'undefined' && Dropzone.instances && Dropzone.instances.length > 0) {
+                Dropzone.instances.forEach(function(dz) {
+                    dz.destroy();
+                });
+            }
+
+            // DESTROY Quill editors & reset global array tracker
+            if (typeof window.quillArray === 'object') {
+                $.each(window.quillArray, function(id, instance) {
+                    if (typeof destory_editor === 'function') {
+                        destory_editor(id);
+                    }
+                });
+                window.quillArray = {}; 
+            }
+
+            // FORCE RESET BODY CLASSES (Crucial for Back navigation responsiveness)
+            // Bootstrap often leaves these stuck if we navigate during a modal transition
+            $('body').removeClass('modal-open sidebar-toggled').css('padding-right', '');
+            $('.modal').removeClass('show').hide(); // Force hide any lingering modals
+
+            // DESTROY Tooltips & Popovers to prevent orphaned ghosts on the next page
+            if ($.fn.tooltip) {
+                $('[data-toggle="tooltip"]').tooltip('dispose');
+            }
+            if ($.fn.popover) {
+                $('[data-toggle="popover"]').popover('dispose');
+            }
+
+            // Force hide any persistent preloader
+            $(".preloader-container").removeClass("d-flex").hide();
+
+            // Force detach any ghost DOM elements attached globally
+            $('.daterangepicker, .modal-backdrop, .dz-hidden-input, .select2-container').remove();
+        });
+
+        // Hide preloader when the new page is ready
+        document.addEventListener("turbo:load", function() {
+            $(".preloader-container").removeClass("d-flex").hide();
         });
 
         window.turboListenersAttached = true;
     }
 
     // Force close mobile menu immediately when any link inside it is clicked
-    $(document).on('click', '.sidebar-menu a', function() {
+    $('body').on('click', '.sidebar-menu a', function() {
         if (typeof closeMobileMenu === 'function') {
             closeMobileMenu();
         }
     });
+
+    /* --- UNIVERSAL GLOBAL FILTER BUS --- */
+    // Handles filter changes for ALL modules. Lives on document, immune to Turbo body swaps.
+    // 'changed.bs.select' is the Bootstrap-Select (selectpicker) event — MUST be here or dropdowns are silent.
+    $(document).on('change keyup changed.bs.select',
+        '.filter-box select, #more_filter select, .filter-box input[type="text"], .filter-box input[type="number"], #search-text-field',
+        function() {
+            var $resetBtn = $('#reset-filters');
+            if ($resetBtn.length > 0) {
+                var isDirty = false;
+                $('.filter-box select, #more_filter select').each(function() {
+                    var val = $(this).val();
+                    if (val && val !== 'all' && val !== 'not finished' && val !== 'deadline' && val !== 'start_date' && val !== 'created_at') {
+                        isDirty = true;
+                    }
+                });
+                if ($('#search-text-field').val() !== '') isDirty = true;
+                if (isDirty) $resetBtn.removeClass('d-none');
+            }
+
+            // Trigger the table refresh if the module has a showTable function
+            if (typeof window.showTable === 'function') {
+                window.showTable();
+            }
+        }
+    );
 
     $('body').on('click', '.view-notification', function (event) {
         event.preventDefault();
@@ -382,6 +525,41 @@
         })
     }
 
+    /* --- GLOBAL UI SYNCHRONIZATION HELPER --- */
+    window.syncGlobalStats = function(data) {
+        if (!data) return;
+
+        // Sync Notification Count
+        if (typeof data.unreadNotificationCount !== 'undefined') {
+            const $badge = $('.unread-notifications-count');
+            if (data.unreadNotificationCount > 0) {
+                if ($badge.length > 0) {
+                    $badge.html(data.unreadNotificationCount).removeClass('d-none');
+                } else {
+                    // If badge doesn't exist, we might need to inject it into the bell icon
+                    $('.show-user-notifications').append('<span class="badge badge-primary unread-notifications-count active-timer-count position-absolute">' + data.unreadNotificationCount + '</span>');
+                }
+            } else {
+                $badge.addClass('d-none').remove();
+            }
+        }
+
+        // Sync Global Timer Clock
+        if (typeof data.clockHtml !== 'undefined' && data.clockHtml !== '') {
+            $('#timer-clock').html(data.clockHtml);
+        }
+
+        // Sync Active Timer Count (Badge on the timer icon)
+        if (typeof data.activeTimerCount !== 'undefined') {
+            const $timerBadge = $('#show-active-timer .active-timer-count');
+            if (data.activeTimerCount > 0) {
+                $timerBadge.html(data.activeTimerCount).removeClass('d-none');
+            } else {
+                $timerBadge.addClass('d-none');
+            }
+        }
+    };
+
     if (SEARCH_KEYWORD !== '' && $('#search-text-field').length > 0) {
         $('#search-text-field').val(SEARCH_KEYWORD);
         $('#reset-filters').removeClass('d-none');
@@ -392,10 +570,96 @@
         $(this).siblings('span').toggleClass('blur-code ');
     });
 
+    /* --- GLOBAL TOPBAR & SIDEBAR DELEGATED LISTENERS --- */
+    $('body').on('click', '#show-active-timer', function () {
+        const url = "{{ route('timelogs.show_active_timer') }}";
+        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+        $.ajaxModal(MODAL_XL, url);
+    });
+
+    $('body').on('click', '#start-timer-modal', function () {
+        const url = "{{ route('timelogs.show_timer') }}";
+        $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+        $.ajaxModal(MODAL_XL, url);
+    });
+
+    $('body').on('click', '.open-search', function () {
+        const url = "{{ route('search.index') }}";
+        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+        $.ajaxModal(MODAL_LG, url);
+    });
+
+    $('body').on('click', '.show-user-notifications', function () {
+        const openStatus = $(this).attr('aria-expanded');
+        if (typeof openStatus == "undefined" || openStatus == "false") {
+            const token = '{{ csrf_token() }}';
+            $.easyAjax({
+                type: 'POST',
+                url: "{{ route('show_notifications') }}",
+                container: "#notification-list",
+                blockUI: true,
+                data: { '_token': token },
+                success: function (data) {
+                    if (data.status === 'success') {
+                        $('#notification-list').html(data.html);
+                    }
+                }
+            });
+        }
+    });
+
+    $('body').on('click', '.mark-notification-read', function () {
+        const token = '{{ csrf_token() }}';
+        $.easyAjax({
+            type: 'POST',
+            url: "{{ route('mark_notification_read') }}",
+            blockUI: true,
+            data: { '_token': token },
+            success: function (data) {
+                if (data.status === 'success') {
+                    $('#notification-list').html('');
+                    $('.unread-notifications-count').remove();
+                    // Turbo-friendly refresh
+                    if (window.Turbo) {
+                        Turbo.visit(window.location.href, { action: "replace" });
+                    } else {
+                        window.location.reload();
+                    }
+                }
+            }
+        });
+    });
+
+    $('body').on('click', '.invite-member', function() {
+        const url = "{{ route('employees.invite_member') }}";
+        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+        $.ajaxModal(MODAL_LG, url);
+    });
+
+    $('body').on('change', '#dark-theme-toggle', function() {
+        const darkTheme = ($(this).is(':checked')) ? '1' : '0';
+        $.easyAjax({
+            type: 'POST',
+            url: "{{ route('profile.dark_theme') }}",
+            blockUI: true,
+            data: { '_token': '{{ csrf_token() }}', 'darkTheme': darkTheme },
+            success: function(response) {
+                if (response.status === 'success') {
+                    if (window.Turbo) {
+                        Turbo.visit(window.location.href, { action: "replace" });
+                    } else {
+                        window.location.reload();
+                    }
+                }
+            }
+        });
+    });
+
 </script>
 
 <script>
-    let quillArray = {};
+    window.quillArray = window.quillArray || {};
+    var quillArray = window.quillArray;
 
     function quillImageLoad(ID) {
         const quillContainer = document.querySelector(ID);

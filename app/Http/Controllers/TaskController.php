@@ -155,7 +155,11 @@ class TaskController extends AccountBaseController
 
         $clockHtml = view('sections.timer_clock', $this->data)->render();
 
-        return Reply::successWithData(__('messages.updateSuccess'), ['clockHtml' => $clockHtml]);
+        $unreadCount = (isset($this->unreadNotificationCount) ? $this->unreadNotificationCount : (isset(user()->unreadNotifications) ? count(user()->unreadNotifications) : 0));
+        return Reply::successWithData(__('messages.updateSuccess'), [
+            'clockHtml' => $clockHtml,
+            'unreadNotificationCount' => $unreadCount
+        ]);
 
     }
 

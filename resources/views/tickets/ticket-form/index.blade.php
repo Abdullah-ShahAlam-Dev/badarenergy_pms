@@ -96,55 +96,70 @@
     <script src="{{ asset('vendor/jquery/highlight.min.js') }}"></script>
 
     <script>
-        $(function() {
-            $("#sortable").sortable({
-                update: function(event, ui) {
-                    var sortedValues = new Array();
-                    $('input[name="sort_order[]"]').each(function(index, value) {
-                        sortedValues[index] = $(this).val();
-                    });
-                    $.easyAjax({
-                        url: "{{ route('ticket-form.sort_fields') }}",
-                        type: "POST",
-                        blockUI: true,
-                        data: {
-                            'sortedValues': sortedValues,
-                            '_token': '{{ csrf_token() }}'
-                        },
-                        success: function(response) {
-                            var iframe = document.getElementById('previewIframe');
-                            iframe.src = iframe.src;
-                        }
-                    })
-                }
+        (function() {
+            var $body = $('body');
+            var $sortable = $("#sortable");
+
+            if ($sortable.length > 0 && typeof $sortable.sortable === 'function') {
+                $sortable.sortable({
+                    update: function(event, ui) {
+                        var sortedValues = new Array();
+                        $('input[name="sort_order[]"]').each(function(index, value) {
+                            sortedValues[index] = $(this).val();
+                        });
+                        $.easyAjax({
+                            url: "{{ route('ticket-form.sort_fields') }}",
+                            type: "POST",
+                            blockUI: true,
+                            data: {
+                                'sortedValues': sortedValues,
+                                '_token': '{{ csrf_token() }}'
+                            },
+                            success: function(response) {
+                                var iframe = document.getElementById('previewIframe');
+                                if (iframe) iframe.src = iframe.src;
+                            }
+                        })
+                    }
+                });
+            }
+
+            $body.off('.ticketsForm');
+
+            $body.on('change.ticketsForm', '.change-setting', function() {
+                var id = $(this).data('setting-id');
+                var sendEmail = $(this).is(':checked') ? 'active' : 'inactive';
+
+                var url = "{{ route('ticket-form.update', ':id') }}".replace(':id', id);
+                $.easyAjax({
+                    url: url,
+                    type: "POST",
+                    blockUI: true,
+                    data: {
+                        'id': id,
+                        'status': sendEmail,
+                        '_method': 'PUT',
+                        '_token': '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        var iframe = document.getElementById('previewIframe');
+                        if (iframe) iframe.src = iframe.src;
+                    }
+                })
             });
-        });
 
-        $('.change-setting').change(function() {
-            var id = $(this).data('setting-id');
-            var sendEmail = $(this).is(':checked') ? 'active' : 'inactive';
-
-            var url = "{{ route('ticket-form.update', ':id') }}";
-            url = url.replace(':id', id);
-            $.easyAjax({
-                url: url,
-                type: "POST",
-                blockUI: true,
-                data: {
-                    'id': id,
-                    'status': sendEmail,
-                    '_method': 'PUT',
-                    '_token': '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    var iframe = document.getElementById('previewIframe');
-                    iframe.src = iframe.src;
+            window.resizeIframe = function(obj) {
+                if (obj && obj.contentWindow && obj.contentWindow.document.documentElement) {
+                    obj.style.height = obj.contentWindow.document.documentElement.scrollHeight + 50 + 'px';
                 }
-            })
-        });
+            };
 
-        function resizeIframe(obj) {
-            obj.style.height = obj.contentWindow.document.documentElement.scrollHeight + 50 + 'px';
-        }
+            document.addEventListener("turbo:before-cache", function() {
+                $body.off('.ticketsForm');
+                if ($sortable.data('ui-sortable')) {
+                    $sortable.sortable('destroy');
+                }
+            }, { once: true });
+        })();
     </script>
 @endpush

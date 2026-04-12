@@ -9,11 +9,16 @@ $viewProjectMemberPermission = user()->permission('view_project_members');
 $viewProjectMilestonePermission = ($project->project_admin == user()->id) ? 'all' : user()->permission('view_project_milestones');
 $viewTasksPermission = ($project->project_admin == user()->id) ? 'all' : user()->permission('view_project_tasks');
 $viewGanttPermission = ($project->project_admin == user()->id) ? 'all' : user()->permission('view_project_gantt_chart');
-$viewInvoicePermission = user()->permission('view_project_invoices');
+$viewInvoicePermission = user()->permission('view_invoices');
 $viewDiscussionPermission = user()->permission('view_project_discussions');
 $viewNotePermission = user()->permission('view_project_note');
 $viewFilesPermission = user()->permission('view_project_files');
 $viewRatingPermission = user()->permission('view_project_rating');
+$viewProjectTimelogPermission = user()->permission('view_timelogs');
+$viewExpensePermission = user()->permission('view_expenses');
+$viewMiroboardPermission = user()->permission('view_miroboard');
+$viewPaymentPermission = user()->permission('view_payments');
+$viewBurndownChartPermission = user()->permission('view_burndown_chart');
 $projectArchived = $project->trashed();
 @endphp
 
@@ -165,118 +170,122 @@ $projectArchived = $project->trashed();
 @push('scripts')
 
     <script>
-        $("body").on("click", ".project-menu .ajax-tab", function(event) {
-            event.preventDefault();
+        (function() {
+            var $body = $('body');
+            var namespace = '.projectShow';
 
-            $('.project-menu .p-sub-menu').removeClass('active');
-            $(this).addClass('active');
+            // Cleanup previous listeners if any
+            $body.off(namespace);
+            $(document).off(namespace);
 
+            // AJAX Tab Loading
+            $body.on('click' + namespace, '.project-menu .ajax-tab', function(event) {
+                event.preventDefault();
+                $('.project-menu .p-sub-menu').removeClass('active');
+                $(this).addClass('active');
 
-            const requestUrl = this.href;
-
-            $.easyAjax({
-                url: requestUrl,
-                blockUI: true,
-                container: ".content-wrapper",
-                historyPush: true,
-                success: function(response) {
-                    if (response.status == "success") {
-                        $('.content-wrapper').html(response.html);
-                        init('.content-wrapper');
-                    }
-                }
-            });
-        });
-
-    </script>
-    <script>
-        const activeTab = "{{ $activeTab }}";
-        $('.project-menu .' + activeTab).addClass('active');
-
-    </script>
-    <script>
-        /*******************************************************
-                 More btn in projects menu Start
-        *******************************************************/
-
-        const container = document.querySelector('.tabs');
-        const primary = container.querySelector('.-primary');
-        const primaryItems = container.querySelectorAll('.-primary > li:not(.-more)');
-        container.classList.add('--jsfied'); // insert "more" button and duplicate the list
-
-        primary.insertAdjacentHTML('beforeend', `
-        <li class="-more">
-            <button type="button" class="px-4 h-100 bg-grey d-none d-lg-flex align-items-center" aria-haspopup="true" aria-expanded="false">
-            {{__('app.more')}} <span>&darr;</span>
-            </button>
-            <ul class="-secondary" id="hide-project-menues">
-            ${primary.innerHTML}
-            </ul>
-        </li>
-        `);
-        const secondary = container.querySelector('.-secondary');
-        const secondaryItems = secondary.querySelectorAll('li');
-        const allItems = container.querySelectorAll('li');
-        const moreLi = primary.querySelector('.-more');
-        const moreBtn = moreLi.querySelector('button');
-        moreBtn.addEventListener('click', e => {
-            e.preventDefault();
-            container.classList.toggle('--show-secondary');
-            moreBtn.setAttribute('aria-expanded', container.classList.contains('--show-secondary'));
-        }); // adapt tabs
-
-        const doAdapt = () => {
-            // reveal all items for the calculation
-            allItems.forEach(item => {
-                item.classList.remove('--hidden');
-            }); // hide items that won't fit in the Primary
-
-            let stopWidth = moreBtn.offsetWidth;
-            let hiddenItems = [];
-            const primaryWidth = primary.offsetWidth;
-            primaryItems.forEach((item, i) => {
-                if (primaryWidth >= stopWidth + item.offsetWidth) {
-                    stopWidth += item.offsetWidth;
-                } else {
-                    item.classList.add('--hidden');
-                    hiddenItems.push(i);
-                }
-            }); // toggle the visibility of More button and items in Secondary
-
-            if (!hiddenItems.length) {
-                moreLi.classList.add('--hidden');
-                container.classList.remove('--show-secondary');
-                moreBtn.setAttribute('aria-expanded', false);
-            } else {
-                secondaryItems.forEach((item, i) => {
-                    if (!hiddenItems.includes(i)) {
-                        item.classList.add('--hidden');
+                var requestUrl = this.href;
+                $.easyAjax({
+                    url: requestUrl,
+                    blockUI: true,
+                    container: ".content-wrapper",
+                    historyPush: true,
+                    success: function(response) {
+                        if (response.status == "success") {
+                            $('.content-wrapper').html(response.html);
+                            if (typeof init === 'function') init('.content-wrapper');
+                        }
                     }
                 });
+            });
+
+            var activeTab = "{{ $activeTab }}";
+            $('.project-menu .' + activeTab).addClass('active');
+
+            // More Button Adaptivity Logic
+            var container = document.querySelector('.tabs');
+            if (container && !container.classList.contains('--jsfied')) {
+                var primary = container.querySelector('.-primary');
+                var primaryItems = container.querySelectorAll('.-primary > li:not(.-more)');
+                container.classList.add('--jsfied');
+
+                primary.insertAdjacentHTML('beforeend', `
+                    <li class="-more">
+                        <button type="button" class="px-4 h-100 bg-grey d-none d-lg-flex align-items-center" aria-haspopup="true" aria-expanded="false">
+                            {{__('app.more')}} <span>&darr;</span>
+                        </button>
+                        <ul class="-secondary" id="hide-project-menues">
+                            ${primary.innerHTML}
+                        </ul>
+                    </li>
+                `);
+
+                var secondary = container.querySelector('.-secondary');
+                var secondaryItems = secondary.querySelectorAll('li');
+                var allItems = container.querySelectorAll('li');
+                var moreLi = primary.querySelector('.-more');
+                var moreBtn = moreLi.querySelector('button');
+
+                var toggleSecondary = function(e) {
+                    e.preventDefault();
+                    container.classList.toggle('--show-secondary');
+                    moreBtn.setAttribute('aria-expanded', container.classList.contains('--show-secondary'));
+                };
+
+                moreBtn.addEventListener('click', toggleSecondary);
+
+                var doAdapt = function() {
+                    if (!container) return;
+                    allItems.forEach(function(item) { item.classList.remove('--hidden'); });
+                    var stopWidth = moreBtn.offsetWidth;
+                    var hiddenItems = [];
+                    var primaryWidth = primary.offsetWidth;
+
+                    primaryItems.forEach(function(item, i) {
+                        if (primaryWidth >= stopWidth + item.offsetWidth) {
+                            stopWidth += item.offsetWidth;
+                        } else {
+                            item.classList.add('--hidden');
+                            hiddenItems.push(i);
+                        }
+                    });
+
+                    if (!hiddenItems.length) {
+                        moreLi.classList.add('--hidden');
+                        container.classList.remove('--show-secondary');
+                        moreBtn.setAttribute('aria-expanded', false);
+                    } else {
+                        moreLi.classList.remove('--hidden');
+                        secondaryItems.forEach(function(item, i) {
+                            if (!hiddenItems.includes(i)) {
+                                item.classList.add('--hidden');
+                            }
+                        });
+                    }
+                };
+
+                doAdapt();
+                window.addEventListener('resize', doAdapt);
+
+                var outsideClick = function(e) {
+                    var el = e.target;
+                    while (el) {
+                        if (el === secondary || el === moreBtn) return;
+                        el = el.parentNode;
+                    }
+                    container.classList.remove('--show-secondary');
+                    moreBtn.setAttribute('aria-expanded', false);
+                };
+                $(document).on('click' + namespace, outsideClick);
+
+                // Combined Cleanup
+                document.addEventListener("turbo:before-cache", function cleanup() {
+                    $body.off(namespace);
+                    $(document).off(namespace);
+                    window.removeEventListener('resize', doAdapt);
+                    document.removeEventListener("turbo:before-cache", cleanup);
+                }, { once: true });
             }
-        };
-
-        doAdapt(); // adapt immediately on load
-
-        window.addEventListener('resize', doAdapt); // adapt on window resize
-        // hide Secondary on the outside click
-
-        document.addEventListener('click', e => {
-            let el = e.target;
-
-            while (el) {
-                if (el === secondary || el === moreBtn) {
-                    return;
-                }
-
-                el = el.parentNode;
-            }
-
-            container.classList.remove('--show-secondary');
-            moreBtn.setAttribute('aria-expanded', false);
-        });
-        /*******************************************************
-                 More btn in projects menu End
-        *******************************************************/
+        })();
     </script>
 @endpush

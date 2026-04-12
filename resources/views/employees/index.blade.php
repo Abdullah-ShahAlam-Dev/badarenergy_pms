@@ -2,6 +2,7 @@
 
 @push('datatable-styles')
     @include('sections.datatable_css')
+    <meta name="turbo-cache-control" content="no-cache">
 @endpush
 
 @section('filter-section')
@@ -201,109 +202,148 @@
     @include('sections.datatable_js')
 
     <script>
+        (function() {
+            // Blade-rendered values (safe — these are PHP variables baked in at render time)
+            var startDate = null;
+            var endDate = null;
+            var lastStartDate = null;
+            var lastEndDate = null;
 
-        var startDate = null;
-        var endDate = null;
-        var lastStartDate = null;
-        var lastEndDate = null;
-
-        @if(request('startDate') != '' && request('endDate') != '' )
-            startDate = '{{ request("startDate") }}';
-        endDate = '{{ request("endDate") }}';
-        @endif
+            @if(request('startDate') != '' && request('endDate') != '' )
+                startDate = '{{ request("startDate") }}';
+                endDate   = '{{ request("endDate") }}';
+            @endif
 
             @if(request('lastStartDate') !=='' && request('lastEndDate') !=='' )
-            lastStartDate = '{{ request("lastStartDate") }}';
-        lastEndDate = '{{ request("lastEndDate") }}';
-        @endif
+                lastStartDate = '{{ request("lastStartDate") }}';
+                lastEndDate   = '{{ request("lastEndDate") }}';
+            @endif
 
-        $('#employees-table').on('preXhr.dt', function (e, settings, data) {
-            const status = $('#status').val();
-            const employee = $('#employee').val();
-            const role = $('#role').val();
-            const gender = $('#gender').val();
-            const skill = $('#skill').val();
-            const designation = $('#designation').val();
-            const department = $('#department').val();
-            const searchText = $('#search-text-field').val();
-            data['status'] = status;
-            data['employee'] = employee;
-            data['role'] = role;
-            data['gender'] = gender;
-            data['skill'] = skill;
-            data['designation'] = designation;
-            data['department'] = department;
-            data['searchText'] = searchText;
+            // ============================================================
+            // initEmployeePage — called on every page load (Turbo or full)
+            // ============================================================
+            function initEmployeePage() {
+                // Guard: only run if the employees table actually exists in DOM
+                if (!document.getElementById('employees-table')) return;
 
-            /* If any of these following filters are applied, then dashboard conditions will not work  */
-            if (status == "all" || employee == "all" || role == "all" || designation == "all" || searchText == "") {
-                data['startDate'] = startDate;
-                data['endDate'] = endDate;
-                data['lastStartDate'] = lastStartDate;
-                data['lastEndDate'] = lastEndDate;
+                // ---- showTable ----
+                window.showTable = function() {
+                    if (window.LaravelDataTables && window.LaravelDataTables["employees-table"]) {
+                        window.LaravelDataTables["employees-table"].draw(false);
+                    }
+                };
+
+                // ---- Attach preXhr to the (possibly new) table element ----
+                // Off first to prevent duplicate listeners on re-navigation
+                $('#employees-table').off('preXhr.dt.emp').on('preXhr.dt.emp', function (e, settings, data) {
+                    data['status']      = $('#status').val()      || 'all';
+                    data['employee']    = $('#employee').val()    || 'all';
+                    data['role']        = $('#role').val()        || 'all';
+                    data['gender']      = $('#gender').val()      || 'all';
+                    data['skill']       = $('#skill').val()       || null;
+                    data['designation'] = $('#designation').val() || 'all';
+                    data['department']  = $('#department').val()  || 'all';
+                    data['searchText']  = $('#search-text-field').val() || '';
+
+                    // Only send date range if it is a real non-null value — prevents the '01--' 500 error
+                    if (startDate && typeof startDate === 'string' && startDate.trim() !== '' && startDate !== 'null') {
+                        data['startDate']     = startDate;
+                        data['endDate']       = endDate;
+                        data['lastStartDate'] = lastStartDate;
+                        data['lastEndDate']   = lastEndDate;
+                    }
+                });
+
+                // ---- Quick action type selector ----
+                $('#quick-action-type').off('change.empQA').on('change.empQA', function () {
+                    var actionValue = $(this).val();
+                    if (actionValue !== '') {
+                        $('#quick-action-apply').removeAttr('disabled');
+                        if (actionValue === 'change-status') {
+                            $('.quick-action-field').addClass('d-none');
+                            $('#change-status-action').removeClass('d-none');
+                        } else {
+                            $('.quick-action-field').addClass('d-none');
+                        }
+                    } else {
+                        $('#quick-action-apply').attr('disabled', true);
+                        $('.quick-action-field').addClass('d-none');
+                    }
+                });
+
+                // ---- Quick action apply ----
+                $('#quick-action-apply').off('click.empQA').on('click.empQA', function () {
+                    var actionValue = $('#quick-action-type').val();
+                    if (actionValue === 'delete') {
+                        Swal.fire({
+                            title: "@lang('messages.sweetAlertTitle')",
+                            text: "@lang('messages.recoverRecord')",
+                            icon: 'warning',
+                            showCancelButton: true,
+                            focusConfirm: false,
+                            confirmButtonText: "@lang('messages.confirmDelete')",
+                            cancelButtonText: "@lang('app.cancel')",
+                            customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                            showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                            buttonsStyling: false
+                        }).then(function(result) { if (result.isConfirmed) applyQuickAction(); });
+                    } else {
+                        applyQuickAction();
+                    }
+                });
+
+                // ---- Settings links ----
+                $('#designation-setting').off('click.empDS').on('click.empDS', function () {
+                    $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                    $.ajaxModal(MODAL_LG, "{{ route('designations.create') }}");
+                });
+                $('.department-setting').off('click.empDept').on('click.empDept', function () {
+                    $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                    $.ajaxModal(MODAL_LG, "{{ route('departments.create') }}");
+                });
             }
 
-        });
+            // ===================================================
+            // Delegated listeners — attached to document once,
+            // survive all Turbo navigations automatically
+            // ===================================================
 
-        const showTable = () => {
-            window.LaravelDataTables["employees-table"].draw(false);
-        }
-
-        $('#employee, #status, #role, #gender, #skill, #designation, #department').on('change keyup',
-            function () {
-                if ($('#status').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#employee').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#role').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#gender').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#designation').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#department').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else {
-                    $('#reset-filters').addClass('d-none');
+            // Filter change — covers top bar AND more filters panel (role/status/dept/gender)
+            // 'changed.bs.select' is Bootstrap-Select's event; native 'change' is for plain selects & inputs
+            $(document).off('change.empF changed.bs.select.empF keyup.empSearch').on(
+                'change.empF changed.bs.select.empF',
+                '#employee, #designation, #status, #role, #gender, #department',
+                function() {
+                    if (!document.getElementById('employees-table')) return;
+                    var hasFilters = ($('#employee').val() !== 'all') ||
+                                     ($('#designation').val() !== 'all') ||
+                                     ($('#status').val() !== 'all') ||
+                                     ($('#role').val() !== 'all') ||
+                                     ($('#gender').val() !== 'all') ||
+                                     ($('#department').val() !== 'all') ||
+                                     ($('#search-text-field').val() !== '');
+                    $('#reset-filters').toggleClass('d-none', !hasFilters);
+                    if (typeof window.showTable === 'function') window.showTable();
                 }
-                showTable();
+            ).on('keyup.empSearch', '#search-text-field', function() {
+                if (!document.getElementById('employees-table')) return;
+                if (typeof window.showTable === 'function') window.showTable();
             });
 
-        $('#search-text-field').on('keyup', function () {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            }
-        });
+            // Reset filters
+            $(document).off('click.empReset').on('click.empReset', '#reset-filters, #reset-filters-2', function () {
+                if (!document.getElementById('employees-table')) return;
+                var $form = $('#filter-form');
+                if ($form.length) $form[0].reset();
+                $('.select-picker').selectpicker('refresh');
+                $('#reset-filters').addClass('d-none');
+                if (typeof window.showTable === 'function') window.showTable();
+            });
 
-        $('#reset-filters, #reset-filters-2').click(function () {
-            $('#filter-form')[0].reset();
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-
-        $('#quick-action-type').change(function () {
-            const actionValue = $(this).val();
-            if (actionValue != '') {
-                $('#quick-action-apply').removeAttr('disabled');
-
-                if (actionValue == 'change-status') {
-                    $('.quick-action-field').addClass('d-none');
-                    $('#change-status-action').removeClass('d-none');
-                } else {
-                    $('.quick-action-field').addClass('d-none');
-                }
-            } else {
-                $('#quick-action-apply').attr('disabled', true);
-                $('.quick-action-field').addClass('d-none');
-            }
-        });
-
-        $('#quick-action-apply').click(function () {
-            const actionValue = $('#quick-action-type').val();
-            if (actionValue == 'delete') {
+            // Delete table row (delegated — works on dynamically rendered rows)
+            $(document).off('click.empDel').on('click.empDel', '.delete-table-row', function () {
+                if (!document.getElementById('employees-table')) return;
+                var id = $(this).data('user-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
                     text: "@lang('messages.recoverRecord')",
@@ -312,133 +352,85 @@
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
-                }).then((result) => {
+                }).then(function(result) {
                     if (result.isConfirmed) {
-                        applyQuickAction();
+                        $.easyAjax({
+                            type: 'POST', blockUI: true,
+                            url: "{{ route('employees.destroy', ':id') }}".replace(':id', id),
+                            data: { '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
+                            success: function (response) {
+                                if (response.status === 'success') {
+                                    if (typeof window.showTable === 'function') window.showTable();
+                                    if (typeof syncGlobalStats === 'function') syncGlobalStats();
+                                }
+                            }
+                        });
                     }
                 });
-
-            } else {
-                applyQuickAction();
-            }
-        });
-
-        $('body').on('click', '.delete-table-row', function () {
-            var id = $(this).data('user-id');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.recoverRecord')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmDelete')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('employees.destroy', ':id') }}";
-                    url = url.replace(':id', id);
-
-                    var token = "{{ csrf_token() }}";
-
-                    $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        blockUI: true,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
-                        success: function (response) {
-                            if (response.status == "success") {
-                                showTable();
-                            }
-                        }
-                    });
-                }
             });
-        });
 
-        const applyQuickAction = () => {
+            // Assign role dropdown (in the DataTable rows — real-time role change)
+            $(document).off('change.empRole').on('change.empRole', '.assign_role', function () {
+                if (!document.getElementById('employees-table')) return;
+                var id   = $(this).data('user-id');
+                var role = $(this).val();
+                if (typeof id === 'undefined') return;
+                $.easyAjax({
+                    url: "{{ route('employees.assign_role') }}",
+                    type: 'POST', blockUI: true,
+                    container: '#employees-table',
+                    data: { role: role, userId: id, _token: "{{ csrf_token() }}" },
+                    success: function (response) {
+                        if (response.status === 'success') {
+                            if (window.LaravelDataTables && window.LaravelDataTables["employees-table"]) {
+                                window.LaravelDataTables["employees-table"].draw(false);
+                            }
+                            if (typeof syncGlobalStats === 'function') syncGlobalStats();
+                        }
+                    }
+                });
+            });
+
+            // ===================================================
+            // Hook into turbo:load so initEmployeePage() re-runs
+            // after every Turbo navigation to the Employees page.
+            // ===================================================
+            document.addEventListener('turbo:load', function() {
+                initEmployeePage();
+            });
+
+            // Also run immediately in case this is a full-page load (no turbo:load fires)
+            initEmployeePage();
+
+        })();
+
+        // applyQuickAction lives outside the IIFE so it can be called from within
+        function applyQuickAction() {
             var rowdIds = $("#employees-table input:checkbox:checked").map(function () {
                 return $(this).val();
             }).get();
-
-            var url = "{{ route('employees.apply_quick_action') }}?row_ids=" + rowdIds;
-
             $.easyAjax({
-                url: url,
+                url: "{{ route('employees.apply_quick_action') }}?row_ids=" + rowdIds,
                 container: '#quick-action-form',
-                type: "POST",
+                type: 'POST',
                 disableButton: true,
-                buttonSelector: "#quick-action-apply",
+                buttonSelector: '#quick-action-apply',
                 data: $('#quick-action-form').serialize(),
                 blockUI: true,
                 success: function (response) {
-                    if (response.status == 'success') {
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
+                    if (response.status === 'success') {
+                        if (typeof window.showTable === 'function') window.showTable();
+                        if (typeof resetActionButtons === 'function') resetActionButtons();
+                        if (typeof deSelectAll === 'function') deSelectAll();
                         $('#quick-action-form').hide();
+                        if (typeof syncGlobalStats === 'function') syncGlobalStats();
                     }
                 }
-            })
-        };
-
-
-        $('body').on('change', '.assign_role', function () {
-            var id = $(this).data('user-id');
-            var role = $(this).val();
-            var token = "{{ csrf_token() }}";
-
-            if (typeof id !== 'undefined') {
-                $.easyAjax({
-                    url: "{{ route('employees.assign_role') }}",
-                    type: "POST",
-                    blockUI: true,
-                    container: '#employees-table',
-                    data: {
-                        role: role,
-                        userId: id,
-                        _token: token
-                    },
-                    success: function (response) {
-                        if (response.status == "success") {
-                            window.LaravelDataTables["employees-table"].draw(false);
-                        }
-                    }
-                })
-            }
-
-        });
-
-        $('#designation-setting').click(function () {
-            const url = "{{ route('designations.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        })
-
-        $('.department-setting').click(function () {
-            const url = "{{ route('departments.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
+            });
+        }
     </script>
 @endpush
+

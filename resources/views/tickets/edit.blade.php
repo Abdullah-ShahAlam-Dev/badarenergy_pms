@@ -517,43 +517,53 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
     <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
     <script src="{{ asset('vendor/jquery/tagify.min.js') }}"></script>
 
-    <script>
-        $(document).ready(function() {
-            quillImageLoad('#description');
-        });
+<script>
+    (function() {
+        var $body = $('body');
+        var namespace = '.ticketsEdit';
+        var ticketDropzone;
+        var tagify;
 
-        $('.reply-button').click(function() {
+        // Cleanup before re-binding
+        $body.off(namespace);
+
+        if (typeof quillImageLoad === 'function') {
+            quillImageLoad('#description');
+        }
+
+        $body.on('click' + namespace, '.reply-button', function() {
             $('#reply-section-action').toggleClass('d-none d-flex');
             $('#reply-section-action-2').toggleClass('d-none flex-row');
             $('#reply-section').removeClass('d-none');
             window.scrollTo(0, document.body.scrollHeight);
         });
 
-        $('#cancel-reply').click(function() {
+        $body.on('click' + namespace, '#cancel-reply', function() {
             $('#reply-section-action').toggleClass('d-none d-flex');
             $('#reply-section-action-2').toggleClass('d-none flex-row');
             $('#reply-section').addClass('d-none');
             window.scrollTo(0, document.body.scrollHeight);
         });
 
-        $('#add-file').click(function() {
+        $body.on('click' + namespace, '#add-file', function() {
             $('.upload-section').removeClass('d-none');
-            $('#add-file').addClass('d-none');
+            $(this).addClass('d-none');
             window.scrollTo(0, document.body.scrollHeight);
         });
 
-        var input = document.querySelector('input[name=tags]'),
-            // init Tagify script on the above inputs
-            tagify = new Tagify(input);
+        var tagInput = document.querySelector('input[name=tags]');
+        if (tagInput) tagify = new Tagify(tagInput);
 
-            Dropzone.autoDiscover = false;
-        //Dropzone class
+        if (Dropzone.instances.length > 0) {
+            Dropzone.instances.forEach(function(dz) {
+                if (dz.element.id === 'ticket-file-upload-dropzone') dz.destroy();
+            });
+        }
+
         ticketDropzone = new Dropzone("div#ticket-file-upload-dropzone", {
             dictDefaultMessage: "{{ __('app.dragDrop') }}",
             url: "{{ route('ticket-files.store') }}",
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
             paramName: "file",
             maxFilesize: DROPZONE_MAX_FILESIZE,
             maxFiles: DROPZONE_MAX_FILES,
@@ -566,61 +576,46 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                 ticketDropzone = this;
             }
         });
+
         ticketDropzone.on('sending', function(file, xhr, formData) {
             var ids = $('#ticket_reply_id').val();
             formData.append('ticket_reply_id', ids);
             formData.append('ticket_id', '{{ $ticket->id }}');
             $.easyBlockUI();
         });
-        ticketDropzone.on('uploadprogress', function() {
-            $.easyBlockUI();
-        });
+
         ticketDropzone.on('queuecomplete', function() {
-            var msgs = "@lang('messages.addDiscussion')";
             window.location.href = "{{ route('tickets.show', $ticket->ticket_number) }}";
         });
-        ticketDropzone.on('removedfile', function () {
-            var grp = $('div#file-upload-dropzone').closest(".form-group");
-            var label = $('div#file-upload-box').siblings("label");
-            $(grp).removeClass("has-error");
-            $(label).removeClass("is-invalid");
-        });
+
         ticketDropzone.on('error', function (file, message) {
-            ticketDropzone.removeFile(file);
-            var grp = $('div#file-upload-dropzone').closest(".form-group");
-            var label = $('div#file-upload-box').siblings("label");
-            $(grp).find(".help-block").remove();
-            var helpBlockContainer = $(grp);
-
-            if (helpBlockContainer.length == 0) {
-                helpBlockContainer = $(grp);
-            }
-
-            helpBlockContainer.append('<div class="help-block invalid-feedback">' + message + '</div>');
-            $(grp).addClass("has-error");
-            $(label).addClass("is-invalid");
-
+            this.removeFile(file);
+            var grp = $(this.element).closest(".form-group");
+            grp.find(".help-block").remove();
+            grp.append('<div class="help-block invalid-feedback">' + message + '</div>');
+            grp.addClass("has-error");
+            grp.find("label").addClass("is-invalid");
         });
 
-        $('.submit-ticket').click(function() {
-            var note = document.getElementById('description').children[0].innerHTML;
-            document.getElementById('description-text').value = note;
+        $body.on('click' + namespace, '.submit-ticket', function() {
+            var $description = $('#description');
+            if ($description.length > 0 && $description[0].children[0]) {
+                var note = $description[0].children[0].innerHTML;
+                $('#description-text').val(note);
+            }
 
             var status = $(this).data('status');
             $('#status').val(status);
 
-            const url = "{{ route('tickets.update', $ticket->id) }}";
-
             $.easyAjax({
-                url: url,
+                url: "{{ route('tickets.update', $ticket->id) }}",
                 container: '#ticketMsg',
                 type: "POST",
                 blockUI: true,
                 data: $('#updateTicket2').serialize(),
                 success: function(response) {
-
                     if (response.status == 'success') {
-                        if (ticketDropzone.getQueuedFiles().length > 0) {
+                        if (ticketDropzone && ticketDropzone.getQueuedFiles().length > 0) {
                             $('#ticket_reply_id').val(response.reply_id);
                             ticketDropzone.processQueue();
                         } else {
@@ -631,8 +626,8 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
             });
         });
 
-        $('.submit-ticket-2').click(function() {
-
+        $body.on('click' + namespace, '.submit-ticket-2', function(e) {
+            e.preventDefault();
             $.easyAjax({
                 url: "{{ route('tickets.update_other_data', $ticket->id) }}",
                 container: '#updateTicket1',
@@ -644,61 +639,44 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                 success: function(response) {
                     if (response.status == 'success') {
                         var status = $('#ticket-status').val();
+                        $('#ticket-closed').toggle(status != 'closed');
+                        
+                        var colors = { 'open': 'red', 'pending': 'yellow', 'resolved': 'dark-green', 'closed': 'blue' };
+                        var labels = { 
+                            'open': "@lang('app.open')", 
+                            'pending': "@lang('app.pending')", 
+                            'resolved': "@lang('app.resolved')", 
+                            'closed': "@lang('app.closed')" 
+                        };
 
-                        ($('#ticket-status').val() != 'closed') ? $('#ticket-closed').show() :  $('#ticket-closed').hide();
-
-                        switch (status) {
-                            case 'open':
-                                var statusHtml =
-                                    '<i class="fa fa-circle mr-2 text-red"></i>@lang("app.open")';
-                                break;
-                            case 'pending':
-                                var statusHtml =
-                                    '<i class="fa fa-circle mr-2 text-yellow"></i>@lang("app.pending")';
-                                break;
-                            case 'resolved':
-                                var statusHtml =
-                                    '<i class="fa fa-circle mr-2 text-dark-green"></i>@lang("app.resolved")';
-                                break;
-                            case 'closed':
-                                var statusHtml =
-                                    '<i class="fa fa-circle mr-2 text-blue"></i>@lang("app.closed")';
-                                break;
-
-                            default:
-                                var statusHtml =
-                                    '<i class="fa fa-circle mr-2 text-red"></i>@lang("app.open")';
-                                break;
-                        }
-                        $('#ticketStatusBadge').html(statusHtml);
+                        var color = colors[status] || 'red';
+                        var label = labels[status] || "@lang('app.open')";
+                        $('#ticketStatusBadge').html('<i class="fa fa-circle mr-2 text-' + color + '"></i>' + label);
                     }
                 }
-            })
+            });
         });
 
-
-        $('.apply-template').click(function() {
+        $body.on('click' + namespace, '.apply-template', function() {
             var templateId = $(this).data('template-id');
-
             $.easyAjax({
                 url: "{{ route('replyTemplates.fetchTemplate') }}",
-                data: {
-                    templateId: templateId
-                },
+                data: { templateId: templateId },
                 success: function(response) {
                     if (response.status == "success") {
                         var container = $('#description').get(0);
-                        var quill = new Quill(container);
-                        quill.clipboard.dangerouslyPasteHTML(0, response.replyText);
+                        if (container) {
+                            var quill = Quill.find(container) || new Quill(container);
+                            quill.clipboard.dangerouslyPasteHTML(0, response.replyText);
+                        }
                     }
                 }
-            })
-        })
+            });
+        });
 
-
-        $('body').on('click', '.delete-file', function() {
+        $body.on('click' + namespace, '.delete-file', function() {
             var id = $(this).data('row-id');
-            var replyFile = $(this);
+            var $replyFile = $(this);
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
                 text: "@lang('messages.recoverRecord')",
@@ -707,40 +685,25 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    var url = "{{ route('ticket-files.destroy', ':id') }}";
-                    url = url.replace(':id', id);
-
-                    var token = "{{ csrf_token() }}";
-
+                    var url = "{{ route('ticket-files.destroy', ':id') }}".replace(':id', id);
                     $.easyAjax({
                         type: 'POST',
                         url: url,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
+                        data: { '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
                         success: function(response) {
-                            if (response.status == "success") {
-                                replyFile.closest('.card').remove();
-                            }
+                            if (response.status == "success") $replyFile.closest('.card').remove();
                         }
                     });
                 }
             });
         });
 
-        $('body').on('click', '.delete-ticket', function() {
+        $body.on('click' + namespace, '.delete-ticket', function() {
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
                 text: "@lang('messages.recoverRecord')",
@@ -749,40 +712,24 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    var url = "{{ route('tickets.destroy', $ticket->id) }}";
-
-                    var token = "{{ csrf_token() }}";
-
                     $.easyAjax({
                         type: 'POST',
-                        url: url,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
+                        url: "{{ route('tickets.destroy', $ticket->id) }}",
+                        data: { '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
                         success: function(response) {
-                            if (response.status == "success") {
-                                window.location.href =
-                                    "{{ route('tickets.index') }}";
-                            }
+                            if (response.status == "success") window.location.href = "{{ route('tickets.index') }}";
                         }
                     });
                 }
             });
         });
 
-        $('body').on('click', '.delete-message', function() {
+        $body.on('click' + namespace, '.delete-message', function() {
             var id = $(this).data('row-id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
@@ -792,111 +739,79 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    var url = "{{ route('ticket-replies.destroy', ':id') }}";
-                    url = url.replace(':id', id);
-
-                    var token = "{{ csrf_token() }}";
-
+                    var url = "{{ route('ticket-replies.destroy', ':id') }}".replace(':id', id);
                     $.easyAjax({
                         type: 'POST',
                         url: url,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
+                        data: { '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
                         success: function(response) {
-                            if (response.status == "success") {
-                                $('#message-' + id).remove();
-                            }
+                            if (response.status == "success") $('#message-' + id).remove();
                         }
                     });
                 }
             });
         });
 
-        /* open add agent modal */
-        $('body').on('click', '#addAgent', function() {
-            var url = "{{ route('ticket-agents.create') }}";
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_XL, url);
+        $body.on('click' + namespace, '#addAgent', function() {
+            $.ajaxModal(MODAL_XL, "{{ route('ticket-agents.create') }}");
         });
 
-        $('body').on('click', '#addChannel', function() {
-            var url = "{{ route('ticketChannels.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
+        $body.on('click' + namespace, '#addChannel', function() {
+            $.ajaxModal(MODAL_LG, "{{ route('ticketChannels.create') }}");
         });
 
-        /* open add agent modal */
-        $('body').on('click', '#addTicketType', function() {
-            var url = "{{ route('ticketTypes.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
+        $body.on('click' + namespace, '#addTicketType', function() {
+            $.ajaxModal(MODAL_LG, "{{ route('ticketTypes.create') }}");
         });
 
+        $body.on('click' + namespace, '#manage-groups', function() {
+            $.ajaxModal(MODAL_LG, "{{ route('ticket-groups.create') }}");
+        });
 
         function scrollToBottom(divId) {
             var myDiv = document.getElementById(divId);
-            myDiv.scrollTop = myDiv.scrollHeight;
+            if (myDiv) myDiv.scrollTop = myDiv.scrollHeight;
         }
-
         scrollToBottom('ticketMsg');
 
-        getAgents($('#group_id').val());
-
-        function getAgents(groupId){
-            var url = "{{ route('tickets.agent_group', ':id').'?ticketNumber='.$ticket->ticket_number}}";
-            url = url.replace(':id', groupId);
-            // alert(url);
-            // var ticket_number = "{{$ticket->ticket_number}}"
-            // alert(ticket);
+        function getAgents(groupId) {
+            var url = "{{ route('tickets.agent_group', ':id').'?ticketNumber='.$ticket->ticket_number}}".replace(':id', groupId);
+            if (!groupId) return;
             $.easyAjax({
                 url: url,
                 type: "GET",
-                // data: ticket_number,
-                success: function(response)
-                {
-                    var options = [];
-                    var rData = [];
-                    if($.isArray(response.data))
-                    {
-                        rData = response.data;
-                        $.each(rData, function(index, value) {
-                            var selectData = '';
-                            options.push(value);
-                        });
-                        $('#agent_id').html('<option value="">--</option>' + options);
-                    }
-                    else
-                    {
-                        $('#agent_id').html(response.data);
-                    }
-                    $('#agent_id').selectpicker('refresh');
+                success: function(response) {
+                    var options = response.data;
+                    $('#agent_id').html('<option value="">--</option>' + options).selectpicker('refresh');
                 }
             });
         }
 
-        $('#group_id').change(function(){
-            var id = $(this).val();
-            getAgents(id)
+        $body.on('change' + namespace, '#group_id', function() {
+            getAgents($(this).val());
         });
 
-        $('#manage-groups').click(function() {
-            var url = "{{ route('ticket-groups.create') }}";
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
+        getAgents($('#group_id').val());
 
-    </script>
+        window.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            if (ticketDropzone) ticketDropzone.destroy();
+            if (tagify) tagify.destroy();
+            
+            // Cleanup Chart.js
+            var chartInstance = Chart.getChart("ticket-chart");
+            if (chartInstance) chartInstance.destroy();
+
+            if (typeof destroy_editor === 'function') destroy_editor('#description');
+            else if (typeof destory_editor === 'function') destory_editor('#description');
+
+            window.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
+</script>
 @endpush

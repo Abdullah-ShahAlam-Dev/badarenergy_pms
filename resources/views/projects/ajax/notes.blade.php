@@ -38,34 +38,63 @@
 @include('sections.datatable_js')
 
 <script>
-    $('#project-notes-table').on('preXhr.dt', function(e, settings, data) {
-        var projectID = "{{ $project->id }}";
-        data['projectID'] = projectID;
-    });
-    const showTable = () => {
-        window.LaravelDataTables["project-notes-table"].draw(false);
-    }
+    (function() {
+        var $body = $('body');
+        var $table = $('#project-notes-table');
+        var namespace = '.projectNotes';
 
-    $('#quick-action-type').change(function() {
-        const actionValue = $(this).val();
-        if (actionValue != '') {
-            $('#quick-action-apply').removeAttr('disabled');
+        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
+            var projectID = "{{ $project->id }}";
+            data['projectID'] = projectID;
+        });
 
-            if (actionValue == 'change-status') {
+        function showTable() {
+            if (window.LaravelDataTables && window.LaravelDataTables["project-notes-table"]) {
+                window.LaravelDataTables["project-notes-table"].draw(false);
+            }
+        }
+        window.showTable = showTable;
+
+        $body.off(namespace);
+
+        $body.on('change' + namespace, '#quick-action-type', function() {
+            const actionValue = $(this).val();
+            if (actionValue != '') {
+                $('#quick-action-apply').removeAttr('disabled');
                 $('.quick-action-field').addClass('d-none');
-                $('#change-status-action').removeClass('d-none');
+                if (actionValue == 'change-status') {
+                    $('#change-status-action').removeClass('d-none');
+                }
             } else {
+                $('#quick-action-apply').attr('disabled', true);
                 $('.quick-action-field').addClass('d-none');
             }
-        } else {
-            $('#quick-action-apply').attr('disabled', true);
-            $('.quick-action-field').addClass('d-none');
-        }
-    });
+        });
 
-    $('#quick-action-apply').click(function() {
-        const actionValue = $('#quick-action-type').val();
-        if (actionValue == 'delete') {
+        $body.on('click' + namespace, '#quick-action-apply', function() {
+            const actionValue = $('#quick-action-type').val();
+            if (actionValue == 'delete') {
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.recoverRecord')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) { applyQuickAction(); }
+                });
+            } else {
+                applyQuickAction();
+            }
+        });
+
+        $body.on('click' + namespace, '.delete-table-row', function() {
+            var id = $(this).data('user-id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
                 text: "@lang('messages.recoverRecord')",
@@ -74,139 +103,92 @@
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    applyQuickAction();
+                    var url = "{{ route('project-notes.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { showTable(); }
+                        }
+                    });
                 }
             });
+        });
 
-        } else {
-            applyQuickAction();
-        }
-    });
+        function applyQuickAction() {
+            var rowdIds = $("#project-notes-table input:checkbox:checked").map(function() {
+                return $(this).val();
+            }).get();
 
+            var url = "{{ route('project_notes.apply_quick_action') }}?row_ids=" + rowdIds;
 
-    $('body').on('click', '.delete-table-row', function() {
-        var id = $(this).data('user-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('project-notes.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            showTable();
-                        }
+            $.easyAjax({
+                url: url,
+                container: '#quick-action-form',
+                type: "POST",
+                disableButton: true,
+                buttonSelector: "#quick-action-apply",
+                data: $('#quick-action-form').serialize(),
+                success: function(response) {
+                    if (response.status == 'success') {
+                        showTable();
+                        if (typeof resetActionButtons === 'function') resetActionButtons();
+                        if (typeof deSelectAll === 'function') deSelectAll();
                     }
-                });
-            }
+                }
+            });
+        }
+        window.applyQuickAction = applyQuickAction;
+
+        $body.on('click' + namespace, '.ask-for-password', function() {
+            let projectNoteId = $(this).data('project-note-id');
+            var url = "{{ route('project_notes.ask_for_password', ':id') }}".replace(':id', projectNoteId);
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
         });
-    });
 
-    const applyQuickAction = () => {
-        var rowdIds = $("#project-notes-table input:checkbox:checked").map(function() {
-            return $(this).val();
-        }).get();
-
-        var url = "{{ route('project_notes.apply_quick_action') }}?row_ids=" + rowdIds;
-
-        $.easyAjax({
-            url: url,
-            container: '#quick-action-form',
-            type: "POST",
-            disableButton: true,
-            buttonSelector: "#quick-action-apply",
-            data: $('#quick-action-form').serialize(),
-            success: function(response) {
-                if (response.status == 'success') {
-                    showTable();
-                    resetActionButtons();
-                    deSelectAll();
+        var getNoteDetail = function(id) {
+            openTaskDetail();
+            var url = "{{ route('project-notes.show', ':id') }}".replace(':id', id);
+            $.easyAjax({
+                url: url,
+                blockUI: true,
+                container: RIGHT_MODAL,
+                historyPush: true,
+                success: function(response) {
+                    if (response.status == "success") {
+                        $(RIGHT_MODAL_CONTENT).html(response.html);
+                        $(RIGHT_MODAL_TITLE).html(response.title);
+                    }
+                },
+                error: function(request, status, error) {
+                    var $content = $(RIGHT_MODAL_CONTENT);
+                    if (request.status == 403) {
+                        $content.html('<div class="align-content-between d-flex justify-content-center mt-105 f-21">403 | Permission Denied</div>');
+                    } else if (request.status == 404) {
+                        $content.html('<div class="align-content-between d-flex justify-content-center mt-105 f-21">404 | Not Found</div>');
+                    } else if (request.status == 500) {
+                        $content.html('<div class="align-content-between d-flex justify-content-center mt-105 f-21">500 | Something Went Wrong</div>');
+                    }
                 }
-            }
-        })
-    };
+            });
+        }
+        window.getNoteDetail = getNoteDetail;
 
-    $('body').on('click', '.ask-for-password', function() {
-        let projectNoteId = $(this).data('project-note-id');
-
-        var url = "{{ route('project_notes.ask_for_password', ':id') }}";
-        url = url.replace(':id', projectNoteId);
-
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-
-    });
-
-    // show note detail in right modal
-    var getNoteDetail = function(id) {
-        openTaskDetail();
-
-        var url = "{{ route('project-notes.show', ':id') }}";
-        url = url.replace(':id', id);
-
-        $.easyAjax({
-            url: url,
-            blockUI: true,
-            container: RIGHT_MODAL,
-            historyPush: true,
-            success: function(response) {
-                if (response.status == "success") {
-                    $(RIGHT_MODAL_CONTENT).html(response.html);
-                    $(RIGHT_MODAL_TITLE).html(response.title);
-                }
-            },
-            error: function(request, status, error) {
-                if (request.status == 403) {
-                    $(RIGHT_MODAL_CONTENT).html(
-                        '<div class="align-content-between d-flex justify-content-center mt-105 f-21">403 | Permission Denied</div>'
-                    );
-                } else if (request.status == 404) {
-                    $(RIGHT_MODAL_CONTENT).html(
-                        '<div class="align-content-between d-flex justify-content-center mt-105 f-21">404 | Not Found</div>'
-                    );
-                } else if (request.status == 500) {
-                    $(RIGHT_MODAL_CONTENT).html(
-                        '<div class="align-content-between d-flex justify-content-center mt-105 f-21">500 | Something Went Wrong</div>'
-                    );
-                }
-            }
-        });
-    }
-
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            delete window.applyQuickAction;
+            delete window.getNoteDetail;
+            document.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

@@ -129,147 +129,62 @@ $projectArchived = $project->trashed();
 @include('sections.datatable_js')
 
 <script>
-    $('#allTasks-table').on('preXhr.dt', function(e, settings, data) {
+    (function() {
+        var $body = $('body');
+        var $table = $('#allTasks-table');
+        var namespace = '.projectTasks';
 
-        var projectID = "{{ $project->id }}";
-        var status = $('#status').val();
-        var searchText = $('#search-text-field').val();
-        var assignedTo = $('#assignedTo').val();
-        var trashedData = "{{ $project->trashed() == 1 ? 'true' : 'false' }}";
-        var milestone_id = $('#milestone_id').val();
-        data['projectId'] = projectID;
-        data['status'] = status;
-        data['assignedTo'] = assignedTo;
-        data['searchText'] = searchText;
-        data['trashedData'] = trashedData;
-        data['milestone_id'] = milestone_id;
-        data['project_admin'] = "{{ ($project->project_admin == user()->id) ? 1 : 0 }}";
-    });
-    const showTable = () => {
-        window.LaravelDataTables["allTasks-table"].draw(false);
-    }
-
-    $('#status, #assignedTo, #milestone_id')
-        .on('change keyup',
-            function() {
-                if ($('#status').val() != "not finished") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#assignedTo').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#milestone_id').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                }else {
-                    $('#reset-filters').addClass('d-none');
-                    showTable();
-                }
-            });
-
-    $('#search-text-field').on('keyup', function() {
-        if ($('#search-text-field').val() != "") {
-            $('#reset-filters').removeClass('d-none');
-            showTable();
-        }
-    });
-
-    $('#reset-filters,#reset-filters-2').click(function() {
-        $('#filter-form')[0].reset();
-        $('#filter-form #status').val('not finished');
-        $('#filter-form .select-picker').selectpicker("refresh");
-        $('#reset-filters').addClass('d-none');
-        showTable();
-    });
-
-    $('body').on('click', '.delete-table-row', function() {
-        var id = $(this).data('user-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('tasks.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            showTable();
-                        }
-                    }
-                });
-            }
+        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
+            var projectID = "{{ $project->id }}";
+            var status = $('#status').val();
+            var searchText = $('#search-text-field').val();
+            var assignedTo = $('#assignedTo').val();
+            var trashedData = "{{ $project->trashed() == 1 ? 'true' : 'false' }}";
+            var milestone_id = $('#milestone_id').val();
+            data['projectId'] = projectID;
+            data['status'] = status;
+            data['assignedTo'] = assignedTo;
+            data['searchText'] = searchText;
+            data['trashedData'] = trashedData;
+            data['milestone_id'] = milestone_id;
+            data['project_admin'] = "{{ ($project->project_admin == user()->id) ? 1 : 0 }}";
         });
-    });
 
-    $('#allTasks-table').on('change', '.change-status', function() {
-        var url = "{{ route('tasks.change_status') }}";
-        var token = "{{ csrf_token() }}";
-        var id = $(this).data('task-id');
-        var status = $(this).val();
-
-        if (id != "" && status != "") {
-            $.easyAjax({
-                url: url,
-                type: "POST",
-                data: {
-                    '_token': token,
-                    taskId: id,
-                    status: status,
-                    sortBy: 'id'
-                },
-                success: function(data) {
-                    window.LaravelDataTables["allTasks-table"].draw(false);
-                }
-            });
-
-        }
-    });
-
-
-    $('#quick-action-type').change(function() {
-        const actionValue = $(this).val();
-        if (actionValue != '') {
-            $('#quick-action-apply').removeAttr('disabled');
-
-            if (actionValue == 'change-status') {
-                $('.quick-action-field').addClass('d-none');
-                $('#change-status-action').removeClass('d-none');
-            } else {
-                $('.quick-action-field').addClass('d-none');
+        function showTable() {
+            if (window.LaravelDataTables && window.LaravelDataTables["allTasks-table"]) {
+                window.LaravelDataTables["allTasks-table"].draw(false);
             }
-        } else {
-            $('#quick-action-apply').attr('disabled', true);
-            $('.quick-action-field').addClass('d-none');
         }
-    });
+        window.showTable = showTable;
 
-    $('#quick-action-apply').click(function() {
-        const actionValue = $('#quick-action-type').val();
-        if (actionValue == 'delete') {
+        $body.off(namespace);
+
+        $body.on('change' + namespace + ' keyup' + namespace, '#status, #assignedTo, #milestone_id', function() {
+            if ($('#status').val() != "not finished" || $('#assignedTo').val() != "all" || $('#milestone_id').val() != "all") {
+                $('#reset-filters').removeClass('d-none');
+            } else {
+                $('#reset-filters').addClass('d-none');
+            }
+            showTable();
+        });
+
+        $body.on('keyup' + namespace, '#search-text-field', function() {
+            if ($(this).val() != "") {
+                $('#reset-filters').removeClass('d-none');
+            }
+            showTable();
+        });
+
+        $body.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
+            $('#filter-form')[0].reset();
+            $('#filter-form #status').val('not finished');
+            $('#filter-form .select-picker').selectpicker("refresh");
+            $('#reset-filters').addClass('d-none');
+            showTable();
+        });
+
+        $body.on('click' + namespace, '.delete-table-row', function() {
+            var id = $(this).data('user-id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
                 text: "@lang('messages.recoverRecord')",
@@ -278,173 +193,162 @@ $projectArchived = $project->trashed();
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    applyQuickAction();
+                    var url = "{{ route('tasks.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { showTable(); }
+                        }
+                    });
                 }
             });
+        });
 
-        } else {
-            applyQuickAction();
+        $body.on('change' + namespace, '#allTasks-table .change-status', function() {
+            var url = "{{ route('tasks.change_status') }}";
+            var token = "{{ csrf_token() }}";
+            var id = $(this).data('task-id');
+            var status = $(this).val();
+
+            if (id != "" && status != "") {
+                $.easyAjax({
+                    url: url,
+                    type: "POST",
+                    data: { '_token': token, taskId: id, status: status, sortBy: 'id' },
+                    success: function() { showTable(); }
+                });
+            }
+        });
+
+        $body.on('change' + namespace, '#quick-action-type', function() {
+            const actionValue = $(this).val();
+            if (actionValue != '') {
+                $('#quick-action-apply').removeAttr('disabled');
+                $('.quick-action-field').addClass('d-none');
+                if (actionValue == 'change-status') {
+                    $('#change-status-action').removeClass('d-none');
+                }
+            } else {
+                $('#quick-action-apply').attr('disabled', true);
+                $('.quick-action-field').addClass('d-none');
+            }
+        });
+
+        $body.on('click' + namespace, '#quick-action-apply', function() {
+            const actionValue = $('#quick-action-type').val();
+            if (actionValue == 'delete') {
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.recoverRecord')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) { applyQuickAction(); }
+                });
+            } else {
+                applyQuickAction();
+            }
+        });
+
+        function applyQuickAction() {
+            var rowdIds = $("#allTasks-table input:checkbox:checked").map(function() {
+                return $(this).val();
+            }).get();
+
+            var url = "{{ route('tasks.apply_quick_action') }}?row_ids=" + rowdIds;
+
+            $.easyAjax({
+                url: url,
+                container: '#quick-action-form',
+                type: "POST",
+                disableButton: true,
+                buttonSelector: "#quick-action-apply",
+                data: $('#quick-action-form').serialize(),
+                success: function(response) {
+                    if (response.status == 'success') {
+                        showTable();
+                        if (typeof resetActionButtons === 'function') resetActionButtons();
+                        if (typeof deSelectAll === 'function') deSelectAll();
+                    }
+                }
+            });
         }
-    });
+        window.applyQuickAction = applyQuickAction;
 
-    const applyQuickAction = () => {
-        var rowdIds = $("#allTasks-table input:checkbox:checked").map(function() {
-            return $(this).val();
-        }).get();
+        $body.on('click' + namespace, '.start-timer', function() {
+            var url = "{{ route('timelogs.start_timer') }}";
+            var user_id = "{{ user()->id }}";
+            var token = "{{ csrf_token() }}";
+            var task_id = $(this).data('task-id');
+            var memo = "{{ __('app.task') }}#" + $(this).data('task-id');
 
-        var url = "{{ route('tasks.apply_quick_action') }}?row_ids=" + rowdIds;
+            $.easyAjax({
+                url: url,
+                container: '#allTasks-table',
+                type: "POST",
+                blockUI: true,
+                data: { task_id: task_id, memo: memo, '_token': token, user_id: user_id },
+                success: function(response) {
+                    if (response.status == 'success') {
+                        if (response.activeTimerCount > 0) {
+                            $('#show-active-timer .active-timer-count').html(response.activeTimerCount).removeClass('d-none');
+                        } else {
+                            $('#show-active-timer .active-timer-count').addClass('d-none');
+                        }
+                        $('#timer-clock').html(response.clockHtml);
+                        showTable();
+                    }
+                }
+            })
+        });
 
-        $.easyAjax({
-            url: url,
-            container: '#quick-action-form',
-            type: "POST",
-            disableButton: true,
-            buttonSelector: "#quick-action-apply",
-            data: $('#quick-action-form').serialize(),
-            success: function(response) {
-                if (response.status == 'success') {
+        $body.on('click' + namespace, '.stop-timer, .pause-timer, .resume-timer', function() {
+            var id = $(this).data('time-id');
+            var action = $(this).hasClass('stop-timer') ? 'stop_timer' : ($(this).hasClass('pause-timer') ? 'pause_timer' : 'resume_timer');
+            var url = "{{ route('timelogs.ACTION', ':id') }}".replace('ACTION', action).replace(':id', id);
+            var token = '{{ csrf_token() }}';
+            var $this = $(this);
+
+            $.easyAjax({
+                url: url,
+                blockUI: true,
+                container: '#allTasks-table',
+                type: "POST",
+                disableButton: true,
+                buttonSelector: $this,
+                data: { timeId: id, _token: token },
+                success: function(response) {
+                    if (response.activeTimerCount > 0) {
+                        $('#show-active-timer .active-timer-count').html(response.activeTimerCount).removeClass('d-none');
+                    } else {
+                        $('#show-active-timer .active-timer-count').addClass('d-none');
+                    }
+                    $('#timer-clock').html(response.clockHtml || '');
                     showTable();
-                    resetActionButtons();
-                    deSelectAll();
                 }
-            }
-        })
-    };
+            })
+        });
 
-    $('#allTasks-table').on('click', '.start-timer', function() {
-        var url = "{{ route('timelogs.start_timer') }}";
-        var user_id = "{{ user()->id }}";
-        var token = "{{ csrf_token() }}";
-        var task_id = $(this).data('task-id');
-        var memo = "{{ __('app.task') }}#" + $(this).data('task-id');
-
-        $.easyAjax({
-            url: url,
-            container: '#allTasks-table',
-            type: "POST",
-            blockUI: true,
-            data: {
-                task_id: task_id,
-                memo: memo,
-                '_token': token,
-                user_id: user_id
-            },
-            success: function(response) {
-                if (response.status == 'success') {
-                    if (response.activeTimerCount > 0) {
-                        $('#show-active-timer .active-timer-count').html(response.activeTimerCount);
-                    } else {
-                        $('#show-active-timer .active-timer-count').addClass('d-none');
-                    }
-
-                    $('#timer-clock').html(response.clockHtml);
-                    if ($('#allTasks-table').length) {
-                        window.LaravelDataTables["allTasks-table"].draw(false);
-                    }
-                }
-            }
-        })
-    });
-
-    $('#allTasks-table').on('click', '.stop-timer', function() {
-        var id = $(this).data('time-id');
-        var url = "{{ route('timelogs.stop_timer', ':id') }}";
-        url = url.replace(':id', id);
-        var token = '{{ csrf_token() }}';
-        $.easyAjax({
-            url: url,
-            blockUI: true,
-            container: '#allTasks-table',
-            type: "POST",
-            data: {
-                timeId: id,
-                _token: token
-            },
-            success: function(response) {
-                if (response.activeTimerCount > 0) {
-                    $('#show-active-timer .active-timer-count').html(response.activeTimerCount);
-                } else {
-                    $('#show-active-timer .active-timer-count').addClass('d-none');
-                }
-
-                $('#timer-clock').html('');
-                if ($('#allTasks-table').length) {
-                    window.LaravelDataTables["allTasks-table"].draw(false);
-                }
-            }
-        })
-    });
-
-    $('#allTasks-table').on('click', '.resume-timer', function() {
-        var id = $(this).data('time-id');
-        var url = "{{ route('timelogs.resume_timer', ':id') }}";
-        url = url.replace(':id', id);
-        var token = '{{ csrf_token() }}';
-        $.easyAjax({
-            url: url,
-            blockUI: true,
-            type: "POST",
-            data: {
-                timeId: id,
-                _token: token
-            },
-            success: function(response) {
-                if (response.status == 'success') {
-                    if (response.activeTimerCount > 0) {
-                        $('#show-active-timer .active-timer-count').html(response.activeTimerCount);
-                    } else {
-                        $('#show-active-timer .active-timer-count').addClass('d-none');
-                    }
-
-                    $('#timer-clock').html(response.clockHtml);
-                    if ($('#allTasks-table').length) {
-                        window.LaravelDataTables["allTasks-table"].draw(false);
-                    }
-                }
-            }
-        })
-    });
-
-    $('#allTasks-table').on('click', '.pause-timer', function() {
-        var id = $(this).data('time-id');
-        var url = "{{ route('timelogs.pause_timer', ':id') }}";
-        url = url.replace(':id', id);
-        var token = '{{ csrf_token() }}';
-        $.easyAjax({
-            url: url,
-            blockUI: true,
-            type: "POST",
-            disableButton: true,
-            buttonSelector: "#pause-timer-btn",
-            data: {
-                timeId: id,
-                _token: token
-            },
-            success: function(response) {
-                if (response.status == 'success') {
-                    if (response.activeTimerCount > 0) {
-                        $('#show-active-timer .active-timer-count').html(response.activeTimerCount);
-                    } else {
-                        $('#show-active-timer .active-timer-count').addClass('d-none');
-                    }
-
-                    $('#timer-clock').html(response.clockHtml);
-                    if ($('#allTasks-table').length) {
-                        window.LaravelDataTables["allTasks-table"].draw(false);
-                    }
-                }
-            }
-        })
-    });
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            delete window.applyQuickAction;
+            document.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

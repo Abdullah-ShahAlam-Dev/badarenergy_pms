@@ -100,72 +100,94 @@ $addTimelogPermission = user()->permission('add_timelogs');
 
 
 <script>
-    $('#timelogs-table').on('preXhr.dt', function(e, settings, data) {
+    (function() {
+        var $body = $('body');
+        var $table = $('#timelogs-table');
+        var namespace = '.projectTimelogs';
 
-        var projectID = "{{ $project->id }}";
-        var approved = $('#status').val();
-        var invoice = $('#invoice_generate').val();
-        var searchText = $('#search-text-field').val();
+        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
+            var projectID = "{{ $project->id }}";
+            var approved = $('#status').val();
+            var invoice = $('#invoice_generate').val();
+            var searchText = $('#search-text-field').val();
 
-        data['projectId'] = projectID;
-        data['approved'] = approved;
-        data['invoice'] = invoice;
-        data['searchText'] = searchText;
-        data['project_admin'] = "{{ ($project->project_admin == user()->id) ? 1 : 0 }}";
-    });
-    const showTable = () => {
-        window.LaravelDataTables["timelogs-table"].draw(false);
-    }
+            data['projectId'] = projectID;
+            data['approved'] = approved;
+            data['invoice'] = invoice;
+            data['searchText'] = searchText;
+            data['project_admin'] = "{{ ($project->project_admin == user()->id) ? 1 : 0 }}";
+        });
 
-    $('#project_id, #employee, #status, #invoice_generate').on('change keyup',
-        function() {
-            if ($('#status').val() != "all") {
+        function showTable() {
+            if (window.LaravelDataTables && window.LaravelDataTables["timelogs-table"]) {
+                window.LaravelDataTables["timelogs-table"].draw(false);
+            }
+        }
+        window.showTable = showTable;
+
+        $body.off(namespace);
+
+        $body.on('change' + namespace + ' keyup' + namespace, '#project_id, #employee, #status, #invoice_generate', function() {
+            if ($('#status').val() != "all" || $('#invoice_generate').val() != "all") {
                 $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else if ($('#invoice_generate').val() != "all") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
             } else {
                 $('#reset-filters').addClass('d-none');
-                showTable();
+            }
+            showTable();
+        });
+
+        $body.on('keyup' + namespace, '#search-text-field', function() {
+            if ($(this).val() != "") {
+                $('#reset-filters').removeClass('d-none');
+            }
+            showTable();
+        });
+
+        $body.on('click' + namespace, '#reset-filters,#reset-filters-2', function() {
+            $('#filter-form')[0].reset();
+            $('#filter-form .select-picker').selectpicker("refresh");
+            $('#reset-filters').addClass('d-none');
+            showTable();
+        });
+
+        $body.on('change' + namespace, '#quick-action-type', function() {
+            const actionValue = $(this).val();
+            if (actionValue != '') {
+                $('#quick-action-apply').removeAttr('disabled');
+                $('.quick-action-field').addClass('d-none');
+                if (actionValue == 'change-status') {
+                    $('#change-status-action').removeClass('d-none');
+                }
+            } else {
+                $('#quick-action-apply').attr('disabled', true);
+                $('.quick-action-field').addClass('d-none');
             }
         });
 
-    $('#search-text-field').on('keyup', function() {
-        if ($('#search-text-field').val() != "") {
-            $('#reset-filters').removeClass('d-none');
-            showTable();
-        }
-    });
-
-    $('#reset-filters,#reset-filters-2').click(function() {
-        $('#filter-form')[0].reset();
-
-        $('#filter-form .select-picker').selectpicker("refresh");
-        $('#reset-filters').addClass('d-none');
-        showTable();
-    });
-
-    $('#quick-action-type').change(function() {
-        const actionValue = $(this).val();
-        if (actionValue != '') {
-            $('#quick-action-apply').removeAttr('disabled');
-
-            if (actionValue == 'change-status') {
-                $('.quick-action-field').addClass('d-none');
-                $('#change-status-action').removeClass('d-none');
+        $body.on('click' + namespace, '#quick-action-apply', function() {
+            const actionValue = $('#quick-action-type').val();
+            if (actionValue == 'delete') {
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.recoverRecord')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) { applyQuickAction(); }
+                });
             } else {
-                $('.quick-action-field').addClass('d-none');
+                applyQuickAction();
             }
-        } else {
-            $('#quick-action-apply').attr('disabled', true);
-            $('.quick-action-field').addClass('d-none');
-        }
-    });
+        });
 
-    $('#quick-action-apply').click(function() {
-        const actionValue = $('#quick-action-type').val();
-        if (actionValue == 'delete') {
+        $body.on('click' + namespace, '.delete-table-row', function() {
+            var id = $(this).data('time-id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
                 text: "@lang('messages.recoverRecord')",
@@ -174,130 +196,71 @@ $addTimelogPermission = user()->permission('add_timelogs');
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    applyQuickAction();
+                    var url = "{{ route('timelogs.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        blockUI: true,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { showTable(); }
+                        }
+                    });
                 }
             });
-
-        } else {
-            applyQuickAction();
-        }
-    });
-
-    $('body').on('click', '.delete-table-row', function() {
-        var id = $(this).data('time-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('timelogs.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    blockUI: true,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            showTable();
-                        }
-                    }
-                });
-            }
         });
-    });
 
-    $('body').on('click', '.stop-active-timer', function() {
-        var id = $(this).data('time-id');
-        var url = "{{ route('timelogs.stop_timer', ':id') }}";
-        url = url.replace(':id', id);
-        var token = '{{ csrf_token() }}';
-        $.easyAjax({
-            url: url,
-            type: "POST",
-            data: {
-                timeId: id,
-                _token: token
-            },
-            success: function(data) {
-                showTable();
-            }
-        })
+        $body.on('click' + namespace, '.stop-active-timer, .approve-timelog', function() {
+            var id = $(this).data('time-id');
+            var action = $(this).hasClass('stop-active-timer') ? 'stop_timer' : 'approve_timelog';
+            var url = (action === 'stop_timer') ? "{{ route('timelogs.stop_timer', ':id') }}".replace(':id', id) : "{{ route('timelogs.approve_timelog', ':id') }}".replace(':id', id);
+            var token = '{{ csrf_token() }}';
+            $.easyAjax({
+                url: url,
+                type: "POST",
+                data: { id: id, timeId: id, _token: token },
+                success: function() { showTable(); }
+            });
+        });
 
-    });
+        function applyQuickAction() {
+            var rowdIds = $("#timelogs-table input:checkbox:checked").map(function() {
+                return $(this).val();
+            }).get();
 
-    $('body').on('click', '.approve-timelog', function() {
-        var id = $(this).data('time-id');
-        var url = "{{ route('timelogs.approve_timelog', ':id') }}";
-        url = url.replace(':id', id);
-        var token = '{{ csrf_token() }}';
-        $.easyAjax({
-            url: url,
-            type: "POST",
-            data: {
-                id: id,
-                _token: token
-            },
-            success: function(data) {
-                showTable();
-            }
-        })
+            var url = "{{ route('timelogs.apply_quick_action') }}?row_ids=" + rowdIds;
 
-    });
-
-    const applyQuickAction = () => {
-        var rowdIds = $("#timelogs-table input:checkbox:checked").map(function() {
-            return $(this).val();
-        }).get();
-
-        var url = "{{ route('timelogs.apply_quick_action') }}?row_ids=" + rowdIds;
-
-        $.easyAjax({
-            url: url,
-            container: '#quick-action-form',
-            type: "POST",
-            disableButton: true,
-            buttonSelector: "#quick-action-apply",
-            data: $('#quick-action-form').serialize(),
-            blockUI: true,
-            success: function(response) {
-                if (response.status == 'success') {
-                    showTable();
-                    resetActionButtons();
-                    deSelectAll();
+            $.easyAjax({
+                url: url,
+                container: '#quick-action-form',
+                type: "POST",
+                disableButton: true,
+                buttonSelector: "#quick-action-apply",
+                data: $('#quick-action-form').serialize(),
+                blockUI: true,
+                success: function(response) {
+                    if (response.status == 'success') {
+                        showTable();
+                        if (typeof resetActionButtons === 'function') resetActionButtons();
+                        if (typeof deSelectAll === 'function') deSelectAll();
+                    }
                 }
-            }
-        })
-    };
+            })
+        }
+        window.applyQuickAction = applyQuickAction;
+
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            delete window.applyQuickAction;
+            document.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

@@ -274,11 +274,11 @@ $projectArchived = $project->trashed();
                 $(document).on('click' + namespace, outsideClick);
 
                 // Combined Cleanup
-                window.addEventListener("turbo:before-cache", function cleanup() {
+                document.addEventListener("turbo:before-cache", function cleanup() {
                     $body.off(namespace);
                     $(document).off(namespace);
                     window.removeEventListener('resize', doAdapt);
-                    window.removeEventListener('turbo:before-cache', cleanup);
+                    document.removeEventListener("turbo:before-cache", cleanup);
                 }, { once: true });
             }
         })();

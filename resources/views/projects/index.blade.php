@@ -340,11 +340,12 @@ $deleteProjectPermission = user()->permission('delete_projects');
                 @endif
             });
 
-            window.showTable = function() {
+            function showTable() {
                 if (window.LaravelDataTables && window.LaravelDataTables["projects-table"]) {
                     window.LaravelDataTables["projects-table"].draw(false);
                 }
-            };
+            }
+            window.showTable = showTable;
 
             $body.on('change' + namespace + ' keyup' + namespace, '#client_id, #status, #employee_id, #team_id, #category_id, #pinned, #date_filter_on, #public, #progress', function() {
                 var filtersActive = ($('#status').val() != "not finished") ||
@@ -521,7 +522,7 @@ $deleteProjectPermission = user()->permission('delete_projects');
                 });
             });
 
-            window.applyQuickAction = function() {
+            function applyQuickAction() {
                 var rowdIds = $("#projects-table input:checkbox:checked").map(function() {
                     return $(this).val();
                 }).get();
@@ -537,7 +538,7 @@ $deleteProjectPermission = user()->permission('delete_projects');
                     data: $('#quick-action-form').serialize(),
                     success: function(response) {
                         if (response.status == 'success') {
-                            window.showTable();
+                            showTable();
                             if (typeof resetActionButtons === 'function') resetActionButtons();
                             if (typeof deSelectAll === 'function') deSelectAll();
                             $('#quick-action-apply').attr('disabled', 'disabled');
@@ -546,7 +547,8 @@ $deleteProjectPermission = user()->permission('delete_projects');
                         }
                     }
                 })
-            };
+            }
+            window.applyQuickAction = applyQuickAction;
 
             $body.on('click' + namespace, '.duplicateProject', function() {
                 var id = $(this).data('project-id');
@@ -555,15 +557,15 @@ $deleteProjectPermission = user()->permission('delete_projects');
                 $.ajaxModal(MODAL_LG, url);
             });
 
-            window.addEventListener('turbo:before-cache', function cleanup() {
+            document.addEventListener('turbo:before-cache', function cleanup() {
                 $body.off(namespace);
-                $table.off(namespace);
+                $table.off('preXhr.dt' + namespace);
                 if (window.LaravelDataTables && window.LaravelDataTables["projects-table"]) {
                     window.LaravelDataTables["projects-table"].destroy();
                 }
-                window.showTable = undefined;
-                window.applyQuickAction = undefined;
-                window.removeEventListener('turbo:before-cache', cleanup);
+                delete window.showTable;
+                delete window.applyQuickAction;
+                document.removeEventListener('turbo:before-cache', cleanup);
             }, { once: true });
 
         })();

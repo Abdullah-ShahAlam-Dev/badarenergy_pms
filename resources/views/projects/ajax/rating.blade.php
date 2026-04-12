@@ -153,14 +153,15 @@
 
 @if (in_array('client', user_roles()))
     <script>
-        $(document).ready(function() {
+        (function() {
+            var $body = $('body');
+            var namespace = '.projectRating';
             var ratingValue = "{{ !is_null($project->rating) ? $project->rating->rating : 0 }}";
 
-            /* 1. Visualizing things on Hover - See next part for action on click */
-            $('#stars li').on('mouseover', function() {
-                var onStar = parseInt($(this).data('value'), 10); // The star currently mouse on
+            $body.off(namespace);
 
-                // Now highlight all the stars that's not after the current hovered star
+            $body.on('mouseover' + namespace, '#stars li', function() {
+                var onStar = parseInt($(this).data('value'), 10);
                 $(this).parent().children('li.star').each(function(e) {
                     if (e < onStar) {
                         $(this).addClass('hover');
@@ -168,38 +169,37 @@
                         $(this).removeClass('hover');
                     }
                 });
-            }).on('mouseout', function() {
+            });
+
+            $body.on('mouseout' + namespace, '#stars li', function() {
                 $(this).parent().children('li.star').each(function(e) {
                     $(this).removeClass('hover');
                 });
             });
 
-            /* 2. Action to perform on click */
-            $('#stars li').on('click', function() {
-                var onStar = parseInt($(this).data('value'), 10); // The star currently selected
+            $body.on('click' + namespace, '#stars li', function() {
+                var onStar = parseInt($(this).data('value'), 10);
                 var stars = $(this).parent().children('li.star');
 
-                for (i = 0; i < stars.length; i++) {
+                for (var i = 0; i < stars.length; i++) {
                     $(stars[i]).removeClass('selected');
                 }
 
-                for (i = 0; i < onStar; i++) {
+                for (var i = 0; i < onStar; i++) {
                     $(stars[i]).addClass('selected');
                 }
 
                 ratingValue = parseInt($('#stars li.selected').last().data('value'), 10);
             });
 
-            $('.save-form').click(function() {
-
+            $body.on('click' + namespace, '.save-form', function() {
                 var token = "{{ csrf_token() }}";
                 var url = "{{ route('project-ratings.store') }}";
                 var method = 'POST';
                 var ratingID = $('#ratingID').val();
 
                 if (ratingID) {
-                    url = "{{ route('project-ratings.update', ':id') }}";
-                    url = url.replace(':id', ratingID);
+                    url = "{{ route('project-ratings.update', ':id') }}".replace(':id', ratingID);
                     method = 'PUT';
                 }
 
@@ -217,9 +217,14 @@
                             '_token': token,
                             '_method': method
                         }
-                    })
+                    });
                 }
             });
-        });
+
+            document.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                document.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
     </script>
 @endif

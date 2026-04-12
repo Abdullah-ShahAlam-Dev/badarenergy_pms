@@ -382,7 +382,6 @@ $createPublicProjectPermission = user()->permission('create_public_project');
         var $body = $('body');
         var namespace = '.projectEdit';
 
-        // Cleanup before re-binding
         $body.off(namespace);
 
         $('.custom-date-picker').each(function(ind, el) {
@@ -588,11 +587,11 @@ $createPublicProjectPermission = user()->permission('create_public_project');
         <x-forms.custom-field-filejs/>
         init(RIGHT_MODAL);
 
-        window.addEventListener('turbo:before-cache', function cleanup() {
+        document.addEventListener('turbo:before-cache', function cleanup() {
             $body.off(namespace);
             if (typeof destory_editor === 'function') destory_editor('#project_summary');
             else if (typeof destroy_editor === 'function') destroy_editor('#project_summary');
-            window.removeEventListener('turbo:before-cache', cleanup);
+            document.removeEventListener('turbo:before-cache', cleanup);
         }, { once: true });
     })();
 
@@ -603,6 +602,4 @@ $createPublicProjectPermission = user()->permission('create_public_project');
         });
         $('#'+id).val(checkedData);
     }
-</script>
-
 </script>

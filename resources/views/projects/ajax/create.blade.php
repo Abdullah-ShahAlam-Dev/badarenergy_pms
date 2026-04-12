@@ -322,7 +322,6 @@
         var add_project_files = "{{ $addProjectFilePermission }}";
         var add_project_note_permission = "{{ $addProjectNotePermission }}";
 
-        // Cleanup before re-binding
         $body.off(namespace);
 
         if (add_project_files == "all") {
@@ -576,11 +575,11 @@
 
         init(RIGHT_MODAL);
 
-        window.addEventListener('turbo:before-cache', function cleanup() {
+        document.addEventListener('turbo:before-cache', function cleanup() {
             $body.off(namespace);
             if (projectCreateDropzone) {
                 projectCreateDropzone.destroy();
-                window.projectCreateDropzone = undefined;
+                delete window.projectCreateDropzone;
             }
             if (typeof destory_editor === 'function') {
                 destory_editor('#project_summary');
@@ -589,7 +588,7 @@
                 destroy_editor('#project_summary');
                 destroy_editor('#notes');
             }
-            window.removeEventListener('turbo:before-cache', cleanup);
+            document.removeEventListener('turbo:before-cache', cleanup);
         }, { once: true });
     })();
 
@@ -600,6 +599,4 @@
         });
         $('#' + id).val(checkedData);
     }
-</script>
-
 </script>

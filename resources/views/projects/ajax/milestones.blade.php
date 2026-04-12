@@ -99,75 +99,67 @@ $deleteProjectMilestonePermission = ($project->project_admin == user()->id) ? 'a
 <!-- ROW END -->
 
 <script>
-    $('#add-project-milestone').click(function() {
-        const url = "{{ route('milestones.create') }}" + "?id={{ $project->id }}";
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
+    (function() {
+        var $body = $('body');
+        var namespace = '.projectMilestones';
 
-    });
+        $body.off(namespace);
 
-    $('body').on('click', '.edit-milestone', function() {
-        var id = $(this).data('row-id');
-
-        var url = "{{ route('milestones.edit', ':id') }}";
-        url = url.replace(':id', id);
-
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-
-    });
-
-    $('body').on('click', '.milestone-detail', function() {
-        var id = $(this).data('milestone-id');
-        var url = "{{ route('milestones.show', ':id') }}";
-        url = url.replace(':id', id);
-        $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_XL, url);
-    });
-
-    $('.delete-row').click(function() {
-
-        var id = $(this).data('row-id');
-        var url = "{{ route('milestones.destroy', ':id') }}";
-        url = url.replace(':id', id);
-
-        var token = "{{ csrf_token() }}";
-
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            $('#row-' + id).fadeOut();
-                        }
-                    }
-                });
-            }
+        $body.on('click' + namespace, '#add-project-milestone', function() {
+            const url = "{{ route('milestones.create') }}" + "?id={{ $project->id }}";
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
         });
 
-    });
+        $body.on('click' + namespace, '.edit-milestone', function() {
+            var id = $(this).data('row-id');
+            var url = "{{ route('milestones.edit', ':id') }}".replace(':id', id);
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
+        });
 
+        $body.on('click' + namespace, '.milestone-detail', function() {
+            var id = $(this).data('milestone-id');
+            var url = "{{ route('milestones.show', ':id') }}".replace(':id', id);
+            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_XL, url);
+        });
+
+        $body.on('click' + namespace, '.delete-row', function() {
+            var id = $(this).data('row-id');
+            var url = "{{ route('milestones.destroy', ':id') }}".replace(':id', id);
+            var token = "{{ csrf_token() }}";
+
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") {
+                                $('#row-' + id).fadeOut();
+                            }
+                        }
+                    });
+                }
+            });
+        });
+
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            document.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

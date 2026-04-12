@@ -302,7 +302,6 @@ $memberIds = $project->members->pluck('user_id')->toArray();
         var $body = $('body');
         var namespace = '.projectOverview';
 
-        // Cleanup before re-binding
         $body.off(namespace);
 
         $body.on('click' + namespace, '#save-dashboard-widget', function() {
@@ -430,9 +429,9 @@ $memberIds = $project->members->pluck('user_id')->toArray();
             $.ajaxModal(MODAL_LG, url);
         });
 
-        window.addEventListener('turbo:before-cache', function cleanup() {
+        document.addEventListener('turbo:before-cache', function cleanup() {
             $body.off(namespace);
-            window.removeEventListener('turbo:before-cache', cleanup);
+            document.removeEventListener('turbo:before-cache', cleanup);
         }, { once: true });
     })();
 </script>

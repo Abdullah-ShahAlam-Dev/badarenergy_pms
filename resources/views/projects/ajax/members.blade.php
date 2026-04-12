@@ -93,131 +93,106 @@ $viewProjectHourlyRatePermission = user()->permission('view_project_hourly_rates
 <!-- ROW END -->
 
 <script>
+    (function() {
+        var $body = $('body');
+        var namespace = '.projectMembers';
 
-    $(document).ready(function () {
+        $body.off(namespace);
+
         setTimeout(function () {
             $('[data-toggle="popover"]').popover();
         }, 500);
-    });
 
-    $('#add-project-member').click(function() {
-        const url = "{{ route('project-members.create') }}" + "?id={{ $project->id }}";
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
+        $body.on('click' + namespace, '#add-project-member', function() {
+            const url = "{{ route('project-members.create') }}" + "?id={{ $project->id }}";
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
+        });
 
-    });
+        $body.on('click' + namespace, '.delete-row', function() {
+            var id = $(this).data('row-id');
+            var url = "{{ route('project-members.destroy', ':id') }}".replace(':id', id);
+            var token = "{{ csrf_token() }}";
 
-    $('.delete-row').click(function() {
-
-        var id = $(this).data('row-id');
-        var url = "{{ route('project-members.destroy', ':id') }}";
-        url = url.replace(':id', id);
-
-        var token = "{{ csrf_token() }}";
-
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            $('#row-' + id).fadeOut();
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") {
+                                $('#row-' + id).fadeOut();
+                            }
                         }
-                    }
-                });
-            }
-        });
-
-    });
-
-
-    $('.change-hourly-rate').blur(function() {
-        let id = $(this).data('row-id');
-        let value = $(this).val();
-
-        var url = "{{ route('project-members.update', ':id') }}";
-        url = url.replace(':id', id);
-
-        var token = "{{ csrf_token() }}";
-
-        $.easyAjax({
-            url: url,
-            container: '#row-' + id,
-            type: "POST",
-            blockUI: true,
-            data: {
-                'hourly_rate': value,
-                '_token': token,
-                '_method': 'PUT'
-            }
-        });
-    });
-
-
-    $('body').on('click', '.assign_role', function() {
-        var userId = $(this).data('user-id');
-        var projectId = '{{ $project->id }}';
-        var token = "{{ csrf_token() }}";
-
-        $.easyAjax({
-            url: "{{ route('projects.assign_project_admin') }}",
-            type: "POST",
-            data: {
-                userId: userId,
-                projectId: projectId,
-                _token: token
-            },
-            blockUI: true,
-            container: '.admin-dash-table',
-            success: function(response) {
-                if (response.status == "success") {
-                    window.location.reload();
+                    });
                 }
-            }
+            });
         });
-    });
 
-    $('body').on('click', '.remove-admin', function() {
-        var userId = null;
-        var projectId = '{{ $project->id }}';
-        var token = "{{ csrf_token() }}";
+        $body.on('blur' + namespace, '.change-hourly-rate', function() {
+            let id = $(this).data('row-id');
+            let value = $(this).val();
+            var url = "{{ route('project-members.update', ':id') }}".replace(':id', id);
+            var token = "{{ csrf_token() }}";
 
-        $.easyAjax({
-            url: "{{ route('projects.assign_project_admin') }}",
-            type: "POST",
-            data: {
-                userId: userId,
-                projectId: projectId,
-                _token: token
-            },
-            success: function(response) {
-                if (response.status == "success") {
-                    window.location.reload();
+            $.easyAjax({
+                url: url,
+                container: '#row-' + id,
+                type: "POST",
+                blockUI: true,
+                data: { 'hourly_rate': value, '_token': token, '_method': 'PUT' }
+            });
+        });
+
+        $body.on('click' + namespace, '.assign_role', function() {
+            var userId = $(this).data('user-id');
+            var projectId = '{{ $project->id }}';
+            var token = "{{ csrf_token() }}";
+
+            $.easyAjax({
+                url: "{{ route('projects.assign_project_admin') }}",
+                type: "POST",
+                data: { userId: userId, projectId: projectId, _token: token },
+                blockUI: true,
+                container: '.admin-dash-table',
+                success: function(response) {
+                    if (response.status == "success") { window.location.reload(); }
                 }
-            }
+            });
         });
 
-    });
+        $body.on('click' + namespace, '.remove-admin', function() {
+            var userId = null;
+            var projectId = '{{ $project->id }}';
+            var token = "{{ csrf_token() }}";
+
+            $.easyAjax({
+                url: "{{ route('projects.assign_project_admin') }}",
+                type: "POST",
+                data: { userId: userId, projectId: projectId, _token: token },
+                success: function(response) {
+                    if (response.status == "success") { window.location.reload(); }
+                }
+            });
+        });
+
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            $('.popover').remove();
+            $('[data-toggle="popover"]').popover('dispose');
+            document.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

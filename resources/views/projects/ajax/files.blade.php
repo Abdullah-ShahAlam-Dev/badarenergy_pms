@@ -108,128 +108,117 @@ $deleteFilePermission = user()->permission('delete_project_files');
 
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script>
-    $(document).ready(function () {
+    (function() {
+        var $body = $('body');
+        var namespace = '.projectFiles';
+        var taskDropzone;
+
         var add_project_files = "{{ $addFilePermission }}";
         var trashed = "{{ $project->trashed() }}";
         var isProjectAdmin = {{ ($project->project_admin == user()->id) ? 1 : 0 }};
 
-    if (!trashed && (add_project_files == "all" || isProjectAdmin)) {
+        $body.off(namespace);
 
-        Dropzone.autoDiscover = false;
-        taskDropzone = new Dropzone("#employee_file", {
-            dictDefaultMessage: "{{ __('app.dragDrop') }}",
-            url: "{{ route('files.store') }}",
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            paramName: "file",
-            maxFilesize: DROPZONE_MAX_FILESIZE,
-            maxFiles: DROPZONE_MAX_FILES,
-            timeout: 0,
-            uploadMultiple: true,
-            addRemoveLinks: true,
-            parallelUploads: DROPZONE_MAX_FILES,
-            acceptedFiles: DROPZONE_FILE_ALLOW,
-            init: function() {
-                taskDropzone = this;
-            }
+        if (!trashed && (add_project_files == "all" || isProjectAdmin)) {
+            Dropzone.autoDiscover = false;
+            taskDropzone = new Dropzone("#employee_file", {
+                dictDefaultMessage: "{{ __('app.dragDrop') }}",
+                url: "{{ route('files.store') }}",
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                paramName: "file",
+                maxFilesize: DROPZONE_MAX_FILESIZE,
+                maxFiles: DROPZONE_MAX_FILES,
+                timeout: 0,
+                uploadMultiple: true,
+                addRemoveLinks: true,
+                parallelUploads: DROPZONE_MAX_FILES,
+                acceptedFiles: DROPZONE_FILE_ALLOW
+            });
+
+            taskDropzone.on('sending', function(file, xhr, formData) {
+                var ids = "{{ $project->id }}";
+                formData.append('project_id', ids);
+                $.easyBlockUI();
+            });
+
+            taskDropzone.on('uploadprogress', function() {
+                $.easyBlockUI();
+            });
+
+            taskDropzone.on('queuecomplete', function(file) {
+                if (file.length > 0 && file[0].xhr) {
+                    var taskView = JSON.parse(file[0].xhr.response).view;
+                    taskDropzone.removeAllFiles();
+                    $('#task-file-list').html(taskView);
+                }
+                $.easyUnblockUI();
+            });
+
+            taskDropzone.on('removedfile', function () {
+                var grp = $('div#employee_file').closest(".form-group");
+                var label = $('div#employee_file').siblings("label");
+                $(grp).removeClass("has-error");
+                $(label).removeClass("is-invalid");
+            });
+
+            taskDropzone.on('error', function (file, message) {
+                taskDropzone.removeFile(file);
+                var grp = $('div#employee_file').closest(".form-group");
+                var label = $('div#employee_file').siblings("label");
+                $(grp).find(".help-block").remove();
+                $(grp).append('<div class="help-block invalid-feedback">' + message + '</div>').addClass("has-error");
+                $(label).addClass("is-invalid");
+            });
+        }
+
+        $body.on('click' + namespace, '#add-task-file', function() {
+            $(this).closest('.row').addClass('d-none');
+            $('#save-taskfile-data-form').removeClass('d-none');
         });
-        taskDropzone.on('sending', function(file, xhr, formData) {
-            var ids = "{{ $project->id }}";
-            formData.append('project_id', ids);
-            $.easyBlockUI();
+
+        $body.on('click' + namespace, '#cancel-taskfile', function() {
+            $('#save-taskfile-data-form').addClass('d-none');
+            $('#add-btn').removeClass('d-none');
         });
-        taskDropzone.on('uploadprogress', function() {
-            $.easyBlockUI();
-        });
-        taskDropzone.on('queuecomplete', function(file) {
-            var taskView = JSON.parse(file[0].xhr.response).view;
-            taskDropzone.removeAllFiles();
-            $.easyUnblockUI();
-            $('#task-file-list').html(taskView);
-        });
-        taskDropzone.on('removedfile', function () {
-            var grp = $('div#file-upload-dropzone').closest(".form-group");
-            var label = $('div#file-upload-box').siblings("label");
-            $(grp).removeClass("has-error");
-            $(label).removeClass("is-invalid");
-        });
-        taskDropzone.on('error', function (file, message) {
-            taskDropzone.removeFile(file);
-            var grp = $('div#file-upload-dropzone').closest(".form-group");
-            var label = $('div#file-upload-box').siblings("label");
-            $(grp).find(".help-block").remove();
-            var helpBlockContainer = $(grp);
 
-            if (helpBlockContainer.length == 0) {
-                helpBlockContainer = $(grp);
-            }
+        $body.on('click' + namespace, '.delete-file', function() {
+            var id = $(this).data('row-id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('files.destroy', ':id') }}".replace(':id', id);
+                    var token = "{{ csrf_token() }}";
 
-            helpBlockContainer.append('<div class="help-block invalid-feedback">' + message + '</div>');
-            $(grp).addClass("has-error");
-            $(label).addClass("is-invalid");
-
-        });
-    }
-
-    $('#add-task-file').click(function() {
-        $(this).closest('.row').addClass('d-none');
-        $('#save-taskfile-data-form').removeClass('d-none');
-    });
-
-    $('#cancel-document').click(function() {
-        $('#save-taskfile-data-form').addClass('d-none');
-        $('#add-task-file').closest('.row').removeClass('d-none');
-    });
-
-    $('body').on('click', '#cancel-taskfile', function() {
-        $('#save-taskfile-data-form').toggleClass('d-none');
-        $('#add-btn').toggleClass('d-none');
-    });
-
-    $('body').on('click', '.delete-file', function() {
-        var id = $(this).data('row-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('files.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            $('#task-file-list').html(response.view);
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: { '_token': token, '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") {
+                                $('#task-file-list').html(response.view);
+                            }
                         }
-                    }
-                });
-            }
+                    });
+                }
+            });
         });
-    });
 
-    });
-
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $body.off(namespace);
+            if (taskDropzone) {
+                taskDropzone.destroy();
+            }
+            document.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
+    })();
 </script>

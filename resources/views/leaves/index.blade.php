@@ -384,4 +384,3 @@ $approveRejectPermission = user()->permission('approve_or_reject_leaves');
         })();
     </script>
 @endpush
-@endpush

@@ -162,7 +162,10 @@ $addPermission = user()->permission('add_holiday');
             });
 
             $body.on('click' + namespace, '#reset-filters', function() {
-                $('#filter-form')[0].reset();
+                var $filterForm = $('#filter-form');
+                if ($filterForm.length) {
+                    $filterForm[0].reset();
+                }
                 $('#month').val('{{ $currentMonth }}');
                 $('#year').val('{{ $currentYear }}');
                 $('.filter-box .select-picker').selectpicker("refresh");
@@ -267,7 +270,7 @@ $addPermission = user()->permission('add_holiday');
             });
 
             $body.on('click' + namespace, '#mark-holiday', function() {
-                var url = "{{ route('holidays.mark_holiday') }}?year" + $('#year').val();
+                var url = "{{ route('holidays.mark_holiday') }}?year=" + $('#year').val();
                 $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
                 $.ajaxModal(MODAL_LG, url);
             });

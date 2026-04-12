@@ -46,13 +46,12 @@
 </div>
 
 <script>
-    $(document).ready(function() {
-
+    (function() {
         var $insertBefore = $('#insertBefore');
         var i = 1;
 
         // Add More Inputs
-        $('#add-item').click(function() {
+        $('#add-item').off('click').on('click', function() {
             i += 1;
 
             $(`<div id="addMoreBox${i}" class="row pl-20 pr-20 clearfix">
@@ -63,8 +62,6 @@
                 </div> </div> <div class="col-lg-2 col-md-1 col-2"><a href="javascript:;" class="d-flex align-items-center justify-content-center mt-5 remove-item" data-item-id="${i}"><i class="fa fa-times-circle f-20 text-lightest"></i></a></div> </div> `)
                 .insertBefore($insertBefore);
 
-
-            // Recently Added date picker assign
             datepicker('#dateField' + i, {
                 position: 'bl',
                 ...datepickerConfig
@@ -72,7 +69,7 @@
         });
 
         // Remove fields
-        $('body').on('click', '.remove-item', function() {
+        $('body').off('click.holidayCreate').on('click.holidayCreate', '.remove-item', function() {
             var index = $(this).data('item-id');
             $('#addMoreBox' + index).remove();
         });
@@ -82,8 +79,7 @@
             ...datepickerConfig
         });
 
-        $('#save-holiday-form').click(function() {
-
+        $('#save-holiday-form').off('click').on('click', function() {
             const url = "{{ route('holidays.store') }}";
             $.easyAjax({
                 url: url,
@@ -94,11 +90,17 @@
                 buttonSelector: "#save-holiday-form",
                 data: $('#save-holiday-data-form').serialize(),
                 success: function(response) {
-                    window.location.href = response.redirectUrl;
+                    if (response.status == 'success') {
+                        if (typeof Turbo !== 'undefined') {
+                            Turbo.visit(response.redirectUrl);
+                        } else {
+                            window.location.href = response.redirectUrl;
+                        }
+                    }
                 }
             });
         });
 
         init(RIGHT_MODAL);
-    });
+    })();
 </script>

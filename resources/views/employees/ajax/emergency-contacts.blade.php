@@ -81,86 +81,70 @@
 <!-- TAB CONTENT END -->
 
 <script>
+    (function() {
+        var $body = $('body');
+        var namespace = '.employeeEmergencyContacts';
 
-    $('body').on('click', '.delete-table-row', function () {
-        const id = $(this).data('row-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                let url = "{{ route('emergency-contacts.destroy', ':id') }}";
-                url = url.replace(':id', id);
+        $body.off(namespace);
 
-                const token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    blockUI: true,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function (response) {
-                        if (response.status == "success") {
-                            $('.tableRow' + id).hide();
+        $body.on('click' + namespace, '.delete-table-row', function() {
+            var id = $(this).data('row-id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('emergency-contacts.destroy', ':id') }}".replace(':id', id);
+                    $.easyAjax({
+                        type: 'POST', url: url, blockUI: true,
+                        data: { '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { $('.tableRow' + id).hide(); }
                         }
-                    }
-                });
-            }
+                    });
+                }
+            });
         });
-    });
 
-    // Add new emergency contact modal
-    $('body').on('click', '.emergency-contacts-btn', function () {
-        var url = "{{ route('emergency-contacts.create') }}?user_id=" + "{{ $employee->id }}";
+        $body.on('click' + namespace, '.emergency-contacts-btn', function() {
+            var url = "{{ route('emergency-contacts.create') }}?user_id={{ $employee->id }}";
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
+        });
 
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    });
+        $body.on('click' + namespace, '.edit-contact', function() {
+            var id = $(this).data('contact-id');
+            var url = "{{ route('emergency-contacts.edit', ':id') }}".replace(':id', id);
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
+        });
 
-    // Edit emergency contact modal
-    $('body').on('click', '.edit-contact', function () {
-        var id = $(this).data('contact-id');
+        $body.on('click' + namespace, '.show-contact', function() {
+            var id = $(this).data('contact-id');
+            var url = "{{ route('emergency-contacts.show', ':id') }}".replace(':id', id);
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
+        });
 
-        var url = "{{ route('emergency-contacts.edit', ':id') }}";
-        url = url.replace(':id', id);
+        $body.on('show.bs.dropdown' + namespace, '.table-responsive', function() {
+            $('.table-responsive').css("overflow", "inherit");
+        });
 
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    });
+        $body.on('hide.bs.dropdown' + namespace, '.table-responsive', function() {
+            $('.table-responsive').css("overflow", "auto");
+        });
 
-    // Show emergency contact modal
-    $('body').on('click', '.show-contact', function () {
-        const id = $(this).data('contact-id');
-
-        let url = "{{ route('emergency-contacts.show', ':id') }}";
-        url = url.replace(':id', id);
-
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    });
-
-    $('.table-responsive').on('show.bs.dropdown', function () {
-        $('.table-responsive').css("overflow", "inherit");
-    });
-
-    $('.table-responsive').on('hide.bs.dropdown', function () {
-        $('.table-responsive').css("overflow", "auto");
-    })
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

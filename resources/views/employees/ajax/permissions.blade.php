@@ -83,79 +83,66 @@
     </x-table>
 
     <script>
-        $('body').on('click', '.show-custom-permission', function() {
-            var moduleRow = $(this).closest('tr');
-            var moduleId = $(this).data('module-id');
-            var url = "{{ route('user-permissions.custom_permissions', $employee->id) }}";
-            var showCustomPermissionButton = $(this);
+        (function() {
+            var $body = $('body');
+            var namespace = '.employeePermissions';
 
-            $.easyAjax({
-                url: url,
-                blockUI: true,
-                container: '.main-container',
-                type: "POST",
-                data: {
-                    'moduleId': moduleId,
-                    '_token': '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    if (response.status == 'success') {
-                        if ($('table.permisison-table tbody #module-custom-permission-' + moduleId)
-                            .length > 0) {
-                            $('table.permisison-table tbody #module-custom-permission-' + moduleId)
-                                .remove();
-                        } else {
-                            moduleRow.after(response.html);
+            $body.off(namespace);
+
+            $body.on('click' + namespace, '.show-custom-permission', function() {
+                var moduleRow = $(this).closest('tr');
+                var moduleId = $(this).data('module-id');
+                var showCustomPermissionButton = $(this);
+
+                $.easyAjax({
+                    url: "{{ route('user-permissions.custom_permissions', $employee->id) }}",
+                    blockUI: true, container: '.main-container', type: "POST",
+                    data: { 'moduleId': moduleId, '_token': '{{ csrf_token() }}' },
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            if ($('table.permisison-table tbody #module-custom-permission-' + moduleId).length > 0) {
+                                $('table.permisison-table tbody #module-custom-permission-' + moduleId).remove();
+                            } else {
+                                moduleRow.after(response.html);
+                            }
+                            showCustomPermissionButton.find(".svg-inline--fa").toggleClass("fa-chevron-down fa-chevron-up");
                         }
-                        showCustomPermissionButton
-                            .find(".svg-inline--fa")
-                            .toggleClass("fa-chevron-down fa-chevron-up");
                     }
-                }
+                });
             });
-        });
 
-        $('body').on('change', '.role-permission-select', function() {
-            var permissionId = $(this).data('permission-id');
-            var permissionType = $(this).val();
-            var url = "{{ route('user-permissions.update', $employee->id) }}";
-
-            $.easyAjax({
-                url: url,
-                blockUI: true,
-                container: '.main-container',
-                type: "POST",
-                data: {
-                    '_method': 'PUT',
-                    'permissionId': permissionId,
-                    'permissionType': permissionType,
-                    'permissionCustomised': 1,
-                    '_token': '{{ csrf_token() }}'
-                },
-                success: function (response) {
-                    $('#reset-user-permissions').closest('.alert').removeClass('d-none');
-                }
-            });
-        });
-
-        $('body').on('click', '#reset-user-permissions', function() {
-            var url = "{{ route('user-permissions.reset_permissions', $employee->id) }}";
-
-            $.easyAjax({
-                url: url,
-                blockUI: true,
-                container: '.main-container',
-                type: "POST",
-                data: {
-                    '_token': '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    if (response.status == 'success') {
-                        window.location.reload();                        
+            $body.on('change' + namespace, '.role-permission-select', function() {
+                $.easyAjax({
+                    url: "{{ route('user-permissions.update', $employee->id) }}",
+                    blockUI: true, container: '.main-container', type: "POST",
+                    data: {
+                        '_method': 'PUT',
+                        'permissionId': $(this).data('permission-id'),
+                        'permissionType': $(this).val(),
+                        'permissionCustomised': 1,
+                        '_token': '{{ csrf_token() }}'
+                    },
+                    success: function() {
+                        $('#reset-user-permissions').closest('.alert').removeClass('d-none');
                     }
-                }
+                });
             });
-        });
 
+            $body.on('click' + namespace, '#reset-user-permissions', function() {
+                $.easyAjax({
+                    url: "{{ route('user-permissions.reset_permissions', $employee->id) }}",
+                    blockUI: true, container: '.main-container', type: "POST",
+                    data: { '_token': '{{ csrf_token() }}' },
+                    success: function(response) {
+                        if (response.status == 'success') { window.location.reload(); }
+                    }
+                });
+            });
+
+            document.addEventListener("turbo:before-cache", function cleanup() {
+                $body.off(namespace);
+                document.removeEventListener("turbo:before-cache", cleanup);
+            }, { once: true });
+        })();
     </script>
 @endif

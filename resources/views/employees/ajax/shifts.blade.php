@@ -21,78 +21,73 @@
 <script src="{{ asset('vendor/full-calendar/locales-all.min.js') }}"></script>
 
 <script>
-    var initialLocaleCode = '{{ user()->locale }}';
-    var calendarEl = document.getElementById('calendar');
-    var global_settings = @json(company());
-    var manageShiftPermission = "{{ $manageEmployeeShiftPermission }}";
+    (function() {
+        var initialLocaleCode = '{{ user()->locale }}';
+        var calendarEl = document.getElementById('calendar');
+        var global_settings = @json(company());
+        var manageShiftPermission = "{{ $manageEmployeeShiftPermission }}";
 
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-        locale: initialLocaleCode,
-        timeZone: '{{ company()->timezone }}',
-        firstDay: parseInt("{{ attendance_setting()?->week_start_from }}"),
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-        },
-        navLinks: true, // can click day/week names to navigate views
-        selectable: (manageShiftPermission == 'all'),
-        selectMirror: true,
-        select: function(arg) {
-            getEventDetail("{{ $employee->id }}", arg.start.getDate(), arg.start.getMonth()+1, arg.start.getFullYear());
-            calendar.unselect()
-        },
-        eventClick: function(arg) {
+        var getEventDetail = function(userId, day, month, year) {
+            if (manageShiftPermission != 'all') { return false; }
+            var url = "{{ route('shifts.mark', [':userid', ':day', ':month', ':year']) }}";
+            url = url.replace(':userid', userId).replace(':day', day).replace(':month', month).replace(':year', year);
+            $(MODAL_DEFAULT + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_DEFAULT, url);
+        };
 
-            getEventDetail(arg.event.extendedProps.userId, arg.event.extendedProps.day, arg.event
-                .extendedProps.month, arg.event.extendedProps.year);
-        },
-        editable: false,
-        dayMaxEvents: true, // allow "more" link when too many events
-        events: {
-            url: "{{ route('shifts.employee_shift_calendar') }}",
-            extraParams: function() {
-                var employeeId = "{{ $employee->id }}";
-
-                return {
-                    employeeId: employeeId
-                };
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            locale: initialLocaleCode,
+            timeZone: '{{ company()->timezone }}',
+            firstDay: parseInt("{{ attendance_setting()?->week_start_from }}"),
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+            },
+            navLinks: true,
+            selectable: (manageShiftPermission == 'all'),
+            selectMirror: true,
+            select: function(arg) {
+                getEventDetail("{{ $employee->id }}", arg.start.getDate(), arg.start.getMonth() + 1, arg.start.getFullYear());
+                calendar.unselect();
+            },
+            eventClick: function(arg) {
+                getEventDetail(arg.event.extendedProps.userId, arg.event.extendedProps.day, arg.event.extendedProps.month, arg.event.extendedProps.year);
+            },
+            editable: false,
+            dayMaxEvents: true,
+            events: {
+                url: "{{ route('shifts.employee_shift_calendar') }}",
+                extraParams: function() { return { employeeId: "{{ $employee->id }}" }; }
+            },
+            eventDidMount: function(info) {
+                $(info.el).css('background-color', info.event.extendedProps.bg_color);
+                $(info.el).css('color', info.event.extendedProps.color);
+            },
+            eventTimeFormat: {
+                hour: global_settings.time_format == 'H:i' ? '2-digit' : 'numeric',
+                minute: '2-digit',
+                meridiem: global_settings.time_format == 'H:i' ? false : true
             }
-        },
-        eventDidMount: function(info) {
-            $(info.el).css('background-color', info.event.extendedProps.bg_color);
-            $(info.el).css('color', info.event.extendedProps.color);
-        },
-        eventTimeFormat: {
-            hour: global_settings.time_format == 'H:i' ? '2-digit' : 'numeric',
-            minute: '2-digit',
-            meridiem: global_settings.time_format == 'H:i' ? false : true
-        }
-    });
+        });
 
-    calendar.render();
-
-    function loadData() {
-        calendar.refetchEvents();
-        calendar.destroy();
         calendar.render();
-        window.location.reload();
-    }
 
-    // show event detail in sidebar
-    var getEventDetail = function(userId, day, month, year) {
-        if (manageShiftPermission != 'all') {
-            return false;
-        }
+        window.loadData = function() {
+            calendar.refetchEvents();
+            calendar.destroy();
+            calendar.render();
+            window.location.reload();
+        };
 
-        var url = "{{ route('shifts.mark', [':userid', ':day', ':month', ':year']) }}";
-        url = url.replace(':userid', userId);
-        url = url.replace(':day', day);
-        url = url.replace(':month', month);
-        url = url.replace(':year', year);
+        var doAdaptShifts = function() {};
+        window.addEventListener('resize', doAdaptShifts);
 
-        $(MODAL_DEFAULT + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_DEFAULT, url);
-
-    }
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            calendar.destroy();
+            window.removeEventListener('resize', doAdaptShifts);
+            delete window.loadData;
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

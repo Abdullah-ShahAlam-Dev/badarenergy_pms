@@ -142,87 +142,76 @@ $editDocumentPermission = user()->permission('edit_documents');
 <!-- TAB CONTENT END -->
 
 <script>
-    $('#add-task-file').click(function() {
-        $(this).closest('.row').addClass('d-none');
-        $('#save-taskfile-data-form').removeClass('d-none');
-    });
+    (function() {
+        var $body = $('body');
+        var namespace = '.employeeDocuments';
 
-    $('body').on('click', '.edit-file', function() {
-        var fileId = $(this).data('file-id');
-        var url = "{{ route('employee-docs.edit', ':id') }}";
-        url = url.replace(':id', fileId);
+        $body.off(namespace);
 
-        $(MODAL_DEFAULT + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_DEFAULT, url);
-    });
-
-    $('#cancel-document').click(function() {
-        $('#save-taskfile-data-form').addClass('d-none');
-        $('#add-task-file').closest('.row').removeClass('d-none');
-    });
-
-    $('#submit-document').click(function() {
-        var url = "{{ route('employee-docs.store') }}";
-
-        $.easyAjax({
-            url: url,
-            container: '#save-taskfile-data-form',
-            type: "POST",
-            disableButton: true,
-            buttonSelector: "#submit-document",
-            file: true,
-            data: $('#editSettings').serialize(),
-            success: function(response) {
-                if (response.status == 'success') {
-                    $('#task-file-list').html(response.view);
-                    $('#save-taskfile-data-form')[0].reset();
-                    $(".dropify-clear").trigger("click");
-                    $('.invalid-feedback').addClass('d-none');
-                }
-            }
-        })
-    });
-
-    $('body').on('click', '.delete-file', function() {
-        var id = $(this).data('row-id');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('employee-docs.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    data: {
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            $('#task-file-list').html(response.view);
-                        }
-                    }
-                });
-            }
+        $body.on('click' + namespace, '#add-task-file', function() {
+            $(this).closest('.row').addClass('d-none');
+            $('#save-taskfile-data-form').removeClass('d-none');
         });
-    });
+
+        $body.on('click' + namespace, '.edit-file', function() {
+            var fileId = $(this).data('file-id');
+            var url = "{{ route('employee-docs.edit', ':id') }}".replace(':id', fileId);
+            $(MODAL_DEFAULT + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_DEFAULT, url);
+        });
+
+        $body.on('click' + namespace, '#cancel-document', function() {
+            $('#save-taskfile-data-form').addClass('d-none');
+            $('#add-task-file').closest('.row').removeClass('d-none');
+        });
+
+        $body.on('click' + namespace, '#submit-document', function() {
+            $.easyAjax({
+                url: "{{ route('employee-docs.store') }}",
+                container: '#save-taskfile-data-form', type: "POST",
+                disableButton: true, buttonSelector: "#submit-document", file: true,
+                data: $('#editSettings').serialize(),
+                success: function(response) {
+                    if (response.status == 'success') {
+                        $('#task-file-list').html(response.view);
+                        $('#save-taskfile-data-form')[0].reset();
+                        $(".dropify-clear").trigger("click");
+                        $('.invalid-feedback').addClass('d-none');
+                    }
+                }
+            });
+        });
+
+        $body.on('click' + namespace, '.delete-file', function() {
+            var id = $(this).data('row-id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('employee-docs.destroy', ':id') }}".replace(':id', id);
+                    $.easyAjax({
+                        type: 'POST', url: url,
+                        data: { '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") { $('#task-file-list').html(response.view); }
+                        }
+                    });
+                }
+            });
+        });
+
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

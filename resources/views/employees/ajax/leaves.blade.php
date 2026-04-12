@@ -113,80 +113,95 @@ $addLeavePermission = user()->permission('add_leave');
 @include('sections.datatable_js')
 
 <script>
-    $('#leaves-table').on('preXhr.dt', function(e, settings, data) {
+    (function() {
+        var $body = $('body');
+        var namespace = '.employeeLeaves';
+        var $table = $('#leaves-table');
 
-        var employeeId = "{{ $employee->id }}";
-        var leaveTypeId = $('#leave_type').val();
-        var status = $('#status').val();
-        var leaveYear = $('#leave_year').val();
-        var searchText = $('#search-text-field').val();
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
+            data['employeeId'] = "{{ $employee->id }}";
+            data['leaveTypeId'] = $('#leave_type').val();
+            data['status'] = $('#status').val();
+            data['leave_year'] = $('#leave_year').val();
+            data['searchText'] = $('#search-text-field').val();
+        });
 
-        data['searchText'] = searchText;
-        data['employeeId'] = employeeId;
-        data['leaveTypeId'] = leaveTypeId;
-        data['leave_year'] = leaveYear;
-        data['status'] = status;
+        var showTable = function() {
+            if (window.LaravelDataTables && window.LaravelDataTables["leaves-table"]) {
+                window.LaravelDataTables["leaves-table"].draw(false);
+            }
+        };
+        window.showTable = showTable;
 
-    });
+        $body.off(namespace);
 
-    const showTable = () => {
-        window.LaravelDataTables["leaves-table"].draw(false);
-    }
-
-    $('#leave_type, #status, #leave_year').on('change keyup',
-        function() {
-            if ($('#leave_type').val() != "all") {
+        $body.on('change' + namespace + ' keyup' + namespace, '#leave_type, #status, #leave_year', function() {
+            if ($('#leave_type').val() != "all" || $('#leave_year').val() != "" || $('#status').val() != "all") {
                 $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else if ($('#leave_year').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else if ($('#status').val() != "all") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
             } else {
                 $('#reset-filters').addClass('d-none');
+            }
+            showTable();
+        });
+
+        $body.on('keyup' + namespace, '#search-text-field', function() {
+            if ($(this).val() != "") {
+                $('#reset-filters').removeClass('d-none');
                 showTable();
             }
         });
 
-    $('#search-text-field').on('keyup', function() {
-        if ($('#search-text-field').val() != "") {
-            $('#reset-filters').removeClass('d-none');
+        $body.on('click' + namespace, '#reset-filters', function() {
+            $('#filter-form')[0].reset();
+            $('#filter-form #status').val('not finished');
+            $('#filter-form .select-picker').selectpicker("refresh");
+            $('#reset-filters').addClass('d-none');
             showTable();
-        }
-    });
+        });
 
-    $('#reset-filters').click(function() {
-        $('#filter-form')[0].reset();
-
-        $('#filter-form #status').val('not finished');
-        $('#filter-form .select-picker').selectpicker("refresh");
-        $('#reset-filters').addClass('d-none');
-        showTable();
-    });
-
-    $('#quick-action-type').change(function() {
-        const actionValue = $(this).val();
-
-        if (actionValue != '') {
-            $('#quick-action-apply').removeAttr('disabled');
-
-            if (actionValue == 'change-leave-status') {
-                $('.quick-action-field').addClass('d-none');
-                $('#change-status-action').removeClass('d-none');
+        $body.on('change' + namespace, '#quick-action-type', function() {
+            var actionValue = $(this).val();
+            if (actionValue != '') {
+                $('#quick-action-apply').removeAttr('disabled');
+                if (actionValue == 'change-leave-status') {
+                    $('.quick-action-field').addClass('d-none');
+                    $('#change-status-action').removeClass('d-none');
+                } else {
+                    $('.quick-action-field').addClass('d-none');
+                }
             } else {
+                $('#quick-action-apply').attr('disabled', true);
                 $('.quick-action-field').addClass('d-none');
             }
-        } else {
-            $('#quick-action-apply').attr('disabled', true);
-            $('.quick-action-field').addClass('d-none');
-        }
-    });
+        });
 
-    $('#quick-action-apply').click(function() {
-        const actionValue = $('#quick-action-type').val();
-        if (actionValue == 'delete') {
+        $body.on('click' + namespace, '#quick-action-apply', function() {
+            var actionValue = $('#quick-action-type').val();
+            if (actionValue == 'delete') {
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.recoverRecord')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) { applyQuickAction(); }
+                });
+            } else {
+                applyQuickAction();
+            }
+        });
+
+        $body.on('click' + namespace, '.delete-table-row', function() {
+            var type = $(this).data('type');
+            var id = $(this).data('leave-id');
+            var uniId = $(this).data('unique-id');
+            var duration = $(this).data('duration');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
                 text: "@lang('messages.recoverRecord')",
@@ -195,192 +210,109 @@ $addLeavePermission = user()->permission('add_leave');
                 focusConfirm: false,
                 confirmButtonText: "@lang('messages.confirmDelete')",
                 cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    applyQuickAction();
-                }
-            });
-
-        } else {
-            applyQuickAction();
-        }
-    });
-
-    $('body').on('click', '.delete-table-row', function() {
-        var type = $(this).data('type');
-        var id = $(this).data('leave-id');
-        var uniId = $(this).data('unique-id');
-        var duration = $(this).data('duration');
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.recoverRecord')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirmDelete')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var url = "{{ route('leaves.destroy', ':id') }}";
-                url = url.replace(':id', id);
-
-                var token = "{{ csrf_token() }}";
-
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    blockUI: true,
-                    data: {
-                        'uniId': uniId,
-                        'duration': duration,
-                        '_token': token,
-                        '_method': 'DELETE'
-                    },
-                    success: function(response) {
-                        if (response.status == "success") {
-                            if(type == 'multiple-leave'){
-                                window.location.reload();
-                            } else{
-                                showTable();
+                    var url = "{{ route('leaves.destroy', ':id') }}".replace(':id', id);
+                    $.easyAjax({
+                        type: 'POST', url: url, blockUI: true,
+                        data: { 'uniId': uniId, 'duration': duration, '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
+                        success: function(response) {
+                            if (response.status == "success") {
+                                if (type == 'multiple-leave') { window.location.reload(); }
+                                else { showTable(); }
                             }
                         }
-                    }
-                });
-            }
-        });
-    });
-
-    const applyQuickAction = () => {
-        var rowdIds = $("#leaves-table input:checkbox:checked").map(function() {
-            return $(this).val();
-        }).get();
-
-        var url = "{{ route('leaves.apply_quick_action') }}?row_ids=" + rowdIds;
-
-        $.easyAjax({
-            url: url,
-            container: '#quick-action-form',
-            type: "POST",
-            disableButton: true,
-            buttonSelector: "#quick-action-apply",
-            data: $('#quick-action-form').serialize(),
-            success: function(response) {
-                if (response.status == 'success') {
-                    showTable();
-                    resetActionButtons();
+                    });
                 }
-            }
-        })
-    };
-
-    $('body').on('click', '.show-leave', function() {
-        var leaveId = $(this).data('leave-id');
-
-        var url = '{{ route('leaves.show', ':id') }}';
-        url = url.replace(':id', leaveId);
-
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    });
-
-    $('body').on('click', '.leave-action', function() {
-        var action = $(this).data('leave-action');
-        var leaveId = $(this).data('leave-id');
-        var url = '{{ route('leaves.leave_action') }}';
-
-        Swal.fire({
-            title: "@lang('messages.sweetAlertTitle')",
-            text: "@lang('messages.changeLeaveStatusConfirmation')",
-            icon: 'warning',
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: "@lang('messages.confirm')",
-            cancelButtonText: "@lang('app.cancel')",
-            customClass: {
-                confirmButton: 'btn btn-primary mr-3',
-                cancelButton: 'btn btn-secondary'
-            },
-            showClass: {
-                popup: 'swal2-noanimation',
-                backdrop: 'swal2-noanimation'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.easyAjax({
-                    type: 'POST',
-                    url: url,
-                    blockUI: true,
-                    data: {
-                        'action': action,
-                        'leaveId': leaveId,
-                        '_token': '{{ csrf_token() }}'
-                    },
-                    success: function(response) {
-                        if (response.status == 'success') {
-                            window.LaravelDataTables["leaves-table"].draw(false);
-                        }
-                    }
-                });
-            }
+            });
         });
 
-    });
-
-    $('body').on('click', '.leave-action-approved', function() {
-            let action = $(this).data('leave-action');
-            let leaveId = $(this).data('leave-id');
-            var type = $(this).data('type');
-            if(type == undefined){
-                var type = 'single';
-            }
-            let searchQuery = "?leave_action=" + action + "&leave_id=" + leaveId + "&type=" + type;
-            let url = "{{ route('leaves.show_approved_modal') }}" + searchQuery;
-
+        $body.on('click' + namespace, '.show-leave', function() {
+            var leaveId = $(this).data('leave-id');
+            var url = '{{ route('leaves.show', ':id') }}'.replace(':id', leaveId);
             $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-    $('body').on('click', '.leave-action-reject', function() {
-        let action = $(this).data('leave-action');
-        let leaveId = $(this).data('leave-id');
-        var type = $(this).data('type');
-            if(type == undefined){
-                var type = 'single';
-            }
-        let searchQuery = "?leave_action=" + action + "&leave_id=" + leaveId + "&type=" + type;
-        let url = "{{ route('leaves.show_reject_modal') }}" + searchQuery;
+        $body.on('click' + namespace, '.leave-action', function() {
+            var action = $(this).data('leave-action');
+            var leaveId = $(this).data('leave-id');
+            var url = '{{ route('leaves.leave_action') }}';
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.changeLeaveStatusConfirmation')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirm')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.easyAjax({
+                        type: 'POST', url: url, blockUI: true,
+                        data: { 'action': action, 'leaveId': leaveId, '_token': '{{ csrf_token() }}' },
+                        success: function(response) {
+                            if (response.status == 'success') { window.LaravelDataTables["leaves-table"].draw(false); }
+                        }
+                    });
+                }
+            });
+        });
 
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    });
+        $body.on('click' + namespace, '.leave-action-approved', function() {
+            var action = $(this).data('leave-action');
+            var leaveId = $(this).data('leave-id');
+            var type = $(this).data('type') || 'single';
+            var url = "{{ route('leaves.show_approved_modal') }}?leave_action=" + action + "&leave_id=" + leaveId + "&type=" + type;
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
+        });
 
-    $('body').on('click', '.view-related-leave', function() {
-        var leaveId = $(this).data('leave-id');
-        var uniqueId = $(this).data('unique-id');
+        $body.on('click' + namespace, '.leave-action-reject', function() {
+            var action = $(this).data('leave-action');
+            var leaveId = $(this).data('leave-id');
+            var type = $(this).data('type') || 'single';
+            var url = "{{ route('leaves.show_reject_modal') }}?leave_action=" + action + "&leave_id=" + leaveId + "&type=" + type;
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
+        });
 
-        var url = "{{ route('leaves.view_related_leave', ':id') }}?uniqueId="+uniqueId;
-        url = url.replace(':id', leaveId);
+        $body.on('click' + namespace, '.view-related-leave', function() {
+            var leaveId = $(this).data('leave-id');
+            var uniqueId = $(this).data('unique-id');
+            var url = "{{ route('leaves.view_related_leave', ':id') }}?uniqueId=" + uniqueId;
+            url = url.replace(':id', leaveId);
+            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+            $.ajaxModal(MODAL_LG, url);
+        });
 
-        $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-        $.ajaxModal(MODAL_LG, url);
-    });
+        var applyQuickAction = function() {
+            var rowdIds = $("#leaves-table input:checkbox:checked").map(function() { return $(this).val(); }).get();
+            $.easyAjax({
+                url: "{{ route('leaves.apply_quick_action') }}?row_ids=" + rowdIds,
+                container: '#quick-action-form', type: "POST", disableButton: true,
+                buttonSelector: "#quick-action-apply",
+                data: $('#quick-action-form').serialize(),
+                success: function(response) {
+                    if (response.status == 'success') {
+                        showTable();
+                        if (typeof resetActionButtons === 'function') resetActionButtons();
+                    }
+                }
+            });
+        };
+
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            document.removeEventListener("turbo:before-cache", cleanup);
+        }, { once: true });
+    })();
 </script>

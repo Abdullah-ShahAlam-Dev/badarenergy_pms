@@ -228,8 +228,9 @@
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
+        document.addEventListener("turbo:before-cache", function cleanup() {
             $body.off('.clientsProfile');
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

@@ -214,8 +214,9 @@ $deleteDocumentPermission = user()->permission('delete_client_document');
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
+        document.addEventListener("turbo:before-cache", function cleanup() {
             $body.off('.clientsDocuments');
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

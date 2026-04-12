@@ -135,8 +135,10 @@ $viewClientContact = user()->permission('view_client_contacts');
                 $('#close-client-overlay').removeClass('open');
             });
 
-            document.addEventListener("turbo:before-cache", function() {
+            document.addEventListener("turbo:before-cache", function cleanup() {
                 $body.off('.clientsShow');
+                delete window.openClientDetailSidebar;
+                document.removeEventListener("turbo:before-cache", cleanup);
             }, { once: true });
         })();
     </script>

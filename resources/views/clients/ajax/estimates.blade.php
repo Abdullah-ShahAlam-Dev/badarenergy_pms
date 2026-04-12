@@ -1,4 +1,4 @@
-﻿@php
+@php
 $addEstimatePermission = user()->permission('add_estimates');
 @endphp
 
@@ -31,6 +31,7 @@ $addEstimatePermission = user()->permission('add_estimates');
 <script>
     (function() {
         var $body = $('body');
+        var namespace = '.clientsEstimates';
         var $table = $('#invoices-table');
         var clipboard = new ClipboardJS('.btn-copy');
 
@@ -48,7 +49,7 @@ $addEstimatePermission = user()->permission('add_estimates');
             });
         });
 
-        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var clientID = "{{ $client->id }}";
             data['clientID'] = clientID;
         });
@@ -199,10 +200,11 @@ $addEstimatePermission = user()->permission('add_estimates');
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.clientsEstimates');
-            $table.off('preXhr.dt');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
             if (clipboard) clipboard.destroy();
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

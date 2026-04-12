@@ -1,4 +1,4 @@
-﻿@php
+@php
 $addClientNotePermission = user()->permission('add_client_note');
 @endphp
 
@@ -43,9 +43,10 @@ $addClientNotePermission = user()->permission('add_client_note');
 <script>
     (function() {
         var $body = $('body');
+        var namespace = '.clientsNotes';
         var $table = $('#client-notes-table');
 
-        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var clientID = "{{ $client->id }}";
             data['clientID'] = clientID;
         });
@@ -186,9 +187,10 @@ $addClientNotePermission = user()->permission('add_client_note');
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.clientsNotes');
-            $table.off('preXhr.dt');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

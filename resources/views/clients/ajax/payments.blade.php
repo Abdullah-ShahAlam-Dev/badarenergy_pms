@@ -1,4 +1,4 @@
-﻿@php
+@php
 $addPaymentPermission = user()->permission('add_payments');
 @endphp
 
@@ -47,9 +47,10 @@ $addPaymentPermission = user()->permission('add_payments');
 <script>
     (function() {
         var $body = $('body');
+        var namespace = '.clientsPayments';
         var $table = $('#payments-table');
 
-        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var clientID = "{{ $client->id }}";
             data['clientID'] = clientID;
         });
@@ -152,9 +153,10 @@ $addPaymentPermission = user()->permission('add_payments');
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.clientsPayments');
-            $table.off('preXhr.dt');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

@@ -1,4 +1,4 @@
-﻿@php
+@php
 $addInvoicesPermission = user()->permission('add_invoices');
 @endphp
 
@@ -25,9 +25,10 @@ $addInvoicesPermission = user()->permission('add_invoices');
 <script>
     (function() {
         var $body = $('body');
+        var namespace = '.clientsCreditNotes';
         var $table = $('#invoices-table');
 
-        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var clientID = "{{ $client->id }}";
             data['clientID'] = clientID;
         });
@@ -166,9 +167,10 @@ $addInvoicesPermission = user()->permission('add_invoices');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.clientsCreditNotes');
-            $table.off('preXhr.dt');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

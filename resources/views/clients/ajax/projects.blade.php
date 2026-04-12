@@ -1,4 +1,4 @@
-﻿@php
+@php
 $addProjectPermission = user()->permission('add_projects');
 @endphp
 
@@ -53,9 +53,10 @@ $addProjectPermission = user()->permission('add_projects');
 <script>
     (function() {
         var $body = $('body');
+        var namespace = '.clientsProjects';
         var $table = $('#projects-table');
 
-        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var status = $('#status').val();
             var clientID = "{{ $client->id }}";
             var categoryID = $('#category_id').val();
@@ -198,9 +199,10 @@ $addProjectPermission = user()->permission('add_projects');
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.clientsProjects');
-            $table.off('preXhr.dt');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

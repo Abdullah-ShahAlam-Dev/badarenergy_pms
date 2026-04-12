@@ -1,4 +1,4 @@
-﻿<!-- ROW START -->
+<!-- ROW START -->
 <div class="row">
 
     <div class="col-lg-12 col-md-12 mb-4 mb-xl-0 mb-lg-4">
@@ -42,9 +42,10 @@
 <script>
     (function() {
         var $body = $('body');
+        var namespace = '.clientsGdpr';
         var $table = $('#client-gdpr-table');
 
-        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var clientID = "{{ $client->id }}";
             data['clientID'] = clientID;
         });
@@ -65,9 +66,10 @@
             $.ajaxModal(MODAL_LG, url);
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.clientsGdpr');
-            $table.off('preXhr.dt');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

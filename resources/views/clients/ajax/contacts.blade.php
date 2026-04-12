@@ -1,4 +1,4 @@
-﻿@php
+@php
 $addClientPermission = user()->permission('add_client_contacts');
 @endphp
 
@@ -42,9 +42,10 @@ $addClientPermission = user()->permission('add_client_contacts');
 <script>
     (function() {
         var $body = $('body');
+        var namespace = '.clientsContacts';
         var $table = $('#clients-table');
 
-        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var clientID = "{{ $client->id }}";
             data['clientID'] = clientID;
         });
@@ -148,9 +149,10 @@ $addClientPermission = user()->permission('add_client_contacts');
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.clientsContacts');
-            $table.off('preXhr.dt');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

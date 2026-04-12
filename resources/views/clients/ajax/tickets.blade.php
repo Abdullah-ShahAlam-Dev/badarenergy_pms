@@ -1,4 +1,4 @@
-﻿@php
+@php
 $addTicketPermission = user()->permission('add_tickets');
 @endphp
 
@@ -56,10 +56,11 @@ $addTicketPermission = user()->permission('add_tickets');
 <script>
     (function() {
         var $body = $('body');
+        var namespace = '.clientsTickets';
         var $table = $('#ticket-table');
         var ticketFilterStatus = "{{ request('ticketStatus') }}";
 
-        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var agentId = $('#agent_id').val() || 0;
             var clientID = "{{ $client->id }}";
             data['agentId'] = agentId;
@@ -201,9 +202,10 @@ $addTicketPermission = user()->permission('add_tickets');
 
         refreshCount();
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.clientsTickets');
-            $table.off('preXhr.dt');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

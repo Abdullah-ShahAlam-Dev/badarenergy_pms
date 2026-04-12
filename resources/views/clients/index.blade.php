@@ -475,7 +475,7 @@
 
             document.addEventListener("turbo:before-cache", function cleanup() {
                 $body.off(namespace);
-                $table.off('preXhr.dt');
+                $table.off('preXhr.dt' + namespace);
                 delete window.showTable;
                 delete window.applyQuickAction;
                 document.removeEventListener("turbo:before-cache", cleanup);

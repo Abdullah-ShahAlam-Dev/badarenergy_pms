@@ -319,7 +319,9 @@ $projectArchived = $project->trashed();
         $body.on('click' + namespace, '.stop-timer, .pause-timer, .resume-timer', function() {
             var id = $(this).data('time-id');
             var action = $(this).hasClass('stop-timer') ? 'stop_timer' : ($(this).hasClass('pause-timer') ? 'pause_timer' : 'resume_timer');
-            var url = "{{ route('timelogs.ACTION', ':id') }}".replace('ACTION', action).replace(':id', id);
+            var url = "{{ route('timelogs.show', ':id') }}";
+            url = url.replace('show', action);
+            url = url.replace(':id', id);
             var token = '{{ csrf_token() }}';
             var $this = $(this);
 

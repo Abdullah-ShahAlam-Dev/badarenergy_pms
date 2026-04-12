@@ -386,7 +386,6 @@ class TasksDataTable extends BaseDataTable
      */
     public function query(Task $model)
     {
-        die("REACHED DATATABLE QUERY");
         $request = $this->request();
         $startDate = null;
         $endDate = null;

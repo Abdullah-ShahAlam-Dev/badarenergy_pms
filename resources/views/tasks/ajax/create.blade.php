@@ -8,6 +8,8 @@
     $checked = request()->has('duplicate_task') ? ($projectId = $task->project_id) : ($projectId = '');
 @endphp
 
+<meta name="turbo-cache-control" content="no-cache">
+
 <link rel="stylesheet" href="{{ asset('vendor/css/dropzone.min.css') }}">
 
 <div class="row">

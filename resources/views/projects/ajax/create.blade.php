@@ -7,6 +7,8 @@
     $addProjectNotePermission = user()->permission('add_project_note');
 @endphp
 
+<meta name="turbo-cache-control" content="no-cache">
+
 <link rel="stylesheet" href="{{ asset('vendor/css/dropzone.min.css') }}">
 
 <div class="row">

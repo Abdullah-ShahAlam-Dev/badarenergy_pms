@@ -420,6 +420,19 @@
                 window.quillArray = {}; 
             }
 
+            // FORCE RESET BODY CLASSES (Crucial for Back navigation responsiveness)
+            // Bootstrap often leaves these stuck if we navigate during a modal transition
+            $('body').removeClass('modal-open').css('padding-right', '');
+            $('.modal').removeClass('show').hide(); // Force hide any lingering modals
+
+            // DESTROY Tooltips & Popovers to prevent orphaned ghosts on the next page
+            if ($.fn.tooltip) {
+                $('[data-toggle="tooltip"]').tooltip('dispose');
+            }
+            if ($.fn.popover) {
+                $('[data-toggle="popover"]').popover('dispose');
+            }
+
             // Force detach any ghost DOM elements attached globally
             $('.daterangepicker, .modal-backdrop, .dz-hidden-input, .select2-container').remove();
         });

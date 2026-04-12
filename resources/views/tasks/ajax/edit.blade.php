@@ -1,10 +1,6 @@
-@php
-$addTaskCategoryPermission = user()->permission('add_task_category');
-$addEmployeePermission = user()->permission('add_employees');
-$addTaskFilePermission = user()->permission('add_task_files');
-$editTaskPermission = user()->permission('edit_tasks');
-$viewTaskCategoryPermission = user()->permission('view_task_category');
 @endphp
+
+<meta name="turbo-cache-control" content="no-cache">
 
 <link rel="stylesheet" href="{{ asset('vendor/css/dropzone.min.css') }}">
 
@@ -12,8 +8,11 @@ $viewTaskCategoryPermission = user()->permission('view_task_category');
     <div class="col-sm-12">
         <x-form id="save-task-data-form" method="PUT">
             <div class="add-client bg-white rounded">
-                <h4 class="mb-0 p-20 f-21 font-weight-normal text-capitalize border-bottom-grey">
-                    @lang('modules.tasks.taskInfo')</h4>
+                @if(request()->ajax())
+                    <h4 class="mb-0 p-20 f-21 font-weight-normal text-capitalize border-bottom-grey">
+                        @lang('modules.tasks.taskInfo')
+                    </h4>
+                @endif
                 <div class="row p-20">
 
                     <div class="col-lg-6 col-md-6">

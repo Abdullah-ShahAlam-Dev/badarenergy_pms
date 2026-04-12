@@ -9,8 +9,11 @@ $addProductSubCategoryPermission = user()->permission('manage_product_sub_catego
     <div class="col-sm-12">
         <x-form id="save-product-data-form" method="PUT">
             <div class="add-client bg-white rounded">
-                <h4 class="mb-0 p-20 f-21 font-weight-normal text-capitalize border-bottom-grey">
-                    @lang('app.menu.editProducts') </h4>
+                @if(request()->ajax())
+                    <h4 class="mb-0 p-20 f-21 font-weight-normal text-capitalize border-bottom-grey">
+                        @lang('app.menu.editProducts')
+                    </h4>
+                @endif
                 <div class="row p-20">
                     <div class="col-lg-12">
                         <div class="row">

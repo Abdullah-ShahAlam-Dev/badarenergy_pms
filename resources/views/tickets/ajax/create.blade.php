@@ -5,6 +5,8 @@
     $manageGroupPermission = user()->permission('manage_ticket_groups');
 @endphp
 
+<meta name="turbo-cache-control" content="no-cache">
+
 <link rel="stylesheet" href="{{ asset('vendor/css/dropzone.min.css') }}">
 <link rel="stylesheet" href="{{ asset('vendor/css/tagify.css') }}">
 

@@ -2,6 +2,7 @@
 
 @push('datatable-styles')
     @include('sections.datatable_css')
+    <meta name="turbo-cache-control" content="no-cache">
 @endpush
 
 @section('filter-section')
@@ -280,12 +281,12 @@ $deleteProjectPermission = user()->permission('delete_projects');
             var deadLineEndDate = '';
             var startFilterDate = '';
             var endFilterDate = '';
-            var $body = $('body');
+            var $doc = $(document);
             var namespace = '.projectsIndex';
             var $table = $('#projects-table');
 
             // Initial cleanup of any previous instances/listeners
-            $body.off(namespace);
+            $doc.off(namespace);
             if (window.LaravelDataTables && window.LaravelDataTables["projects-table"]) {
                 window.LaravelDataTables["projects-table"].destroy();
             }
@@ -340,40 +341,14 @@ $deleteProjectPermission = user()->permission('delete_projects');
                 @endif
             });
 
-            function showTable() {
+            var showTable = function() {
                 if (window.LaravelDataTables && window.LaravelDataTables["projects-table"]) {
                     window.LaravelDataTables["projects-table"].draw(false);
                 }
             }
             window.showTable = showTable;
 
-            $body.on('change' + namespace + ' keyup' + namespace, '#client_id, #status, #employee_id, #team_id, #category_id, #pinned, #date_filter_on, #public, #progress', function() {
-                var filtersActive = ($('#status').val() != "not finished") ||
-                                    ($('#employee_id').val() != "all") ||
-                                    ($('#team_id').val() != "all") ||
-                                    ($('#category_id').val() != "all") ||
-                                    ($('#client_id').val() != "all") ||
-                                    ($('#pinned').val() != "all") ||
-                                    ($('#date_filter_on').val() != "deadline") ||
-                                    ($('#public').val() != "all") ||
-                                    ($('#progress').val() != "all");
-
-                if (filtersActive) {
-                    $('#reset-filters').removeClass('d-none');
-                } else {
-                    $('#reset-filters').addClass('d-none');
-                }
-                window.showTable();
-            });
-
-            $body.on('keyup' + namespace, '#search-text-field', function() {
-                if ($(this).val() != "") {
-                    $('#reset-filters').removeClass('d-none');
-                }
-                window.showTable();
-            });
-
-            $body.on('click' + namespace, '.show-pinned', function() {
+            $doc.on('click' + namespace, '.show-pinned', function() {
                 $('.projects').removeClass('btn-active');
                 if ($(this).hasClass('btn-active')) {
                     $('#pinned').val('all');
@@ -387,7 +362,7 @@ $deleteProjectPermission = user()->permission('delete_projects');
                 window.showTable();
             });
 
-            $body.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
+            $doc.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
                 $('#filter-form')[0].reset();
                 $('.filter-box #date_filter_on').val('deadline');
                 $('.filter-box .select-picker').selectpicker("refresh");
@@ -395,7 +370,7 @@ $deleteProjectPermission = user()->permission('delete_projects');
                 window.showTable();
             });
 
-            $body.on('change' + namespace, '.change-status', function() {
+            $doc.on('change' + namespace, '.change-status', function() {
                 var url = "{{ route('projects.change_status') }}";
                 var token = "{{ csrf_token() }}";
                 var id = $(this).data('project-id');
@@ -423,7 +398,7 @@ $deleteProjectPermission = user()->permission('delete_projects');
                 }
             });
 
-            $body.on('change' + namespace, '#quick-action-type', function() {
+            $doc.on('change' + namespace, '#quick-action-type', function() {
                 var actionValue = $(this).val();
                 if (actionValue != '') {
                     $('#quick-action-apply').removeAttr('disabled');
@@ -437,7 +412,7 @@ $deleteProjectPermission = user()->permission('delete_projects');
                 }
             });
 
-            $body.on('click' + namespace, '#quick-action-apply', function() {
+            $doc.on('click' + namespace, '#quick-action-apply', function() {
                 var actionValue = $('#quick-action-type').val();
                 if (actionValue == 'delete') {
                     Swal.fire({
@@ -461,7 +436,7 @@ $deleteProjectPermission = user()->permission('delete_projects');
                 }
             });
 
-            $body.on('click' + namespace, '.delete-table-row', function() {
+            $doc.on('click' + namespace, '.delete-table-row', function() {
                 var id = $(this).data('user-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
@@ -566,7 +541,7 @@ $deleteProjectPermission = user()->permission('delete_projects');
             }
             window.applyQuickAction = applyQuickAction;
 
-            $body.on('click' + namespace, '.duplicateProject', function() {
+            $doc.on('click' + namespace, '.duplicateProject', function() {
                 var id = $(this).data('project-id');
                 var url = "{{ route('projects.duplicate_project', ':id') }}".replace(':id', id);
                 $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
@@ -574,13 +549,13 @@ $deleteProjectPermission = user()->permission('delete_projects');
             });
 
             document.addEventListener('turbo:before-cache', function cleanup() {
-                $body.off(namespace);
+                $doc.off(namespace);
                 $table.off('preXhr.dt' + namespace);
                 if (window.LaravelDataTables && window.LaravelDataTables["projects-table"]) {
                     window.LaravelDataTables["projects-table"].destroy();
                 }
-                delete window.showTable;
-                delete window.applyQuickAction;
+                window.showTable = undefined;
+                window.applyQuickAction = undefined;
                 document.removeEventListener('turbo:before-cache', cleanup);
             }, { once: true });
 

@@ -2,6 +2,7 @@
 
 @push('datatable-styles')
     @include('sections.datatable_css')
+    <meta name="turbo-cache-control" content="no-cache">
 @endpush
 
 
@@ -413,7 +414,7 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
 
     <script>
         (function() {
-            var $body = $('body');
+            var $doc = $(document);
             var namespace = '.tasksIndex';
 
             $('#allTasks-table').on('preXhr.dt' + namespace, function(e, settings, data) {
@@ -467,34 +468,9 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                     table.draw(true);
                 }
             }
+            window.showTable = showTable;
 
-            $('.filter-box').on('change keyup' + namespace, '#milestone_id, #billable_task, #status, #clientID, #category_id, #assignedBY, #assignedTo, #label, #project_id_filter, #pinned, #date_filter_on', function() {
-                if ($('#status').val() != "not finished" || 
-                    $('#project_id_filter').val() != "all" || 
-                    $('#clientID').val() != "all" || 
-                    $('#category_id').val() != "all" || 
-                    $('#assignedBY').val() != "all" || 
-                    $('#assignedTo').val() != "all" || 
-                    $('#label').val() != "all" || 
-                    $('#billable_task').val() != "all" || 
-                    $('#milestone_id').val() != "all" || 
-                    $('#pinned').val() != "all" || 
-                    $('#date_filter_on').val() != "start_date") {
-                    $('#reset-filters').removeClass('d-none');
-                } else {
-                    $('#reset-filters').addClass('d-none');
-                }
-                showTable();
-            });
-
-            $('#search-text-field').on('keyup' + namespace, function() {
-                if ($(this).val() != "") {
-                    $('#reset-filters').removeClass('d-none');
-                }
-                showTable();
-            });
-
-            $('.show-pinned').on('click' + namespace, function() {
+            $doc.on('click' + namespace, '.show-pinned', function() {
                 $('.task').removeClass('btn-active');
                 if ($(this).hasClass('btn-active')) {
                     $('#pinned').val('all');
@@ -507,7 +483,7 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                 showTable();
             });
 
-            $body.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
+            $doc.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
                 $('#filter-form')[0].reset();
                 $('.filter-box #status').val('not finished');
                 $('.filter-box #date_filter_on').val('start_date');
@@ -517,7 +493,7 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                 showTable();
             });
 
-            $('#quick-action-type').on('change' + namespace, function() {
+            $doc.on('change' + namespace, '#quick-action-type', function() {
                 var actionValue = $(this).val();
                 if (actionValue != '') {
                     $('#quick-action-apply').removeAttr('disabled');
@@ -533,7 +509,7 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                 }
             });
 
-            $('#quick-action-apply').on('click' + namespace, function() {
+            $doc.on('click' + namespace, '#quick-action-apply', function() {
                 var actionValue = $('#quick-action-type').val();
                 if (actionValue == 'delete') {
                     Swal.fire({
@@ -563,7 +539,7 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                 }
             });
 
-            $body.on('click' + namespace, '.delete-table-row', function() {
+            $doc.on('click' + namespace, '.delete-table-row', function() {
                 var id = $(this).data('user-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
@@ -598,6 +574,9 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                             success: function(response) {
                                 if (response.status == "success") {
                                     showTable();
+                                    if (typeof syncGlobalStats === "function") {
+                                        syncGlobalStats();
+                                    }
                                 }
                             }
                         });
@@ -658,7 +637,7 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                 }
             });
 
-            $body.on('click' + namespace, '#filter-my-task', function () {
+            $doc.on('click' + namespace, '#filter-my-task', function () {
                 $('.filter-box #assignedTo').val('{{ user()->id }}');
                 $('.filter-box .select-picker').selectpicker("refresh");
                 $('#reset-filters').removeClass('d-none');
@@ -893,10 +872,15 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
             });
 
             // Turbo Lifecycle Cleanup
-            window.addEventListener('turbo:before-cache', function cleanup() {
-                $body.off(namespace);
+            document.addEventListener('turbo:before-cache', function cleanup() {
+                $doc.off(namespace);
                 $('#allTasks-table').off(namespace);
-                window.removeEventListener('turbo:before-cache', cleanup);
+                if (window.LaravelDataTables && window.LaravelDataTables["allTasks-table"]) {
+                    window.LaravelDataTables["allTasks-table"].destroy();
+                }
+                window.showTable = undefined;
+                window.applyQuickAction = undefined;
+                document.removeEventListener('turbo:before-cache', cleanup);
             }, { once: true });
         })();
     </script>

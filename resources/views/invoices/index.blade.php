@@ -211,9 +211,10 @@ $manageRecurringInvoicesPermission = user()->permission('manage_recurring_invoic
             });
 
             // ── showTable (module-scoped + window alias for DataTable callbacks) ──
-            function showTable() {
-                if (window.LaravelDataTables && window.LaravelDataTables["invoices-table"]) {
-                    window.LaravelDataTables["invoices-table"].draw(false);
+            var showTable = function() {
+                var table = window.LaravelDataTables["invoices-table"];
+                if (table) {
+                    table.draw(false);
                 }
             }
             window.showTable = showTable;

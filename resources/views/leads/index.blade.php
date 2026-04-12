@@ -2,6 +2,7 @@
 
 @push('datatable-styles')
     @include('sections.datatable_css')
+    <meta name="turbo-cache-control" content="no-cache">
 @endpush
 
 @section('filter-section')
@@ -92,17 +93,17 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
 
     <script>
         (function() {
-            var $body = $('body');
+            var $doc = $(document);
             var $table = $('#leads-table');
             var namespace = '.leadsIndex';
 
             document.addEventListener("turbo:before-cache", function cleanup() {
-                $body.off(namespace);
+                $doc.off(namespace);
                 $table.off('preXhr.dt' + namespace);
-                delete window.showTable;
-                delete window.applyQuickAction;
-                delete window.changeStatus;
-                delete window.followUp;
+                window.showTable = undefined;
+                window.applyQuickAction = undefined;
+                window.changeStatus = undefined;
+                window.followUp = undefined;
                 document.removeEventListener("turbo:before-cache", cleanup);
             }, { once: true });
 
@@ -132,16 +133,16 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             data['date_filter_on'] = $('#date_filter_on').val();
         });
 
-            function showTable() {
+            var showTable = function() {
                 if (window.LaravelDataTables && window.LaravelDataTables["leads-table"]) {
                     window.LaravelDataTables["leads-table"].draw(false);
                 }
             }
             window.showTable = showTable;
 
-            $body.off(namespace);
+            $doc.off(namespace);
 
-            $body.on('click' + namespace, '#reset-filters', function() {
+            $doc.on('click' + namespace, '#reset-filters', function() {
             $('#filter-form')[0].reset();
             $('.filter-box #status').val('not finished');
             $('.filter-box .select-picker').selectpicker("refresh");
@@ -149,7 +150,7 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             showTable();
         });
 
-        $body.on('click' + namespace, '#reset-filters-2', function() {
+        $doc.on('click' + namespace, '#reset-filters-2', function() {
             $('#filter-form')[0].reset();
             $('.filter-box #status').val('all');
             $('.filter-box #leave_type').val('all');
@@ -158,7 +159,7 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             showTable();
         });
 
-        $body.on('change' + namespace, '#quick-action-type', function() {
+        $doc.on('change' + namespace, '#quick-action-type', function() {
             var actionValue = $(this).val();
             if (actionValue != '') {
                 $('#quick-action-apply').removeAttr('disabled');
@@ -174,7 +175,7 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             }
         });
 
-            function applyQuickAction() {
+            var applyQuickAction = function() {
                 var rowdIds = $("#leads-table input:checkbox:checked").map(function() {
                     return $(this).val();
                 }).get();
@@ -203,7 +204,7 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             }
             window.applyQuickAction = applyQuickAction;
 
-            $body.on('click' + namespace, '#quick-action-apply', function() {
+            $doc.on('click' + namespace, '#quick-action-apply', function() {
             var actionValue = $('#quick-action-type').val();
             if (actionValue == 'delete') {
                 Swal.fire({
@@ -225,7 +226,7 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             }
         });
 
-        $body.on('click' + namespace, '.delete-table-row', function() {
+        $doc.on('click' + namespace, '.delete-table-row', function() {
             var id = $(this).data('id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
@@ -279,7 +280,7 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             }
         });
 
-            function changeStatus(leadID, statusID) {
+            var changeStatus = function(leadID, statusID) {
                 var url = "{{ route('leads.change_status') }}";
                 var token = "{{ csrf_token() }}";
                 $.easyAjax({
@@ -300,13 +301,13 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             }
             window.changeStatus = changeStatus;
 
-            function followUp(leadID) {
+            var followUp = function(leadID) {
                 var url = '{{ route('leads.follow_up', ':id') }}'.replace(':id', leadID);
                 $.ajaxModal(MODAL_LG, url);
             }
             window.followUp = followUp;
 
-            $body.on('click' + namespace, '#add-lead', function() {
+            $doc.on('click' + namespace, '#add-lead', function() {
             window.location.href = "{{ route('lead-form.index') }}";
         });
 

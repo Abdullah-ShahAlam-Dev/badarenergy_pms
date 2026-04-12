@@ -96,6 +96,8 @@
         }
     </style>
 
+    {{-- Disable Turbo Caching globally to prevent zombie JS objects --}}
+    <meta name="turbo-cache-control" content="no-cache">
     <script src="https://unpkg.com/@hotwired/turbo@8.0.4/dist/turbo.es2017-umd.js"></script>
 
     <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
@@ -401,6 +403,8 @@
             // DESTROY DataTables memory leaks and DOM corruption
             if ($.fn.dataTable) {
                 $('.dataTable').DataTable().destroy();
+                // CRITICAL: Clear the global DataTables registry to prevent "Processing" hangs on the next page
+                window.LaravelDataTables = {}; 
             }
 
             // DESTROY Dropzone instances
@@ -422,7 +426,7 @@
 
             // FORCE RESET BODY CLASSES (Crucial for Back navigation responsiveness)
             // Bootstrap often leaves these stuck if we navigate during a modal transition
-            $('body').removeClass('modal-open').css('padding-right', '');
+            $('body').removeClass('modal-open sidebar-toggled').css('padding-right', '');
             $('.modal').removeClass('show').hide(); // Force hide any lingering modals
 
             // DESTROY Tooltips & Popovers to prevent orphaned ghosts on the next page
@@ -433,8 +437,16 @@
                 $('[data-toggle="popover"]').popover('dispose');
             }
 
+            // Force hide any persistent preloader
+            $(".preloader-container").removeClass("d-flex").hide();
+
             // Force detach any ghost DOM elements attached globally
             $('.daterangepicker, .modal-backdrop, .dz-hidden-input, .select2-container').remove();
+        });
+
+        // Hide preloader when the new page is ready
+        document.addEventListener("turbo:load", function() {
+            $(".preloader-container").removeClass("d-flex").hide();
         });
 
         window.turboListenersAttached = true;
@@ -446,6 +458,32 @@
             closeMobileMenu();
         }
     });
+
+    /* --- UNIVERSAL GLOBAL FILTER BUS --- */
+    // Handles filter changes for ALL modules. Lives on document, immune to Turbo body swaps.
+    // 'changed.bs.select' is the Bootstrap-Select (selectpicker) event — MUST be here or dropdowns are silent.
+    $(document).on('change keyup changed.bs.select',
+        '.filter-box select, #more_filter select, .filter-box input[type="text"], .filter-box input[type="number"], #search-text-field',
+        function() {
+            var $resetBtn = $('#reset-filters');
+            if ($resetBtn.length > 0) {
+                var isDirty = false;
+                $('.filter-box select, #more_filter select').each(function() {
+                    var val = $(this).val();
+                    if (val && val !== 'all' && val !== 'not finished' && val !== 'deadline' && val !== 'start_date' && val !== 'created_at') {
+                        isDirty = true;
+                    }
+                });
+                if ($('#search-text-field').val() !== '') isDirty = true;
+                if (isDirty) $resetBtn.removeClass('d-none');
+            }
+
+            // Trigger the table refresh if the module has a showTable function
+            if (typeof window.showTable === 'function') {
+                window.showTable();
+            }
+        }
+    );
 
     $('body').on('click', '.view-notification', function (event) {
         event.preventDefault();

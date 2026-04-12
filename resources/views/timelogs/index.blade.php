@@ -199,9 +199,10 @@
                 data['searchText'] = $('#search-text-field').val();
             });
 
-            function showTable() {
-                if (window.LaravelDataTables && window.LaravelDataTables["timelogs-table"]) {
-                    window.LaravelDataTables["timelogs-table"].draw(false);
+            var showTable = function() {
+                var table = window.LaravelDataTables["timelogs-table"];
+                if (table) {
+                    table.draw(false);
                 }
             }
             window.showTable = showTable;

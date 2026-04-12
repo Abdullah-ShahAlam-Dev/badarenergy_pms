@@ -275,9 +275,10 @@
                 data['searchText'] = searchText;
             });
 
-            function showTable() {
-                if (window.LaravelDataTables && window.LaravelDataTables["clients-table"]) {
-                    window.LaravelDataTables["clients-table"].draw(false);
+            var showTable = function() {
+                var table = window.LaravelDataTables["clients-table"];
+                if (table) {
+                    table.draw(false);
                 }
             }
             window.showTable = showTable;

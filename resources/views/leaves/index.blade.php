@@ -208,9 +208,10 @@ $approveRejectPermission = user()->permission('approve_or_reject_leaves');
                 data['status'] = $('#status').val();
             });
 
-            function showTable() {
-                if (window.LaravelDataTables && window.LaravelDataTables["leaves-table"]) {
-                    window.LaravelDataTables["leaves-table"].draw(false);
+            var showTable = function() {
+                var table = window.LaravelDataTables["leaves-table"];
+                if (table) {
+                    table.draw(false);
                 }
             }
             window.showTable = showTable;

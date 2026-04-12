@@ -2,6 +2,7 @@
 
 @push('datatable-styles')
     @include('sections.datatable_css')
+    <meta name="turbo-cache-control" content="no-cache">
 @endpush
 
 @section('filter-section')
@@ -209,80 +210,79 @@
 
         @if(request('startDate') != '' && request('endDate') != '' )
             startDate = '{{ request("startDate") }}';
-        endDate = '{{ request("endDate") }}';
+            endDate = '{{ request("endDate") }}';
         @endif
 
-            @if(request('lastStartDate') !=='' && request('lastEndDate') !=='' )
+        @if(request('lastStartDate') !=='' && request('lastEndDate') !=='' )
             lastStartDate = '{{ request("lastStartDate") }}';
-        lastEndDate = '{{ request("lastEndDate") }}';
+            lastEndDate = '{{ request("lastEndDate") }}';
         @endif
 
         $('#employees-table').on('preXhr.dt', function (e, settings, data) {
-            const status = $('#status').val();
-            const employee = $('#employee').val();
-            const role = $('#role').val();
-            const gender = $('#gender').val();
-            const skill = $('#skill').val();
-            const designation = $('#designation').val();
-            const department = $('#department').val();
-            const searchText = $('#search-text-field').val();
-            data['status'] = status;
-            data['employee'] = employee;
-            data['role'] = role;
-            data['gender'] = gender;
-            data['skill'] = skill;
+            var status     = $('#status').val()     || 'all';
+            var employee   = $('#employee').val()   || 'all';
+            var role       = $('#role').val()       || 'all';
+            var gender     = $('#gender').val()     || 'all';
+            var skill      = $('#skill').val()      || null;
+            var designation= $('#designation').val()|| 'all';
+            var department = $('#department').val() || 'all';
+            var searchText = $('#search-text-field').val() || '';
+
+            data['status']      = status;
+            data['employee']    = employee;
+            data['role']        = role;
+            data['gender']      = gender;
+            data['skill']       = skill;
             data['designation'] = designation;
-            data['department'] = department;
-            data['searchText'] = searchText;
+            data['department']  = department;
+            data['searchText']  = searchText;
 
-            /* If any of these following filters are applied, then dashboard conditions will not work  */
-            if (status == "all" || employee == "all" || role == "all" || designation == "all" || searchText == "") {
-                data['startDate'] = startDate;
-                data['endDate'] = endDate;
+            // Only send date range if it is a real, non-null value — prevents the '01--' 500 error
+            if (startDate && typeof startDate === 'string' && startDate.trim() !== '' && startDate !== 'null') {
+                data['startDate']     = startDate;
+                data['endDate']       = endDate;
                 data['lastStartDate'] = lastStartDate;
-                data['lastEndDate'] = lastEndDate;
-            }
-
-        });
-
-        const showTable = () => {
-            window.LaravelDataTables["employees-table"].draw(false);
-        }
-
-        $('.filter-box').on('change keyup', '#employee, #status, #role, #gender, #skill, #designation, #department',
-            function () {
-                if ($('#status').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#employee').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#role').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#gender').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#designation').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#department').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else {
-                    $('#reset-filters').addClass('d-none');
-                }
-                showTable();
-            });
-
-        $('.filter-box').on('keyup', '#search-text-field', function () {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
+                data['lastEndDate']   = lastEndDate;
             }
         });
 
-        $('body').on('click', '#reset-filters, #reset-filters-2', function () {
-            $('#filter-form')[0].reset();
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
+        var showTable = function() {
+            if (window.LaravelDataTables && window.LaravelDataTables["employees-table"]) {
+                window.LaravelDataTables["employees-table"].draw(false);
+            }
+        };
+        window.showTable = showTable;
+
+        // Real-time filter listeners — delegated on document so they survive Turbo navigation
+        // Covers both the top filter bar AND the More Filters sidebar (role, status, department, gender)
+        $(document).off('change.empFilters').on('change.empFilters',
+            '#employee, #designation, #search-text-field, #status, #role, #gender, #department',
+            function() {
+                var val = $(this).val();
+                var hasFilters = ($('#employee').val() !== 'all') ||
+                                 ($('#designation').val() !== 'all') ||
+                                 ($('#status').val() !== 'all') ||
+                                 ($('#role').val() !== 'all') ||
+                                 ($('#gender').val() !== 'all') ||
+                                 ($('#department').val() !== 'all') ||
+                                 ($('#search-text-field').val() !== '');
+                $('#reset-filters').toggleClass('d-none', !hasFilters);
+                showTable();
+            }
+        );
+
+        // Also listen to keyup on the search field separately
+        $(document).off('keyup.empSearch').on('keyup.empSearch', '#search-text-field', function() {
             showTable();
         });
 
+        $(document).off('click.empReset').on('click.empReset', '#reset-filters, #reset-filters-2', function () {
+            var $form = $('#filter-form');
+            if ($form.length) $form[0].reset();
+            $('.select-picker').selectpicker('refresh');
+            $('#reset-filters').addClass('d-none');
+            showTable();
+        });
 
         $('#quick-action-type').change(function () {
             const actionValue = $(this).val();

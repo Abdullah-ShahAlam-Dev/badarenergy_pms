@@ -186,9 +186,10 @@
                 data['searchText'] = searchText;
             });
 
-            function showTable() {
-                if (window.LaravelDataTables && window.LaravelDataTables["payments-table"]) {
-                    window.LaravelDataTables["payments-table"].draw(false);
+            var showTable = function() {
+                var table = window.LaravelDataTables["payments-table"];
+                if (table) {
+                    table.draw(false);
                 }
             }
             window.showTable = showTable;

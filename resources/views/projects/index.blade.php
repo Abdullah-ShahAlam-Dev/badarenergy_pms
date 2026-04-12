@@ -415,6 +415,9 @@ $deleteProjectPermission = user()->permission('delete_projects');
                         },
                         success: function(data) {
                             window.showTable();
+                            if (typeof syncGlobalStats === "function") {
+                                syncGlobalStats();
+                            }
                         }
                     });
                 }
@@ -483,7 +486,12 @@ $deleteProjectPermission = user()->permission('delete_projects');
                             blockUI: true,
                             data: { '_token': token, '_method': 'DELETE' },
                             success: function(response) {
-                                if (response.status == "success") { window.showTable(); }
+                                if (response.status == "success") {
+                                    window.showTable();
+                                    if (typeof syncGlobalStats === "function") {
+                                        syncGlobalStats();
+                                    }
+                                }
                             }
                         });
                     }
@@ -515,7 +523,12 @@ $deleteProjectPermission = user()->permission('delete_projects');
                             blockUI: true,
                             data: { '_token': token },
                             success: function(response) {
-                                if (response.status == "success") { window.showTable(); }
+                                if (response.status == "success") {
+                                    window.showTable();
+                                    if (typeof syncGlobalStats === "function") {
+                                        syncGlobalStats();
+                                    }
+                                }
                             }
                         });
                     }
@@ -544,6 +557,9 @@ $deleteProjectPermission = user()->permission('delete_projects');
                             $('#quick-action-apply').attr('disabled', 'disabled');
                             $('#change-status-action').addClass('d-none');
                             $('#quick-action-form').hide();
+                            if (typeof syncGlobalStats === "function") {
+                                syncGlobalStats();
+                            }
                         }
                     }
                 })

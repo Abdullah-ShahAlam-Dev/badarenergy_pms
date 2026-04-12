@@ -442,7 +442,12 @@ $addTicketPermission = user()->permission('add_tickets');
                             url: url,
                             data: { '_token': token, '_method': 'DELETE' },
                             success: function(response) {
-                                if (response.status == "success") { showTable(); }
+                                if (response.status == "success") {
+                                    showTable();
+                                    if (typeof refreshCount === 'function') {
+                                        refreshCount();
+                                    }
+                                }
                             }
                         });
                     }
@@ -492,6 +497,9 @@ $addTicketPermission = user()->permission('add_tickets');
                             if (typeof resetActionButtons === 'function') resetActionButtons();
                             if (typeof deSelectAll === 'function') deSelectAll();
                             $('#quick-action-form').hide();
+                            if (typeof refreshCount === 'function') {
+                                refreshCount();
+                            }
                         }
                     }
                 })

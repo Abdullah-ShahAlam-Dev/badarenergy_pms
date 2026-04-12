@@ -194,6 +194,9 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
                             if (typeof resetActionButtons === 'function') resetActionButtons();
                             if (typeof deSelectAll === 'function') deSelectAll();
                             $('#quick-action-form').hide();
+                            if (typeof syncGlobalStats === 'function') {
+                                syncGlobalStats();
+                            }
                         }
                     }
                 });
@@ -244,7 +247,12 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
                         url: url,
                         data: { '_token': token, '_method': 'DELETE' },
                         success: function(response) {
-                            if (response.status == "success") { showTable(); }
+                            if (response.status == "success") {
+                                showTable();
+                                if (typeof syncGlobalStats === 'function') {
+                                    syncGlobalStats();
+                                }
+                            }
                         }
                     });
                 }
@@ -283,6 +291,9 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
                             showTable();
                             if (typeof resetActionButtons === 'function') resetActionButtons();
                             if (typeof deSelectAll === 'function') deSelectAll();
+                            if (typeof syncGlobalStats === 'function') {
+                                syncGlobalStats();
+                            }
                         }
                     }
                 });

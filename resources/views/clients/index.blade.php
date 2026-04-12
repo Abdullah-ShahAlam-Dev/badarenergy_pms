@@ -378,7 +378,12 @@
                             url: url,
                             data: { '_token': token },
                             success: function(response) {
-                                if (response.status == "success") { showTable(); }
+                                if (response.status == "success") {
+                                    showTable();
+                                    if (typeof syncGlobalStats === "function") {
+                                        syncGlobalStats();
+                                    }
+                                }
                             }
                         });
                     }
@@ -414,7 +419,12 @@
                                         url: destroyUrl,
                                         data: { '_token': token, '_method': 'DELETE' },
                                         success: function(response) {
-                                            if (response.status == "success") { showTable(); }
+                                            if (response.status == "success") {
+                                                showTable();
+                                                if (typeof syncGlobalStats === "function") {
+                                                    syncGlobalStats();
+                                                }
+                                            }
                                         }
                                     });
                                 }
@@ -444,6 +454,9 @@
                             if (typeof resetActionButtons === 'function') resetActionButtons();
                             if (typeof deSelectAll === 'function') deSelectAll();
                             $('#quick-action-form').hide();
+                            if (typeof syncGlobalStats === 'function') {
+                                syncGlobalStats();
+                            }
                         }
                     }
                 });

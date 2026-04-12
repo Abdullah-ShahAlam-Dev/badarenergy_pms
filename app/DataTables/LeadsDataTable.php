@@ -431,6 +431,9 @@ class LeadsDataTable extends BaseDataTable
                         selector: \'[data-toggle="tooltip"]\'
                     });
                     $(".statusChange").selectpicker();
+                    if (typeof syncGlobalStats === "function") {
+                        syncGlobalStats(oSettings.json);
+                    }
                 }',
             ])
             ->buttons(Button::make(['extend' => 'excel', 'text' => '<i class="fa fa-file-export"></i> ' . trans('app.exportExcel')]));

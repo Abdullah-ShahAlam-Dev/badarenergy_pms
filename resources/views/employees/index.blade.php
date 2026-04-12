@@ -249,7 +249,7 @@
             window.LaravelDataTables["employees-table"].draw(false);
         }
 
-        $('#employee, #status, #role, #gender, #skill, #designation, #department').on('change keyup',
+        $('.filter-box').on('change keyup', '#employee, #status, #role, #gender, #skill, #designation, #department',
             function () {
                 if ($('#status').val() != "all") {
                     $('#reset-filters').removeClass('d-none');
@@ -269,14 +269,14 @@
                 showTable();
             });
 
-        $('#search-text-field').on('keyup', function () {
+        $('.filter-box').on('keyup', '#search-text-field', function () {
             if ($('#search-text-field').val() != "") {
                 $('#reset-filters').removeClass('d-none');
                 showTable();
             }
         });
 
-        $('#reset-filters, #reset-filters-2').click(function () {
+        $('body').on('click', '#reset-filters, #reset-filters-2', function () {
             $('#filter-form')[0].reset();
             $('.filter-box .select-picker').selectpicker("refresh");
             $('#reset-filters').addClass('d-none');
@@ -369,6 +369,9 @@
                         success: function (response) {
                             if (response.status == "success") {
                                 showTable();
+                                if (typeof syncGlobalStats === "function") {
+                                    syncGlobalStats();
+                                }
                             }
                         }
                     });
@@ -397,6 +400,9 @@
                         resetActionButtons();
                         deSelectAll();
                         $('#quick-action-form').hide();
+                        if (typeof syncGlobalStats === "function") {
+                            syncGlobalStats();
+                        }
                     }
                 }
             })
@@ -422,6 +428,9 @@
                     success: function (response) {
                         if (response.status == "success") {
                             window.LaravelDataTables["employees-table"].draw(false);
+                            if (typeof syncGlobalStats === "function") {
+                                syncGlobalStats();
+                            }
                         }
                     }
                 })

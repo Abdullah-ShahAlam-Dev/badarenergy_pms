@@ -321,9 +321,9 @@ class ArchiveTasksDataTable extends BaseDataTable
 
         $model->leftJoin('users as creator_user', 'creator_user.id', '=', 'tasks.created_by')
             ->leftJoin('task_labels', 'task_labels.task_id', '=', 'tasks.id')
-            ->selectRaw('tasks.id, tasks.added_by, projects.project_name, projects.project_admin, tasks.heading, client.name as clientName, creator_user.name as created_by, creator_user.image as created_image, tasks.board_column_id,
+            ->selectRaw('tasks.id, tasks.task_short_code, tasks.completed_on, tasks.added_by, projects.project_name, projects.project_admin, tasks.heading, client.name as clientName, creator_user.name as created_by, creator_user.image as created_image, tasks.board_column_id,
              tasks.due_date, taskboard_columns.column_name as board_column, taskboard_columns.label_color,
-              tasks.project_id, tasks.is_private ,( select count(id) from pinned where pinned.task_id = tasks.id and pinned.user_id = ' . user()->id . ') as pinned_task')
+              tasks.project_id, tasks.is_private ,( select count(*) from pinned where pinned.task_id = tasks.id and pinned.user_id = ' . user()->id . ') as pinned_task')
             ->with('users', 'activeTimerAll', 'boardColumn', 'activeTimer', 'timeLogged', 'timeLogged.breaks', 'userActiveTimer', 'userActiveTimer.activeBreak', 'labels')
             ->withCount('activeTimerAll')
             ->groupBy('tasks.id');

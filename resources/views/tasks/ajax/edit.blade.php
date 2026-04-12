@@ -1,3 +1,12 @@
+@php
+    $addTaskCategoryPermission = user()->permission('add_task_category');
+    $viewTaskCategoryPermission = user()->permission('view_task_category');
+    $addEmployeePermission = user()->permission('add_employees');
+    $addTaskFilePermission = user()->permission('add_task_files');
+    $addTaskPermission = user()->permission('add_tasks');
+    $viewMilestonePermission = user()->permission('view_project_milestones');
+@endphp
+
 <meta name="turbo-cache-control" content="no-cache">
 
 <link rel="stylesheet" href="{{ asset('vendor/css/dropzone.min.css') }}">

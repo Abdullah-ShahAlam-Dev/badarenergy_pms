@@ -294,6 +294,43 @@
             $('.main-sidebar .nav-item').removeClass('hover');
             $('.main-sidebar .accordionItemHeading').removeClass('hover');
 
+            // -------------------------------------------------------
+            // TURBO SIDEBAR ACTIVE STATE SYNC
+            // The sidebar is data-turbo-permanent so Laravel's server-
+            // rendered `active` class is never refreshed by Turbo.
+            // On every navigation we recompute it from the current URL.
+            // -------------------------------------------------------
+            (function syncSidebarActive() {
+                var currentPath = window.location.pathname;
+
+                // 1. Reset all active states
+                $('.main-sidebar .accordionItemHeading').removeClass('active');
+                $('.main-sidebar .accordionItemContent a').removeClass('active');
+                $('.main-sidebar .accordionItem').removeClass('open');
+                // Also reset direct nav-item links (non-accordion)
+                $('.main-sidebar a.nav-item').removeClass('active');
+
+                // 2. Mark matching direct links (single-item menu entries)
+                $('.main-sidebar a.nav-item[href]').each(function() {
+                    var linkPath = this.pathname; // browser parses full href automatically
+                    if (currentPath === linkPath || currentPath.startsWith(linkPath + '/')) {
+                        $(this).addClass('active');
+                    }
+                });
+
+                // 3. Mark matching sub-menu links and open their parent accordion
+                $('.main-sidebar .accordionItemContent a[href]').each(function() {
+                    var linkPath = this.pathname;
+                    if (currentPath === linkPath || currentPath.startsWith(linkPath + '/')) {
+                        $(this).addClass('active');
+                        // Open the parent accordion and mark heading active
+                        var $accordionItem = $(this).closest('.accordionItem');
+                        $accordionItem.addClass('open');
+                        $accordionItem.find('> .accordionItemHeading').addClass('active');
+                    }
+                });
+            })();
+
             // Robust closing of all mobile overlays
             const closeOverlays = () => {
                 $("#mobile_menu_collapse, #mobile_close_panel").removeClass("toggled");

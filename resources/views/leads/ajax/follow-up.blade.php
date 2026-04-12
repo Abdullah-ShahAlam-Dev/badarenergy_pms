@@ -32,32 +32,34 @@ $deleteLeadFollowUpPermission = user()->permission('delete_lead_follow_up');
     (function() {
         var $body = $('body');
         var $table = $('#leadfollowup-table');
+        var namespace = '.leadsFollowUp';
 
-        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
             var leadId = "{{ $lead->id }}";
             data['leadId'] = leadId;
         });
 
-        var showTable = function() {
-            if (window.LaravelDataTables["leadfollowup-table"]) {
+        function showTable() {
+            if (window.LaravelDataTables && window.LaravelDataTables["leadfollowup-table"]) {
                 window.LaravelDataTables["leadfollowup-table"].draw(false);
             }
-        };
+        }
+        window.showTable = showTable;
 
-        $body.off('.leadsFollowUp');
+        $body.off(namespace);
 
-        $body.on('click.leadsFollowUp', '#add-lead-followup', function() {
+        $body.on('click' + namespace, '#add-lead-followup', function() {
             var url = "{{ route('leads.follow_up', $leadId) }}";
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('click.leadsFollowUp', '.edit-table-row-lead', function() {
+        $body.on('click' + namespace, '.edit-table-row-lead', function() {
             var id = $(this).data('followup-id');
             var url = "{{ route('leads.follow_up_edit', ':id') }}".replace(':id', id);
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('click.leadsFollowUp', '.delete-table-row-lead', function() {
+        $body.on('click' + namespace, '.delete-table-row-lead', function() {
             var id = $(this).data('followup-id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
@@ -86,7 +88,7 @@ $deleteLeadFollowUpPermission = user()->permission('delete_lead_follow_up');
             });
         });
 
-        $body.on('change.leadsFollowUp', '.status', function() {
+        $body.on('change' + namespace, '.status', function() {
             var status = $(this).val();
             var followUpId = $(this).data('followup-id');
             var url = "{{ route('leads.change_follow_up_status') }}";
@@ -98,9 +100,11 @@ $deleteLeadFollowUpPermission = user()->permission('delete_lead_follow_up');
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.leadsFollowUp');
-            $table.off('.leadsFollowUp');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

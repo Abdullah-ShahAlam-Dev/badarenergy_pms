@@ -35,21 +35,23 @@
     (function() {
         var $body = $('body');
         var $table = $('#invoices-table');
+        var namespace = '.leadsProposal';
 
-        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
             var leadId = "{{ $lead->id }}";
             data['leadId'] = leadId;
         });
 
-        var showTable = function() {
-            if (window.LaravelDataTables["invoices-table"]) {
+        function showTable() {
+            if (window.LaravelDataTables && window.LaravelDataTables["invoices-table"]) {
                 window.LaravelDataTables["invoices-table"].draw(false);
             }
-        };
+        }
+        window.showTable = showTable;
 
-        $body.off('.leadsProposal');
+        $body.off(namespace);
 
-        $body.on('click.leadsProposal', '.delete-table-row', function() {
+        $body.on('click' + namespace, '.delete-table-row', function() {
             var id = $(this).data('proposal-id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
@@ -78,7 +80,7 @@
             });
         });
 
-        $body.on('click.leadsProposal', '.sendButton', function() {
+        $body.on('click' + namespace, '.sendButton', function() {
             var id = $(this).data('proposal-id');
             var url = "{{ route('proposals.send_proposal', ':id') }}".replace(':id', id);
             var token = "{{ csrf_token() }}";
@@ -95,9 +97,11 @@
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.leadsProposal');
-            $table.off('.leadsProposal');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

@@ -55,13 +55,14 @@ $viewClientNote = user()->permission('view_lead_note');
 <script>
     (function() {
         var $body = $('body');
+        var namespace = '.leadsShow';
         var activeTab = "{{ $activeTab }}";
 
         $('.project-menu .' + activeTab).addClass('active');
 
-        $body.off('.leadsShow');
+        $body.off(namespace);
 
-        $body.on('click.leadsShow', '.ajax-tab', function(event) {
+        $body.on('click' + namespace, '.ajax-tab', function(event) {
             event.preventDefault();
 
             $('.project-menu .p-sub-menu').removeClass('active');
@@ -83,12 +84,12 @@ $viewClientNote = user()->permission('view_lead_note');
             });
         });
 
-        $body.on('click.leadsShow', '#add-files', function() {
+        $body.on('click' + namespace, '#add-files', function() {
             var url = "{{ route('lead-files.create') }}";
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('click.leadsShow', '.delete-table-row', function() {
+        $body.on('click' + namespace, '.delete-table-row', function() {
             var id = $(this).data('id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
@@ -119,8 +120,9 @@ $viewClientNote = user()->permission('view_lead_note');
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.leadsShow');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

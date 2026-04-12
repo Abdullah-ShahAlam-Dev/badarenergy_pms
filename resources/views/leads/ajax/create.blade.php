@@ -274,6 +274,7 @@ $addProductPermission = user()->permission('add_product');
     (function() {
         var $body = $('body');
         var add_lead_note_permission = "{{ $addLeadNotePermission }}";
+        var namespace = '.leadsCreate';
 
         $('.custom-date-picker').each(function(ind, el) {
             datepicker(el, {
@@ -283,10 +284,12 @@ $addProductPermission = user()->permission('add_product');
         });
 
         if (add_lead_note_permission == 'all' || add_lead_note_permission == 'added' || add_lead_note_permission == 'both') {
-            quillImageLoad('#note');
+            if (typeof quillImageLoad === 'function') {
+                quillImageLoad('#note');
+            }
         }
 
-        $body.off('.leadsCreate');
+        $body.off(namespace);
 
         var saveLead = function(data, url, buttonSelector) {
             $.easyAjax({
@@ -318,7 +321,7 @@ $addProductPermission = user()->permission('add_product');
             });
         };
 
-        $body.on('click.leadsCreate', '#save-more-lead-form', function() {
+        $body.on('click' + namespace, '#save-more-lead-form', function() {
             if (add_lead_note_permission == 'all' || add_lead_note_permission == 'added' || add_lead_note_permission == 'both') {
                 var note = document.getElementById('note').children[0].innerHTML;
                 document.getElementById('note-text').value = note;
@@ -329,7 +332,7 @@ $addProductPermission = user()->permission('add_product');
             saveLead(data, url, "#save-more-lead-form");
         });
 
-        $body.on('click.leadsCreate', '#save-lead-form', function() {
+        $body.on('click' + namespace, '#save-lead-form', function() {
             if (add_lead_note_permission == 'all' || add_lead_note_permission == 'added' || add_lead_note_permission == 'both') {
                 var note = document.getElementById('note').children[0].innerHTML;
                 document.getElementById('note-text').value = note;
@@ -340,22 +343,22 @@ $addProductPermission = user()->permission('add_product');
             saveLead(data, url, "#save-lead-form");
         });
 
-        $body.on('click.leadsCreate', '.add-lead-agent', function() {
+        $body.on('click' + namespace, '.add-lead-agent', function() {
             var url = '{{ route('lead-agent-settings.create') }}';
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('click.leadsCreate', '.add-lead-source', function() {
+        $body.on('click' + namespace, '.add-lead-source', function() {
             var url = '{{ route('lead-source-settings.create') }}';
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('click.leadsCreate', '.add-lead-category', function() {
+        $body.on('click' + namespace, '.add-lead-category', function() {
             var url = '{{ route('leadCategory.create') }}';
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('click.leadsCreate', '.toggle-other-details', function() {
+        $body.on('click' + namespace, '.toggle-other-details', function() {
             $(this).find('svg').toggleClass('fa-chevron-down fa-chevron-up');
             $('#other-details').toggleClass('d-none');
         });
@@ -370,11 +373,12 @@ $addProductPermission = user()->permission('add_product');
 
         init(RIGHT_MODAL);
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.leadsCreate');
-            if (typeof quill !== 'undefined' && quill) {
-                // Quill cleanup if necessary, though usually handled by DOM removal
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            if (typeof destroy_editor === 'function') {
+                destroy_editor('#note');
             }
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

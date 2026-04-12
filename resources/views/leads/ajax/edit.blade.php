@@ -267,6 +267,7 @@ $addProductPermission = user()->permission('add_product');
 <script>
     (function() {
         var $body = $('body');
+        var namespace = '.leadsEdit';
 
         $('.custom-date-picker').each(function(ind, el) {
             datepicker(el, {
@@ -275,9 +276,9 @@ $addProductPermission = user()->permission('add_product');
             });
         });
 
-        $body.off('.leadsEdit');
+        $body.off(namespace);
 
-        $body.on('click.leadsEdit', '#save-lead-form', function() {
+        $body.on('click' + namespace, '#save-lead-form', function() {
             var url = "{{ route('leads.update', [$lead->id]) }}";
             $.easyAjax({
                 url: url,
@@ -294,58 +295,58 @@ $addProductPermission = user()->permission('add_product');
             });
         });
 
-        $body.on('click.leadsEdit', '.add-lead-agent', function() {
+        $body.on('click' + namespace, '.add-lead-agent', function() {
             var url = '{{ route('lead-agent-settings.create') }}';
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('click.leadsEdit', '.add-lead-source', function() {
+        $body.on('click' + namespace, '.add-lead-source', function() {
             var url = '{{ route('lead-source-settings.create') }}';
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('click.leadsEdit', '.add-lead-category', function() {
+        $body.on('click' + namespace, '.add-lead-category', function() {
             var url = '{{ route('leadCategory.create') }}';
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('click.leadsEdit', '#create_task_category', function() {
+        $body.on('click' + namespace, '#create_task_category', function() {
             var url = "{{ route('taskCategory.create') }}";
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('click.leadsEdit', '#department-setting', function() {
+        $body.on('click' + namespace, '#department-setting', function() {
             var url = "{{ route('departments.create') }}";
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('change.leadsEdit', '#client_view_task', function() {
+        $body.on('change' + namespace, '#client_view_task', function() {
             $('#clientNotification').toggleClass('d-none');
         });
 
-        $body.on('change.leadsEdit', '#set_time_estimate', function() {
+        $body.on('change' + namespace, '#set_time_estimate', function() {
             $('#set-time-estimate-fields').toggleClass('d-none');
         });
 
-        $body.on('change.leadsEdit', '#repeat-task', function() {
+        $body.on('change' + namespace, '#repeat-task', function() {
             $('#repeat-fields').toggleClass('d-none');
         });
 
-        $body.on('change.leadsEdit', '#dependent-task', function() {
+        $body.on('change' + namespace, '#dependent-task', function() {
             $('#dependent-fields').toggleClass('d-none');
         });
 
-        $body.on('click.leadsEdit', '.toggle-other-details', function() {
+        $body.on('click' + namespace, '.toggle-other-details', function() {
             $(this).find('svg').toggleClass('fa-chevron-down fa-chevron-up');
             $('#other-details').toggleClass('d-none');
         });
 
-        $body.on('click.leadsEdit', '#createTaskLabel', function() {
+        $body.on('click' + namespace, '#createTaskLabel', function() {
             var url = "{{ route('task-label.create') }}";
             $.ajaxModal(MODAL_XL, url);
         });
 
-        $body.on('click.leadsEdit', '#add-project', function() {
+        $body.on('click' + namespace, '#add-project', function() {
             $(MODAL_XL).modal('show');
             var url = "{{ route('projects.create') }}";
             $.easyAjax({
@@ -362,7 +363,7 @@ $addProductPermission = user()->permission('add_product');
             });
         });
 
-        $body.on('click.leadsEdit', '#add-employee', function() {
+        $body.on('click' + namespace, '#add-employee', function() {
             $(MODAL_XL).modal('show');
             var url = "{{ route('employees.create') }}";
             $.easyAjax({
@@ -390,8 +391,9 @@ $addProductPermission = user()->permission('add_product');
         <x-forms.custom-field-filejs/>
         init(RIGHT_MODAL);
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.leadsEdit');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

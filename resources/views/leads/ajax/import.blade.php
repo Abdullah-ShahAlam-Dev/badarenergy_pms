@@ -36,13 +36,14 @@
 <script>
     (function() {
         var $body = $('body');
+        var namespace = '.leadsImport';
         var $dropify = $("#lead_import").dropify({
             messages: dropifyMessages
         });
 
-        $body.off('.leadsImport');
+        $body.off(namespace);
 
-        $body.on('click.leadsImport', '#import-lead-form', function() {
+        $body.on('click' + namespace, '#import-lead-form', function() {
             var url = "{{ route('leads.import.store') }}";
 
             $.easyAjax({
@@ -62,11 +63,12 @@
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.leadsImport');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
             if ($dropify.data('dropify')) {
                 $dropify.data('dropify').destroy();
             }
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

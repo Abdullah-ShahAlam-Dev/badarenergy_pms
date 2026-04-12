@@ -47,21 +47,23 @@
     (function() {
         var $body = $('body');
         var $table = $('#leads-gdpr-table');
+        var namespace = '.leadsGdpr';
 
-        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
             var leadID = "{{ $lead->id }}";
             data['leadID'] = leadID;
         });
 
-        var showTable = function() {
-            if (window.LaravelDataTables["leads-gdpr-table"]) {
+        function showTable() {
+            if (window.LaravelDataTables && window.LaravelDataTables["leads-gdpr-table"]) {
                 window.LaravelDataTables["leads-gdpr-table"].draw(false);
             }
-        };
+        }
+        window.showTable = showTable;
 
-        $body.off('.leadsGdpr');
+        $body.off(namespace);
 
-        $body.on('click.leadsGdpr', '.consent-details', function() {
+        $body.on('click' + namespace, '.consent-details', function() {
             var consentId = $(this).data('consent-id');
             var leadId = "{{ $lead->id }}";
             var url = `{{ route('leads.gdpr_consent') }}?consentId=${consentId}&leadId=${leadId}`;
@@ -69,9 +71,11 @@
             $.ajaxModal(MODAL_LG, url);
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.leadsGdpr');
-            $table.off('.leadsGdpr');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

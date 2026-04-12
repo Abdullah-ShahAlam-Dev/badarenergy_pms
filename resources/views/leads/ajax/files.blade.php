@@ -44,9 +44,10 @@ $addLeadFilePermission = user()->permission('add_lead_files');
 <script>
     (function() {
         var $body = $('body');
+        var namespace = '.leadsFiles';
         var fileLayout = 'listview';
 
-        var leadFilesView = function(layout) {
+        function leadFilesView(layout) {
             $('#layout').html('');
             var leadID = "{{ $lead->id }}";
             fileLayout = layout;
@@ -67,16 +68,17 @@ $addLeadFilePermission = user()->permission('add_lead_files');
                     }
                 }
             });
-        };
+        }
+        window.leadFilesView = leadFilesView;
 
-        $body.off('.leadsFiles');
+        $body.off(namespace);
 
-        $body.on('click.leadsFiles', '.layout', function() {
+        $body.on('click' + namespace, '.layout', function() {
             var layout = $(this).data('tab-name');
             leadFilesView(layout);
         });
 
-        $body.on('click.leadsFiles', '.delete-lead-file', function() {
+        $body.on('click' + namespace, '.delete-lead-file', function() {
             var id = $(this).data('file-id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
@@ -106,8 +108,10 @@ $addLeadFilePermission = user()->permission('add_lead_files');
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.leadsFiles');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            delete window.leadFilesView;
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

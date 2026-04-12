@@ -90,12 +90,23 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
 @push('scripts')
     @include('sections.datatable_js')
 
-<script>
-    (function() {
-        var $body = $('body');
-        var $table = $('#leads-table');
+    <script>
+        (function() {
+            var $body = $('body');
+            var $table = $('#leads-table');
+            var namespace = '.leadsIndex';
 
-        $table.off('preXhr.dt').on('preXhr.dt', function(e, settings, data) {
+            document.addEventListener("turbo:before-cache", function cleanup() {
+                $body.off(namespace);
+                $table.off('preXhr.dt' + namespace);
+                delete window.showTable;
+                delete window.applyQuickAction;
+                delete window.changeStatus;
+                delete window.followUp;
+                document.removeEventListener("turbo:before-cache", cleanup);
+            }, { once: true });
+
+            $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
             var dateRangePicker = $('#datatableRange').data('daterangepicker');
             var startDate = $('#datatableRange').val();
 
@@ -121,15 +132,16 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             data['date_filter_on'] = $('#date_filter_on').val();
         });
 
-        var showTable = function() {
-            if (window.LaravelDataTables["leads-table"]) {
-                window.LaravelDataTables["leads-table"].draw(false);
+            function showTable() {
+                if (window.LaravelDataTables && window.LaravelDataTables["leads-table"]) {
+                    window.LaravelDataTables["leads-table"].draw(false);
+                }
             }
-        };
+            window.showTable = showTable;
 
-        $body.off('.leadsIndex');
+            $body.off(namespace);
 
-        $body.on('click.leadsIndex', '#reset-filters', function() {
+            $body.on('click' + namespace, '#reset-filters', function() {
             $('#filter-form')[0].reset();
             $('.filter-box #status').val('not finished');
             $('.filter-box .select-picker').selectpicker("refresh");
@@ -137,7 +149,7 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             showTable();
         });
 
-        $body.on('click.leadsIndex', '#reset-filters-2', function() {
+        $body.on('click' + namespace, '#reset-filters-2', function() {
             $('#filter-form')[0].reset();
             $('.filter-box #status').val('all');
             $('.filter-box #leave_type').val('all');
@@ -146,7 +158,7 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             showTable();
         });
 
-        $body.on('change.leadsIndex', '#quick-action-type', function() {
+        $body.on('change' + namespace, '#quick-action-type', function() {
             var actionValue = $(this).val();
             if (actionValue != '') {
                 $('#quick-action-apply').removeAttr('disabled');
@@ -162,32 +174,33 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             }
         });
 
-        var applyQuickAction = function() {
-            var rowdIds = $("#leads-table input:checkbox:checked").map(function() {
-                return $(this).val();
-            }).get();
+            function applyQuickAction() {
+                var rowdIds = $("#leads-table input:checkbox:checked").map(function() {
+                    return $(this).val();
+                }).get();
 
-            var url = "{{ route('leads.apply_quick_action') }}?row_ids=" + rowdIds;
+                var url = "{{ route('leads.apply_quick_action') }}?row_ids=" + rowdIds;
 
-            $.easyAjax({
-                url: url,
-                container: '#quick-action-form',
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#quick-action-apply",
-                data: $('#quick-action-form').serialize(),
-                success: function(response) {
-                    if (response.status == 'success') {
-                        showTable();
-                        if (typeof resetActionButtons === 'function') resetActionButtons();
-                        if (typeof deSelectAll === 'function') deSelectAll();
-                        $('#quick-action-form').hide();
+                $.easyAjax({
+                    url: url,
+                    container: '#quick-action-form',
+                    type: "POST",
+                    disableButton: true,
+                    buttonSelector: "#quick-action-apply",
+                    data: $('#quick-action-form').serialize(),
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                            $('#quick-action-form').hide();
+                        }
                     }
-                }
-            });
-        };
+                });
+            }
+            window.applyQuickAction = applyQuickAction;
 
-        $body.on('click.leadsIndex', '#quick-action-apply', function() {
+            $body.on('click' + namespace, '#quick-action-apply', function() {
             var actionValue = $('#quick-action-type').val();
             if (actionValue == 'delete') {
                 Swal.fire({
@@ -209,7 +222,7 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             }
         });
 
-        $body.on('click.leadsIndex', '.delete-table-row', function() {
+        $body.on('click' + namespace, '.delete-table-row', function() {
             var id = $(this).data('id');
             Swal.fire({
                 title: "@lang('messages.sweetAlertTitle')",
@@ -238,7 +251,7 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             });
         });
 
-        $table.on('change.leadsIndex', '.change-status', function() {
+        $table.on('change' + namespace, '.change-status', function() {
             var url = "{{ route('leads.change_status') }}";
             var token = "{{ csrf_token() }}";
             var id = $(this).data('task-id');
@@ -258,29 +271,31 @@ $addLeadCustomFormPermission = user()->permission('manage_lead_custom_forms');
             }
         });
 
-        var changeStatus = function(leadID, statusID) {
-            var url = "{{ route('leads.change_status') }}";
-            var token = "{{ csrf_token() }}";
-            $.easyAjax({
-                type: 'POST',
-                url: url,
-                data: { '_token': token, 'leadID': leadID, 'statusID': statusID },
-                success: function(response) {
-                    if (response.status == "success") {
-                        showTable();
-                        if (typeof resetActionButtons === 'function') resetActionButtons();
-                        if (typeof deSelectAll === 'function') deSelectAll();
+            function changeStatus(leadID, statusID) {
+                var url = "{{ route('leads.change_status') }}";
+                var token = "{{ csrf_token() }}";
+                $.easyAjax({
+                    type: 'POST',
+                    url: url,
+                    data: { '_token': token, 'leadID': leadID, 'statusID': statusID },
+                    success: function(response) {
+                        if (response.status == "success") {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                        }
                     }
-                }
-            });
-        };
+                });
+            }
+            window.changeStatus = changeStatus;
 
-        var followUp = function(leadID) {
-            var url = '{{ route('leads.follow_up', ':id') }}'.replace(':id', leadID);
-            $.ajaxModal(MODAL_LG, url);
-        };
+            function followUp(leadID) {
+                var url = '{{ route('leads.follow_up', ':id') }}'.replace(':id', leadID);
+                $.ajaxModal(MODAL_LG, url);
+            }
+            window.followUp = followUp;
 
-        $body.on('click.leadsIndex', '#add-lead', function() {
+            $body.on('click' + namespace, '#add-lead', function() {
             window.location.href = "{{ route('lead-form.index') }}";
         });
 

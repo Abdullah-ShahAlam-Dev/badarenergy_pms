@@ -42,21 +42,23 @@ $addLeadNotePermission = user()->permission('add_lead_note');
     (function() {
         var $body = $('body');
         var $table = $('#lead-notes-table');
+        var namespace = '.leadsNotes';
 
-        $table.on('preXhr.dt', function(e, settings, data) {
+        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
             var leadID = "{{ $lead->id }}";
             data['leadID'] = leadID;
         });
 
-        var showTable = function() {
-            if (window.LaravelDataTables["lead-notes-table"]) {
+        function showTable() {
+            if (window.LaravelDataTables && window.LaravelDataTables["lead-notes-table"]) {
                 window.LaravelDataTables["lead-notes-table"].draw(false);
             }
-        };
+        }
+        window.showTable = showTable;
 
-        $body.off('.leadsNotes');
+        $body.off(namespace);
 
-        $body.on('change.leadsNotes', '#quick-action-type', function() {
+        $body.on('change' + namespace, '#quick-action-type', function() {
             var actionValue = $(this).val();
             if (actionValue != '') {
                 $('#quick-action-apply').removeAttr('disabled');
@@ -174,9 +176,11 @@ $addLeadNotePermission = user()->permission('add_lead_note');
             });
         });
 
-        document.addEventListener("turbo:before-cache", function() {
-            $body.off('.leadsNotes');
-            $table.off('.leadsNotes');
+        document.addEventListener("turbo:before-cache", function cleanup() {
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
+            delete window.showTable;
+            document.removeEventListener("turbo:before-cache", cleanup);
         }, { once: true });
     })();
 </script>

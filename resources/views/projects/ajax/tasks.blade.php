@@ -134,7 +134,7 @@ $projectArchived = $project->trashed();
         var $table = $('#allTasks-table');
         var namespace = '.projectTasks';
 
-        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var projectID = "{{ $project->id }}";
             var status = $('#status').val();
             var searchText = $('#search-text-field').val();

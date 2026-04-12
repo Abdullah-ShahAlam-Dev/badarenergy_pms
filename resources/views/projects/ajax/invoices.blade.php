@@ -96,7 +96,7 @@ $addInvoicePermission = user()->permission('add_invoices');
         var $table = $('#invoices-table');
         var namespace = '.projectInvoices';
 
-        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var projectID = "{{ $project->id }}";
             var status = $('#status').val();
             var searchText = $('#search-text-field').val();

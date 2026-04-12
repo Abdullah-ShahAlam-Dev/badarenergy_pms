@@ -112,229 +112,190 @@ $viewAppreciationPermission = user()->permission('view_appreciation');
     @include('sections.datatable_js')
 
     <script>
-        $('#filter_status').selectpicker();
-        const showTable = () => {
-            window.LaravelDataTables["appreciation-type-table"].draw(false);
-        }
+        (function() {
+            var $body = $('body');
+            var $table = $('#appreciation-type-table');
+            var namespace = '.awardsIndex';
 
-        $('#appreciation-type-table').on('preXhr.dt', function(e, settings, data) {
-            var searchText = $('#search-text-field').val();
-            var status = $('#filter_status').val();
-            data['searchText'] = searchText;
-            data['status'] = status;
-        });
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
 
-        $('#search-text-field , #filter_status').on('change keyup', function() {
-            if ($('#filter_status').val() != "all") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            } if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else {
-                $('#reset-filters').addClass('d-none');
-                showTable();
-            }
-        });
+            $('#filter_status').selectpicker();
 
-        $('body').on('change', '.change-appreciation-status', function() {
-            var id = $(this).data('appreciation-id');
-
-            var token = "{{ csrf_token() }}";
-            var status = $(this).val();
-
-            if (typeof id !== 'undefined') {
-                $.easyAjax({
-                    url: "{{ route('awards.change-status') }}",
-                    type: "POST",
-                    data: {
-                        '_token': token,
-                        appreciationId: id,
-                        status: status
-                    },
-
-                    success: function(response) {
-                        if (response.status == "success") {
-                            showTable();
-                            resetActionButtons();
-                            deSelectAll();
-                        }
-                    }
-                });
-            }
-        });
-
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-            $('.select-picker').val('all');
-
-            $('.select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-
-            showTable();
-        });
-
-        $('body').on('click', '.delete-table-row', function() {
-            var id = $(this).data('user-id');
-            var appreciationCount = $(this).data('total-appreciation');
-            var status = $(this).data('status');
-            var denyButtonStatus = true;
-            var alertText = "@lang('messages.recoverRecord')";
-
-            if(status == 'inactive' || appreciationCount == 0){
-                denyButtonStatus = false;
-            }
-
-            if(appreciationCount != 0){
-                 alertText = "@lang('messages.recoverAwardRecord')";
-                 alertText = alertText.replace(':employeeCount', appreciationCount);
-            }
-
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: alertText,
-                icon: 'warning',
-                showCancelButton: true,
-                showDenyButton: denyButtonStatus,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmDelete')",
-                cancelButtonText: "@lang('app.cancel')",
-                denyButtonText: "@lang('messages.disableIt')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary mr-3',
-                    denyButton: 'btn btn-warning mr-3'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('awards.destroy', ':id') }}";
-                    url = url.replace(':id', id);
-
-                    var token = "{{ csrf_token() }}";
-
-                    $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
-                        success: function(response) {
-                            if (response.status == "success") {
-                                showTable();
-                            }
-                        }
-                    });
+            function showTable() {
+                if (window.LaravelDataTables && window.LaravelDataTables["appreciation-type-table"]) {
+                    window.LaravelDataTables["appreciation-type-table"].draw(false);
                 }
-                else if (result.isDenied) {
-                    if(status == 'active'){
-                        status = 'inactive'
-                    }
-                    else{
-                        status = 'active';
-                    }
-                    var url = "{{ route('awards.change-status') }}";
-                    url = url.replace(':id', id);
+            }
+            window.showTable = showTable;
 
-                    var token = "{{ csrf_token() }}";
+            $table.on('preXhr.dt' + namespace, function(e, settings, data) {
+                var searchText = $('#search-text-field').val();
+                var status = $('#filter_status').val();
+                data['searchText'] = searchText;
+                data['status'] = status;
+            });
 
+            $body.on('change keyup' + namespace, '#search-text-field , #filter_status', function() {
+                var hasFilters = ($('#filter_status').val() != "all") || ($('#search-text-field').val() != "");
+                $('#reset-filters').toggleClass('d-none', !hasFilters);
+                showTable();
+            });
+
+            $body.on('change' + namespace, '.change-appreciation-status', function() {
+                var id = $(this).data('appreciation-id');
+                var token = "{{ csrf_token() }}";
+                var status = $(this).val();
+
+                if (typeof id !== 'undefined') {
                     $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        data: {
-                            '_token': token,
-                            'appreciationId': id,
-                            'status': status,
-                        },
+                        url: "{{ route('awards.change-status') }}",
+                        type: "POST",
+                        data: { '_token': token, appreciationId: id, status: status },
                         success: function(response) {
                             if (response.status == "success") {
                                 showTable();
+                                if (typeof resetActionButtons === 'function') resetActionButtons();
+                                if (typeof deSelectAll === 'function') deSelectAll();
                             }
                         }
                     });
                 }
             });
-        });
 
-        $('#quick-action-type').change(function() {
-            const actionValue = $(this).val();
+            $body.on('click' + namespace, '#reset-filters', function() {
+                $('#filter-form')[0].reset();
+                $('.select-picker').val('all');
+                $('.select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            });
 
-            if (actionValue != '') {
-                $('#quick-action-apply').removeAttr('disabled');
+            $body.on('click' + namespace, '.delete-table-row', function() {
+                var id = $(this).data('user-id');
+                var appreciationCount = $(this).data('total-appreciation');
+                var status = $(this).data('status');
+                var denyButtonStatus = true;
+                var alertText = "@lang('messages.recoverRecord')";
 
-                if (actionValue == 'change-leave-status') {
-                    $('.quick-action-field').addClass('d-none');
-                    $('#change-status-action').removeClass('d-none');
-                } else {
-                    $('.quick-action-field').addClass('d-none');
+                if(status == 'inactive' || appreciationCount == 0){ denyButtonStatus = false; }
+                if(appreciationCount != 0){
+                    alertText = "@lang('messages.recoverAwardRecord')".replace(':employeeCount', appreciationCount);
                 }
-            } else {
-                $('#quick-action-apply').attr('disabled', true);
-                $('.quick-action-field').addClass('d-none');
-            }
-        });
 
-        const applyQuickAction = () => {
-            var rowdIds = $("#appreciation-type-table input:checkbox:checked").map(function() {
-                return $(this).val();
-            }).get();
-
-            var url = "{{ route('awards.apply_quick_action') }}?row_ids=" + rowdIds;
-
-            $.easyAjax({
-                url: url,
-                container: '#quick-action-form',
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#quick-action-apply",
-                data: $('#quick-action-form').serialize(),
-                success: function(response) {
-                    if (response.status == 'success') {
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
-                        $('.quick-action-field').addClass('d-none');
-                    }
-                }
-            })
-        };
-
-        $('#quick-action-apply').click(function() {
-            const actionValue = $('#quick-action-type').val();
-            if (actionValue == 'delete') {
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
-                    text: "@lang('messages.recoverRecord')",
+                    text: alertText,
                     icon: 'warning',
                     showCancelButton: true,
+                    showDenyButton: denyButtonStatus,
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
+                    denyButtonText: "@lang('messages.disableIt')",
                     customClass: {
                         confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
+                        cancelButton: 'btn btn-secondary mr-3',
+                        denyButton: 'btn btn-warning mr-3'
                     },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        applyQuickAction();
+                        var url = "{{ route('awards.destroy', ':id') }}".replace(':id', id);
+                        var token = "{{ csrf_token() }}";
+                        $.easyAjax({
+                            type: 'POST',
+                            url: url,
+                            data: { '_token': token, '_method': 'DELETE' },
+                            success: function(response) {
+                                if (response.status == "success") { showTable(); }
+                            }
+                        });
+                    }
+                    else if (result.isDenied) {
+                        var newStatus = (status == 'active') ? 'inactive' : 'active';
+                        $.easyAjax({
+                            type: 'POST',
+                            url: "{{ route('awards.change-status') }}",
+                            data: { '_token': "{{ csrf_token() }}", 'appreciationId': id, 'status': newStatus },
+                            success: function(response) {
+                                if (response.status == "success") { showTable(); }
+                            }
+                        });
                     }
                 });
+            });
 
-            } else {
-                applyQuickAction();
+            $body.on('change' + namespace, '#quick-action-type', function() {
+                const actionValue = $(this).val();
+                if (actionValue != '') {
+                    $('#quick-action-apply').removeAttr('disabled');
+                    $('#change-status-action').toggleClass('d-none', actionValue != 'change-leave-status');
+                } else {
+                    $('#quick-action-apply').attr('disabled', true);
+                    $('.quick-action-field').addClass('d-none');
+                }
+            });
+
+            function applyQuickAction() {
+                var rowdIds = $("#appreciation-type-table input:checkbox:checked").map(function() {
+                    return $(this).val();
+                }).get();
+
+                var url = "{{ route('awards.apply_quick_action') }}?row_ids=" + rowdIds;
+
+                $.easyAjax({
+                    url: url,
+                    container: '#quick-action-form',
+                    type: "POST",
+                    disableButton: true,
+                    buttonSelector: "#quick-action-apply",
+                    data: $('#quick-action-form').serialize(),
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                            $('.quick-action-field').addClass('d-none');
+                        }
+                    }
+                })
             }
-        });
+            window.applyQuickAction = applyQuickAction;
 
+            $body.on('click' + namespace, '#quick-action-apply', function() {
+                const actionValue = $('#quick-action-type').val();
+                if (actionValue == 'delete') {
+                    Swal.fire({
+                        title: "@lang('messages.sweetAlertTitle')",
+                        text: "@lang('messages.recoverRecord')",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        focusConfirm: false,
+                        confirmButtonText: "@lang('messages.confirmDelete')",
+                        cancelButtonText: "@lang('app.cancel')",
+                        customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                        showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            applyQuickAction();
+                        }
+                    });
+                } else {
+                    applyQuickAction();
+                }
+            });
+
+            document.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                $table.off('preXhr.dt' + namespace);
+                delete window.showTable;
+                delete window.applyQuickAction;
+                document.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
     </script>
+
 @endpush

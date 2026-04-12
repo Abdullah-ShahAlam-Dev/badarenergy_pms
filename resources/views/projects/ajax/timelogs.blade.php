@@ -105,7 +105,7 @@ $addTimelogPermission = user()->permission('add_timelogs');
         var $table = $('#timelogs-table');
         var namespace = '.projectTimelogs';
 
-        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var projectID = "{{ $project->id }}";
             var approved = $('#status').val();
             var invoice = $('#invoice_generate').val();

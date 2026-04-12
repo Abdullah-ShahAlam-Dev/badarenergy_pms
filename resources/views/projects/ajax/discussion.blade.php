@@ -80,7 +80,7 @@ $manageCategoryPermission = user()->permission('manage_discussion_category');
         var $table = $('#discussion-table');
         var namespace = '.projectDiscussion';
 
-        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var projectId = "{{ $project->id }}";
             var categoryId = $('#discussion_category').val();
             data['project_id'] = projectId;

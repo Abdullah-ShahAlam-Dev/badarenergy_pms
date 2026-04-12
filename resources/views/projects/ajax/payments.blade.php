@@ -92,7 +92,7 @@ $addPaymentPermission = user()->permission('add_payments');
         var $table = $('#payments-table');
         var namespace = '.projectPayments';
 
-        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var startDate = $('#start-date').val() || null;
             var endDate = $('#end-date').val() || null;
             var projectID = "{{ $project->id }}";

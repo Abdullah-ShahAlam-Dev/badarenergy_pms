@@ -94,7 +94,7 @@ $addExpensesPermission = user()->permission('add_expenses');
         var $table = $('#expenses-table');
         var namespace = '.projectExpenses';
 
-        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var status = $('#filter-status').val();
             var searchText = $('#search-text-field').val();
             var employee = $('#employee2').val();

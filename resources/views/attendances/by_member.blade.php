@@ -170,119 +170,109 @@ $addAttendancePermission = user()->permission('add_attendance');
 @push('scripts')
 
     <script>
-        $('#user_id, #department, #month, #year, #late')
-            .on('change',
-                function() {
-                    if ($('#user_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#department').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#month').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#year').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#late').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else {
-                        $('#reset-filters').addClass('d-none');
-                        showTable();
+        (function() {
+            var $body = $('body');
+            var namespace = '.attendanceByMember';
+
+            $body.off(namespace);
+
+            $body.on('change' + namespace, '#user_id, #department, #month, #year, #late', function() {
+                var hasFilters = ($('#user_id').val() != "all") ||
+                                 ($('#department').val() != "all") ||
+                                 ($('#month').val() != "all") ||
+                                 ($('#year').val() != "all") ||
+                                 ($('#late').val() != "all");
+
+                $('#reset-filters').toggleClass('d-none', !hasFilters);
+                showTable();
+            });
+
+            $body.on('click' + namespace, '#reset-filters', function() {
+                $('#filter-form')[0].reset();
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            });
+
+            function showTable() {
+                var year = $('#year').val();
+                var month = $('#month').val();
+                var userId = $('#user_id').val();
+                var department = $('#department').val();
+                var late = $('#late').val();
+                var url = "{{ route('attendances.employee_data') }}";
+                var token = "{{ csrf_token() }}";
+
+                $.easyAjax({
+                    type: 'POST',
+                    data: {
+                        '_token': token,
+                        year: year,
+                        month: month,
+                        department: department,
+                        late: late,
+                        userId: userId
+                    },
+                    url: url,
+                    blockUI: true,
+                    container: '.content-wrapper',
+                    success: function(response) {
+                        $('#attendance-data').html(response.data);
+                        $('#daysPresent').html(response.daysPresent);
+                        $('#daysLate').html(response.daysLate);
+                        $('#halfDays').html(response.halfDays);
+                        $('#totalWorkingDays').html(response.totalWorkingDays);
+                        $('#absentDays').html(response.absentDays);
+                        $('#holidayDays').html(response.holidays);
                     }
                 });
+            }
+            window.showTable = showTable;
 
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        function showTable() {
-            var year = $('#year').val();
-            var month = $('#month').val();
-            var userId = $('#user_id').val();
-            var department = $('#department').val();
-            var late = $('#late').val();
-
-            // Refresh counts
-            var url = "{{ route('attendances.employee_data') }}";
-            var token = "{{ csrf_token() }}";
-
-            $.easyAjax({
-                type: 'POST',
-                data: {
-                    '_token': token,
-                    year: year,
-                    month: month,
-                    department: department,
-                    late: late,
-                    userId: userId
-                },
-                url: url,
-                blockUI: true,
-                container: '.content-wrapper',
-                success: function(response) {
-                    $('#attendance-data').html(response.data);
-                    $('#daysPresent').html(response.daysPresent);
-                    $('#daysLate').html(response.daysLate);
-                    $('#halfDays').html(response.halfDays);
-                    $('#totalWorkingDays').html(response.totalWorkingDays);
-                    $('#absentDays').html(response.absentDays);
-                    $('#holidayDays').html(response.holidays);
-                }
+            $body.on('click' + namespace, '#export-bymember', function() {
+                var year = $('#year').val();
+                var month = $('#month').val();
+                var userId = $('#user_id').val();
+                var url = "{{ route('attendances.export_attendance', [':year', ':month', ':userId']) }}";
+                url = url.replace(':year', year).replace(':month', month).replace(':userId', userId);
+                window.location.href = url;
             });
-        }
 
-        $('#export-bymember').click(function() {
-            var year = $('#year').val();
-            var month = $('#month').val();
+            $body.on('click' + namespace, '.view-attendance', function() {
+                var attendanceID = $(this).data('attendance-id');
+                var url = "{{ route('attendances.show', ':attendanceID') }}".replace(':attendanceID', attendanceID);
+                $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_XL, url);
+            });
 
-            var userId = $('#user_id').val();
+            $body.on('click' + namespace, '.edit-attendance', function(event) {
+                var attendanceDate = $(this).data('attendance-date');
+                var userID = $(this).data('user-id');
+                var year = $('#year').val();
+                var month = $('#month').val();
+                var url = "{{ route('attendances.mark', [':userid', ':day', ':month', ':year']) }}";
+                url = url.replace(':userid', userID).replace(':day', attendanceDate).replace(':month', month).replace(':year', year);
+                $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_XL, url);
+            });
 
-            var url = "{{ route('attendances.export_attendance', [':year', ':month', ':userId']) }}";
-            url = url.replace(':year', year).replace(':month', month).replace(':userId', userId);
-            window.location.href=url;
-        });
+            function editAttendance(id) {
+                var url = "{{ route('attendances.edit', [':id']) }}".replace(':id', id);
+                $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_XL, url);
+            }
+            window.editAttendance = editAttendance;
 
-        $('#attendance-data').on('click', '.view-attendance', function() {
-            var attendanceID = $(this).data('attendance-id');
-            var url = "{{ route('attendances.show', ':attendanceID') }}";
-            url = url.replace(':attendanceID', attendanceID);
+            showTable();
 
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_XL, url);
-        });
-
-        $('#attendance-data').on('click', '.edit-attendance', function(event) {
-            var attendanceDate = $(this).data('attendance-date');
-            var userData = $(this).closest('tr').children('td:first');
-            var userID = $(this).data('user-id');
-            var year = $('#year').val();
-            var month = $('#month').val();
-
-            var url = "{{ route('attendances.mark', [':userid', ':day', ':month', ':year']) }}";
-            url = url.replace(':userid', userID);
-            url = url.replace(':day', attendanceDate);
-            url = url.replace(':month', month);
-            url = url.replace(':year', year);
-
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_XL, url);
-        });
-
-        function editAttendance(id) {
-            var url = "{{ route('attendances.edit', [':id']) }}";
-            url = url.replace(':id', id);
-
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_XL, url);
-        }
-
-        showTable();
+            document.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                delete window.showTable;
+                delete window.editAttendance;
+                document.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
     </script>
+
 
 @endpush

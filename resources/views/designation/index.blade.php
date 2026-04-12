@@ -116,119 +116,62 @@
     @include('sections.datatable_js')
 
     <script>
-        $('#Designation-table').on('preXhr.dt', function (e, settings, data) {
+        (function() {
+            var $body = $('body');
+            var $table = $('#Designation-table');
+            var namespace = '.designationsIndex';
 
-            var parentId = $('#parent_id').val();
-            var childId = $('#child').val();
-            var searchText = $('#search-text-field').val();
+            $body.off(namespace);
+            $table.off('preXhr.dt' + namespace);
 
-            data['searchText'] = searchText;
-            data['parentId'] = parentId;
-            data['childId'] = childId;
-        });
+            $table.on('preXhr.dt' + namespace, function (e, settings, data) {
+                var parentId = $('#parent_id').val();
+                var childId = $('#child').val();
+                var searchText = $('#search-text-field').val();
 
-        const showTable = () => {
-            window.LaravelDataTables["Designation-table"].draw(false);
-        }
-
-        $('#parent_id, #child').on('change keyup',
-            function () {
-                if ($('#parent_id').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#child').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else {
-                    $('#reset-filters').addClass('d-none');
-                    showTable();
-                }
+                data['searchText'] = searchText;
+                data['parentId'] = parentId;
+                data['childId'] = childId;
             });
 
-        $('#search-text-field').on('keyup', function () {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
+            function showTable() {
+                if (window.LaravelDataTables && window.LaravelDataTables["Designation-table"]) {
+                    window.LaravelDataTables["Designation-table"].draw(false);
+                }
+            }
+            window.showTable = showTable;
+
+            $body.on('change keyup' + namespace, '#parent_id, #child', function () {
+                var hasFilters = ($('#parent_id').val() != "all") || ($('#child').val() != "all");
+                $('#reset-filters').toggleClass('d-none', !hasFilters);
                 showTable();
-            }
-        });
-
-        $('#reset-filters').click(function () {
-            $('#filter-form')[0].reset();
-            $('.filter-box #status').val('not finished');
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        $('#reset-filters-2').click(function () {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box #parent_id').val('all');
-            $('.filter-box #child').val('all');
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        $('body').on('click', '.delete-table-row', function () {
-            var id = $(this).data('designation-id');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.recoverRecord')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmDelete')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('designations.destroy', ':id') }}";
-                    url = url.replace(':id', id);
-
-                    var token = "{{ csrf_token() }}";
-
-                    $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        blockUI: true,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
-                        success: function (response) {
-                            if (response.status == "success") {
-                                showTable();
-                            }
-                        }
-                    });
-                }
             });
-        });
 
-        $('#quick-action-type').change(function () {
-            const actionValue = $(this).val();
+            $body.on('keyup' + namespace, '#search-text-field', function () {
+                if ($(this).val() != "") {
+                    $('#reset-filters').removeClass('d-none');
+                }
+                showTable();
+            });
 
-            if (actionValue != '') {
-                $('#quick-action-apply').removeAttr('disabled');
-            } else {
-                $('#quick-action-apply').attr('disabled', true);
-                $('.quick-action-field').addClass('d-none');
-            }
-        });
+            $body.on('click' + namespace, '#reset-filters', function () {
+                $('#filter-form')[0].reset();
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            });
 
-        $('#quick-action-apply').click(function () {
-            const actionValue = $('#quick-action-type').val();
+            $body.on('click' + namespace, '#reset-filters-2', function () {
+                $('#filter-form')[0].reset();
+                $('.filter-box #parent_id').val('all');
+                $('.filter-box #child').val('all');
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            });
 
-            if (actionValue === 'delete') {
+            $body.on('click' + namespace, '.delete-table-row', function () {
+                var id = $(this).data('designation-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
                     text: "@lang('messages.recoverRecord')",
@@ -237,50 +180,94 @@
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        applyQuickAction();
+                        var url = "{{ route('designations.destroy', ':id') }}".replace(':id', id);
+                        var token = "{{ csrf_token() }}";
+                        $.easyAjax({
+                            type: 'POST',
+                            url: url,
+                            blockUI: true,
+                            data: { '_token': token, '_method': 'DELETE' },
+                            success: function (response) {
+                                if (response.status == "success") { showTable(); }
+                            }
+                        });
                     }
                 });
+            });
 
-            } else {
-                applyQuickAction();
-            }
-        });
-
-        const applyQuickAction = () => {
-            const rowdIds = $("#Designation-table input:checkbox:checked").map(function () {
-                return $(this).val();
-            }).get();
-
-            const url = "{{ route('designations.apply_quick_action') }}?row_ids=" + rowdIds;
-
-            $.easyAjax({
-                url: url,
-                container: '#quick-action-form',
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#quick-action-apply",
-                data: $('#quick-action-form').serialize(),
-                success: function (response) {
-                    if (response.status === 'success') {
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
-                        $('#quick-action-form').hide();
-                    }
+            $body.on('change' + namespace, '#quick-action-type', function () {
+                const actionValue = $(this).val();
+                if (actionValue != '') {
+                    $('#quick-action-apply').removeAttr('disabled');
+                } else {
+                    $('#quick-action-apply').attr('disabled', true);
+                    $('.quick-action-field').addClass('d-none');
                 }
-            })
-        };
+            });
 
+            function applyQuickAction() {
+                const rowdIds = $("#Designation-table input:checkbox:checked").map(function () {
+                    return $(this).val();
+                }).get();
+
+                const url = "{{ route('designations.apply_quick_action') }}?row_ids=" + rowdIds;
+
+                $.easyAjax({
+                    url: url,
+                    container: '#quick-action-form',
+                    type: "POST",
+                    disableButton: true,
+                    buttonSelector: "#quick-action-apply",
+                    data: $('#quick-action-form').serialize(),
+                    success: function (response) {
+                        if (response.status === 'success') {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                            $('#quick-action-form').hide();
+                        }
+                    }
+                })
+            }
+            window.applyQuickAction = applyQuickAction;
+
+            $body.on('click' + namespace, '#quick-action-apply', function () {
+                const actionValue = $('#quick-action-type').val();
+                if (actionValue === 'delete') {
+                    Swal.fire({
+                        title: "@lang('messages.sweetAlertTitle')",
+                        text: "@lang('messages.recoverRecord')",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        focusConfirm: false,
+                        confirmButtonText: "@lang('messages.confirmDelete')",
+                        cancelButtonText: "@lang('app.cancel')",
+                        customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                        showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            applyQuickAction();
+                        }
+                    });
+                } else {
+                    applyQuickAction();
+                }
+            });
+
+            document.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                $table.off('preXhr.dt' + namespace);
+                delete window.showTable;
+                delete window.applyQuickAction;
+                document.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
     </script>
+
 @endpush

@@ -174,317 +174,214 @@ $approveRejectPermission = user()->permission('approve_or_reject_leaves');
 @endsection
 
 @push('scripts')
-
     @include('sections.datatable_js')
 
     <script>
-        $('#leaves-table').on('preXhr.dt', function(e, settings, data) {
+        (function() {
+            var $body = $('body');
+            var $table = $('#leaves-table');
+            var namespace = '.leavesIndex';
 
-            @if (request('start') && request('end'))
-                $('#datatableRange').data('daterangepicker').setStartDate("{{ request('start') }}");
-                $('#datatableRange').data('daterangepicker').setEndDate("{{ request('end') }}");
-            @endif
+            $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
+                @if (request('start') && request('end'))
+                    $('#datatableRange').data('daterangepicker').setStartDate("{{ request('start') }}");
+                    $('#datatableRange').data('daterangepicker').setEndDate("{{ request('end') }}");
+                @endif
 
-            var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                var startDate = $('#datatableRange').val();
+                var endDate;
 
-            let startDate = $('#datatableRange').val();
-
-            let endDate;
-
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
-            }
-
-            var employeeId = $('#employee_id').val();
-            var leaveTypeId = $('#leave_type').val();
-            var status = $('#status').val();
-            var searchText = $('#search-text-field').val();
-
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['searchText'] = searchText;
-            data['employeeId'] = employeeId;
-            data['leaveTypeId'] = leaveTypeId;
-            data['status'] = status;
-        });
-
-        const showTable = () => {
-            window.LaravelDataTables["leaves-table"].draw(false);
-        }
-
-        $('#start-date, #end-date, #employee_id, #leave_type, #status').on('change keyup',
-            function() {
-                if ($('#start-date').val() != "") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#end-date').val() != "") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#employee_id').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#leave_type').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#status').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
+                if (startDate == '') {
+                    startDate = null;
+                    endDate = null;
                 } else {
-                    $('#reset-filters').addClass('d-none');
-                    showTable();
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
                 }
+
+                data['startDate'] = startDate;
+                data['endDate'] = endDate;
+                data['searchText'] = $('#search-text-field').val();
+                data['employeeId'] = $('#employee_id').val();
+                data['leaveTypeId'] = $('#leave_type').val();
+                data['status'] = $('#status').val();
             });
 
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            }
-        });
-
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box #status').val('not finished');
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        $('#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box #status').val('all');
-            $('.filter-box #leave_type').val('all');
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        $('#quick-action-type').change(function() {
-            const actionValue = $(this).val();
-
-            if (actionValue != '') {
-                $('#quick-action-apply').removeAttr('disabled');
-
-                if (actionValue == 'change-leave-status') {
-                    $('.quick-action-field').addClass('d-none');
-                    $('#change-status-action').removeClass('d-none');
-                } else {
-                    $('.quick-action-field').addClass('d-none');
+            function showTable() {
+                if (window.LaravelDataTables && window.LaravelDataTables["leaves-table"]) {
+                    window.LaravelDataTables["leaves-table"].draw(false);
                 }
-            } else {
-                $('#quick-action-apply').attr('disabled', true);
-                $('.quick-action-field').addClass('d-none');
             }
-        });
+            window.showTable = showTable;
 
-        $('#quick-action-apply').click(function() {
-            const actionValue = $('#quick-action-type').val();
-            if (actionValue == 'delete') {
-                Swal.fire({
-                    title: "@lang('messages.sweetAlertTitle')",
-                    text: "@lang('messages.recoverRecord')",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    focusConfirm: false,
-                    confirmButtonText: "@lang('messages.confirmDelete')",
-                    cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
-                    buttonsStyling: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        applyQuickAction();
+            function applyQuickAction() {
+                var rowdIds = $("#leaves-table input:checkbox:checked").map(function() {
+                    return $(this).val();
+                }).get();
+
+                $.easyAjax({
+                    url: "{{ route('leaves.apply_quick_action') }}?row_ids=" + rowdIds,
+                    container: '#quick-action-form',
+                    type: "POST",
+                    disableButton: true,
+                    buttonSelector: "#quick-action-apply",
+                    data: $('#quick-action-form').serialize(),
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                            $('#quick-action-form').hide();
+                        }
                     }
                 });
-
-            } else {
-                applyQuickAction();
             }
-        });
 
-        $('body').on('click', '.delete-table-row', function() {
-            var type = $(this).data('type');
-            var id = $(this).data('leave-id');
-            var uniId = $(this).data('unique-id');
-            var duration = $(this).data('duration');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.recoverRecord')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmDelete')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('leaves.destroy', ':id') }}";
-                    url = url.replace(':id', id);
+            $body.off(namespace);
 
-                    var token = "{{ csrf_token() }}";
+            $body.on('change' + namespace + ' keyup' + namespace, '#start-date, #end-date, #employee_id, #leave_type, #status', function() {
+                var anyFilter = $('#start-date').val() != "" || $('#end-date').val() != "" || 
+                                $('#employee_id').val() != "all" || $('#leave_type').val() != "all" || 
+                                $('#status').val() != "all";
+                $('#reset-filters').toggleClass('d-none', !anyFilter);
+                showTable();
+            });
 
-                    $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        blockUI: true,
-                        data: {
-                            'uniId': uniId,
-                            'duration': duration,
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
-                        success: function(response) {
-                            if (response.status == "success") {
-                                if(type == 'multiple-leave'){
-                                    window.location.reload();
-                                } else{
-                                    showTable();
+            $body.on('keyup' + namespace, '#search-text-field', function() {
+                if ($(this).val() != "") {
+                    $('#reset-filters').removeClass('d-none');
+                    showTable();
+                }
+            });
+
+            $body.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
+                $('#filter-form')[0].reset();
+                $('.filter-box #status').val('all');
+                $('.filter-box #leave_type').val('all');
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            });
+
+            $body.on('change' + namespace, '#quick-action-type', function() {
+                var actionValue = $(this).val();
+                if (actionValue != '') {
+                    $('#quick-action-apply').removeAttr('disabled');
+                    $('.quick-action-field').addClass('d-none');
+                    if (actionValue == 'change-leave-status') { $('#change-status-action').removeClass('d-none'); }
+                } else {
+                    $('#quick-action-apply').attr('disabled', true);
+                    $('.quick-action-field').addClass('d-none');
+                }
+            });
+
+            $body.on('click' + namespace, '#quick-action-apply', function() {
+                var actionValue = $('#quick-action-type').val();
+                if (actionValue == 'delete') {
+                    Swal.fire({
+                        title: "@lang('messages.sweetAlertTitle')", text: "@lang('messages.recoverRecord')",
+                        icon: 'warning', showCancelButton: true, focusConfirm: false,
+                        confirmButtonText: "@lang('messages.confirmDelete')", cancelButtonText: "@lang('app.cancel')",
+                        customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                        showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' }, buttonsStyling: false
+                    }).then(function(result) { if (result.isConfirmed) { applyQuickAction(); } });
+                } else { applyQuickAction(); }
+            });
+
+            $body.on('click' + namespace, '.delete-table-row', function() {
+                var id = $(this).data('leave-id');
+                var uniId = $(this).data('unique-id');
+                var duration = $(this).data('duration');
+                var type = $(this).data('type');
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')", text: "@lang('messages.recoverRecord')",
+                    icon: 'warning', showCancelButton: true, focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')", cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' }, buttonsStyling: false
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        var url = "{{ route('leaves.destroy', ':id') }}".replace(':id', id);
+                        $.easyAjax({
+                            type: 'POST', url: url, blockUI: true,
+                            data: { 'uniId': uniId, 'duration': duration, '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
+                            success: function(response) {
+                                if (response.status == "success") {
+                                    if(type == 'multiple-leave'){ window.location.reload(); } else{ showTable(); }
                                 }
                             }
-                        }
-                    });
-                }
-            });
-        });
-
-        const applyQuickAction = () => {
-            var rowdIds = $("#leaves-table input:checkbox:checked").map(function() {
-                return $(this).val();
-            }).get();
-
-            var url = "{{ route('leaves.apply_quick_action') }}?row_ids=" + rowdIds;
-
-            $.easyAjax({
-                url: url,
-                container: '#quick-action-form',
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#quick-action-apply",
-                data: $('#quick-action-form').serialize(),
-                success: function(response) {
-                    if (response.status == 'success') {
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
-                        $('#quick-action-form').hide();
+                        });
                     }
-                }
-            })
-        };
-
-        $('body').on('click', '.show-leave', function() {
-            var leaveId = $(this).data('leave-id');
-
-            var url = '{{ route('leaves.show', ':id') }}';
-            url = url.replace(':id', leaveId);
-
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
-
-        $('body').on('click', '.leave-action-approved', function() {
-            let action = $(this).data('leave-action');
-            let leaveId = $(this).data('leave-id');
-            var type = $(this).data('type');
-            if(type == undefined){
-                var type = 'single';
-            }
-            let searchQuery = "?leave_action=" + action + "&leave_id=" + leaveId + "&type=" + type;
-            let url = "{{ route('leaves.show_approved_modal') }}" + searchQuery;
-
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
-
-        $('body').on('click', '.leave-action-reject', function() {
-            let action = $(this).data('leave-action');
-            let leaveId = $(this).data('leave-id');
-            var type = $(this).data('type');
-            if(type == undefined){
-                var type = 'single';
-            }
-            let searchQuery = "?leave_action=" + action + "&leave_id=" + leaveId + "&type=" + type;
-            let url = "{{ route('leaves.show_reject_modal') }}" + searchQuery;
-
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
-
-        $('body').on('click', '.leave-action-preapprove', function() {
-            var action = $(this).data('leave-action');
-            var leaveId = $(this).data('leave-id');
-            var url = "{{ route('leaves.pre_approve_leave') }}";
-
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.changeLeaveStatusConfirmation')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirm')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        blockUI: true,
-                        data: {
-                            'action': action,
-                            'leaveId': leaveId,
-                            '_token': '{{ csrf_token() }}'
-                        },
-                        success: function(response) {
-                            if (response.status == 'success') {
-                                showTable();
-                                resetActionButtons();
-                                deSelectAll();
-                            }
-                        }
-                    });
-                }
+                });
             });
-        });
 
-        $('body').on('click', '.view-related-leave', function() {
-            var leaveId = $(this).data('leave-id');
-            var uniqueId = $(this).data('unique-id');
+            $body.on('click' + namespace, '.show-leave', function() {
+                var leaveId = $(this).data('leave-id');
+                var url = '{{ route('leaves.show', ':id') }}'.replace(':id', leaveId);
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG, url);
+            });
 
-            var url = "{{ route('leaves.view_related_leave', ':id') }}?uniqueId="+uniqueId;
-            url = url.replace(':id', leaveId);
+            $body.on('click' + namespace, '.leave-action-approved', function() {
+                var action = $(this).data('leave-action');
+                var leaveId = $(this).data('leave-id');
+                var type = $(this).data('type') || 'single';
+                var url = "{{ route('leaves.show_approved_modal') }}" + "?leave_action=" + action + "&leave_id=" + leaveId + "&type=" + type;
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG, url);
+            });
 
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
+            $body.on('click' + namespace, '.leave-action-reject', function() {
+                var action = $(this).data('leave-action');
+                var leaveId = $(this).data('leave-id');
+                var type = $(this).data('type') || 'single';
+                var url = "{{ route('leaves.show_reject_modal') }}" + "?leave_action=" + action + "&leave_id=" + leaveId + "&type=" + type;
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG, url);
+            });
 
+            $body.on('click' + namespace, '.leave-action-preapprove', function() {
+                var action = $(this).data('leave-action');
+                var leaveId = $(this).data('leave-id');
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')", text: "@lang('messages.changeLeaveStatusConfirmation')",
+                    icon: 'warning', showCancelButton: true, focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirm')", cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' }, buttonsStyling: false
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        $.easyAjax({
+                            type: 'POST', url: "{{ route('leaves.pre_approve_leave') }}", blockUI: true,
+                            data: { 'action': action, 'leaveId': leaveId, '_token': '{{ csrf_token() }}' },
+                            success: function(response) {
+                                if (response.status == 'success') {
+                                    showTable();
+                                    if (typeof resetActionButtons === 'function') resetActionButtons();
+                                    if (typeof deSelectAll === 'function') deSelectAll();
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+
+            $body.on('click' + namespace, '.view-related-leave', function() {
+                var leaveId = $(this).data('leave-id');
+                var uniqueId = $(this).data('unique-id');
+                var url = "{{ route('leaves.view_related_leave', ':id') }}".replace(':id', leaveId) + "?uniqueId="+uniqueId;
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG, url);
+            });
+
+            document.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                $table.off('preXhr.dt' + namespace);
+                delete window.showTable;
+                document.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
     </script>
+@endpush
 @endpush

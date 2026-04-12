@@ -172,246 +172,165 @@
     @include('sections.datatable_js')
 
     <script>
-        $('#timelogs-table').on('preXhr.dt', function (e, settings, data) {
+        (function() {
+            var $body = $('body');
+            var $table = $('#timelogs-table');
+            var namespace = '.timelogsIndex';
 
-            const dateRangePicker = $('#datatableRange').data('daterangepicker');
+            $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
+                var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                var startDate = $('#datatableRange').val();
+                var endDate;
 
-            let startDate = $('#datatableRange').val();
-            let endDate;
-
-            if (startDate === '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
-            }
-
-
-            var projectID = $('#project_id').val();
-            var employee = $('#employee').val();
-            var approved = $('#status').val();
-            var invoice = $('#invoice_generate').val();
-            var searchText = $('#search-text-field').val();
-
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['projectId'] = projectID;
-            data['employee'] = employee;
-            data['approved'] = approved;
-            data['invoice'] = invoice;
-            data['searchText'] = searchText;
-        });
-        const showTable = () => {
-            window.LaravelDataTables["timelogs-table"].draw(false);
-        }
-
-        $('#project_id, #employee, #status, #invoice_generate').on('change keyup',
-            function () {
-                if ($('#status').val() !== "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#employee').val() !== "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#project_id').val() !== "all") {
-                    $('#reset-filters').removeClass('d-none');
-                } else if ($('#invoice_generate').val() !== "all") {
-                    $('#reset-filters').removeClass('d-none');
+                if (startDate === '') {
+                    startDate = null;
+                    endDate = null;
                 } else {
-                    $('#reset-filters').addClass('d-none');
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
                 }
 
-                showTable();
+                data['startDate'] = startDate;
+                data['endDate'] = endDate;
+                data['projectId'] = $('#project_id').val();
+                data['employee'] = $('#employee').val();
+                data['approved'] = $('#status').val();
+                data['invoice'] = $('#invoice_generate').val();
+                data['searchText'] = $('#search-text-field').val();
             });
 
-        $('#search-text-field').on('keyup', function () {
-            if ($('#search-text-field').val() !== "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            }
-        });
-
-        $('#reset-filters').click(function () {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        $('#reset-filters-2').click(function () {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        $('#quick-action-type').change(function () {
-            const actionValue = $(this).val();
-            if (actionValue !== '') {
-                $('#quick-action-apply').removeAttr('disabled');
-
-                if (actionValue === 'change-status') {
-                    $('.quick-action-field').addClass('d-none');
-                    $('#change-status-action').removeClass('d-none');
-                } else {
-                    $('.quick-action-field').addClass('d-none');
+            function showTable() {
+                if (window.LaravelDataTables && window.LaravelDataTables["timelogs-table"]) {
+                    window.LaravelDataTables["timelogs-table"].draw(false);
                 }
-            } else {
-                $('#quick-action-apply').attr('disabled', true);
-                $('.quick-action-field').addClass('d-none');
             }
-        });
+            window.showTable = showTable;
 
-        $('#quick-action-apply').click(function () {
-            const actionValue = $('#quick-action-type').val();
-            if (actionValue == 'delete') {
-                Swal.fire({
-                    title: "@lang('messages.sweetAlertTitle')",
-                    text: "@lang('messages.recoverRecord')",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    focusConfirm: false,
-                    confirmButtonText: "@lang('messages.confirmDelete')",
-                    cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
-                    buttonsStyling: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        applyQuickAction();
+            function applyQuickAction() {
+                var rowdIds = $("#timelogs-table input:checkbox:checked").map(function() {
+                    return $(this).val();
+                }).get();
+
+                $.easyAjax({
+                    url: "{{ route('timelogs.apply_quick_action') }}?row_ids=" + rowdIds,
+                    container: '#quick-action-form',
+                    type: "POST",
+                    disableButton: true,
+                    buttonSelector: "#quick-action-apply",
+                    data: $('#quick-action-form').serialize(),
+                    blockUI: true,
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            showTable();
+                            if (typeof resetActionButtons === 'function') resetActionButtons();
+                            if (typeof deSelectAll === 'function') deSelectAll();
+                            $('#quick-action-form').hide();
+                        }
                     }
                 });
-
-            } else {
-                applyQuickAction();
             }
-        });
 
-        $('body').on('click', '.delete-table-row', function () {
-            const id = $(this).data('time-id');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.recoverRecord')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmDelete')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    let url = "{{ route('timelogs.destroy', ':id') }}";
-                    url = url.replace(':id', id);
+            $body.off(namespace);
 
-                    const token = "{{ csrf_token() }}";
-
-                    $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        blockUI: true,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
-                        success: function (response) {
-                            if (response.status === "success") {
-                                showTable();
-                            }
-                        }
-                    });
-                }
-            });
-        });
-
-        $('body').on('click', '.stop-active-timer', function () {
-            const id = $(this).data('time-id');
-            let url = "{{ route('timelogs.stop_timer', ':id') }}";
-            url = url.replace(':id', id);
-            const token = '{{ csrf_token() }}';
-            $.easyAjax({
-                url: url,
-                type: "POST",
-                data: {
-                    timeId: id,
-                    _token: token
-                },
-                success: function (data) {
-                    showTable();
-                }
-            })
-
-        });
-
-        $('body').on('click', '.approve-timelog', function () {
-            const id = $(this).data('time-id');
-            let url = "{{ route('timelogs.approve_timelog', ':id') }}";
-            url = url.replace(':id', id);
-            const token = '{{ csrf_token() }}';
-            $.easyAjax({
-                url: url,
-                type: "POST",
-                data: {
-                    id: id,
-                    _token: token
-                },
-                success: function (data) {
-                    showTable();
-                }
-            })
-
-        });
-
-        const applyQuickAction = () => {
-            const rowdIds = $("#timelogs-table input:checkbox:checked").map(function () {
-                return $(this).val();
-            }).get();
-
-            const url = "{{ route('timelogs.apply_quick_action') }}?row_ids=" + rowdIds;
-
-            $.easyAjax({
-                url: url,
-                container: '#quick-action-form',
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#quick-action-apply",
-                data: $('#quick-action-form').serialize(),
-                blockUI: true,
-                success: function (response) {
-                    if (response.status === 'success') {
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
-                        $('#quick-action-form').hide();
-                    }
-                }
-            })
-        };
-    </script>
-
-    @if (!is_null(request('start')) && !is_null(request('end')))
-        <script>
-            $(document).ready(function () {
-                $('#datatableRange').data('daterangepicker').setStartDate('{{ request('start') }}')
-                $('#datatableRange').data('daterangepicker').setEndDate('{{ request('end') }}')
-                $('#datatableRange').val('{{ request('start') }}' + ' @lang("app.to") ' + '{{ request('end') }}');
-
+            $body.on('change' + namespace + ' keyup' + namespace, '#project_id, #employee, #status, #invoice_generate', function() {
+                var anyFilter = $('#status').val() !== 'all' || $('#employee').val() !== 'all' ||
+                                $('#project_id').val() !== 'all' || $('#invoice_generate').val() !== 'all';
+                $('#reset-filters').toggleClass('d-none', !anyFilter);
                 showTable();
             });
-        </script>
-    @endif
+
+            $body.on('keyup' + namespace, '#search-text-field', function() {
+                if ($(this).val() !== '') {
+                    $('#reset-filters').removeClass('d-none');
+                    showTable();
+                }
+            });
+
+            $body.on('click' + namespace, '#reset-filters, #reset-filters-2', function() {
+                $('#filter-form')[0].reset();
+                $('.filter-box .select-picker').selectpicker('refresh');
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            });
+
+            $body.on('change' + namespace, '#quick-action-type', function() {
+                var actionValue = $(this).val();
+                if (actionValue !== '') {
+                    $('#quick-action-apply').removeAttr('disabled');
+                    $('.quick-action-field').addClass('d-none');
+                    if (actionValue === 'change-status') { $('#change-status-action').removeClass('d-none'); }
+                } else {
+                    $('#quick-action-apply').attr('disabled', true);
+                    $('.quick-action-field').addClass('d-none');
+                }
+            });
+
+            $body.on('click' + namespace, '#quick-action-apply', function() {
+                var actionValue = $('#quick-action-type').val();
+                if (actionValue === 'delete') {
+                    Swal.fire({
+                        title: "@lang('messages.sweetAlertTitle')", text: "@lang('messages.recoverRecord')",
+                        icon: 'warning', showCancelButton: true, focusConfirm: false,
+                        confirmButtonText: "@lang('messages.confirmDelete')", cancelButtonText: "@lang('app.cancel')",
+                        customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                        showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' }, buttonsStyling: false
+                    }).then(function(result) { if (result.isConfirmed) { applyQuickAction(); } });
+                } else { applyQuickAction(); }
+            });
+
+            $body.on('click' + namespace, '.delete-table-row', function() {
+                var id = $(this).data('time-id');
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')", text: "@lang('messages.recoverRecord')",
+                    icon: 'warning', showCancelButton: true, focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')", cancelButtonText: "@lang('app.cancel')",
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' }, buttonsStyling: false
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        var url = "{{ route('timelogs.destroy', ':id') }}".replace(':id', id);
+                        $.easyAjax({
+                            type: 'POST', url: url, blockUI: true,
+                            data: { '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
+                            success: function(response) { if (response.status === 'success') { showTable(); } }
+                        });
+                    }
+                });
+            });
+
+            $body.on('click' + namespace, '.stop-active-timer', function() {
+                var id = $(this).data('time-id');
+                var url = "{{ route('timelogs.stop_timer', ':id') }}".replace(':id', id);
+                $.easyAjax({
+                    url: url, type: 'POST',
+                    data: { timeId: id, _token: '{{ csrf_token() }}' },
+                    success: function() { showTable(); }
+                });
+            });
+
+            $body.on('click' + namespace, '.approve-timelog', function() {
+                var id = $(this).data('time-id');
+                var url = "{{ route('timelogs.approve_timelog', ':id') }}".replace(':id', id);
+                $.easyAjax({
+                    url: url, type: 'POST',
+                    data: { id: id, _token: '{{ csrf_token() }}' },
+                    success: function() { showTable(); }
+                });
+            });
+
+            @if (!is_null(request('start')) && !is_null(request('end')))
+                $('#datatableRange').data('daterangepicker').setStartDate('{{ request('start') }}');
+                $('#datatableRange').data('daterangepicker').setEndDate('{{ request('end') }}');
+                $('#datatableRange').val('{{ request('start') }}' + ' @lang("app.to") ' + '{{ request('end') }}');
+                showTable();
+            @endif
+
+            document.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                $table.off('preXhr.dt' + namespace);
+                delete window.showTable;
+                document.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
+    </script>
 @endpush

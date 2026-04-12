@@ -43,7 +43,7 @@
         var $table = $('#project-notes-table');
         var namespace = '.projectNotes';
 
-        $table.off('preXhr.dt').on('preXhr.dt' + namespace, function(e, settings, data) {
+        $table.off('preXhr.dt' + namespace).on('preXhr.dt' + namespace, function(e, settings, data) {
             var projectID = "{{ $project->id }}";
             data['projectID'] = projectID;
         });

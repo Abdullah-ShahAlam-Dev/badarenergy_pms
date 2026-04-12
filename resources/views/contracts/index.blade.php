@@ -144,83 +144,132 @@
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@2.3.2/dist/signature_pad.min.js"></script>
 
     <script>
-        $('#contracts-table').on('preXhr.dt', function(e, settings, data) {
-            var dateRangePicker = $('#datatableRange').data('daterangepicker');
-            var startDate = $('#datatableRange').val();
+        (function () {
 
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+            // ============================================================
+            // initContractsPage — called on every page load (Turbo or full)
+            // ============================================================
+            function initContractsPage() {
+                // Guard: only run if the contracts table exists in the DOM
+                if (!document.getElementById('contracts-table')) return;
+
+                // ---- showTable ----
+                window.showTable = function () {
+                    if (window.LaravelDataTables && window.LaravelDataTables['contracts-table']) {
+                        window.LaravelDataTables['contracts-table'].draw(false);
+                    }
+                };
+
+                // ---- preXhr: inject all filter values before each AJAX request ----
+                // Off first to prevent duplicate listeners on re-navigation
+                $('#contracts-table').off('preXhr.dt.contracts').on('preXhr.dt.contracts', function (e, settings, data) {
+                    var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                    var startDateVal    = $('#datatableRange').val();
+                    var startDate = null, endDate = null;
+
+                    if (startDateVal !== '' && dateRangePicker) {
+                        startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                        endDate   = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                    }
+
+                    data['startDate']     = startDate;
+                    data['endDate']       = endDate;
+                    data['contract_type'] = $('#contract_type').val() || 'all';
+                    data['client']        = $('#client').val()        || 'all';
+                    data['searchText']    = $('#search-text-field').val() || '';
+                });
+
+                // ---- Quick action type selector ----
+                $('#quick-action-type').off('change.contractsQA').on('change.contractsQA', function () {
+                    var actionValue = $(this).val();
+                    if (actionValue !== '') {
+                        $('#quick-action-apply').removeAttr('disabled');
+                        if (actionValue === 'change-status') {
+                            $('.quick-action-field').addClass('d-none');
+                            $('#change-status-action').removeClass('d-none');
+                        } else {
+                            $('.quick-action-field').addClass('d-none');
+                        }
+                    } else {
+                        $('#quick-action-apply').attr('disabled', true);
+                        $('.quick-action-field').addClass('d-none');
+                    }
+                });
+
+                // ---- Quick action apply ----
+                $('#quick-action-apply').off('click.contractsQA').on('click.contractsQA', function () {
+                    var actionValue = $('#quick-action-type').val();
+                    if (actionValue === 'delete') {
+                        Swal.fire({
+                            title: "@lang('messages.sweetAlertTitle')",
+                            text: "@lang('messages.recoverRecord')",
+                            icon: 'warning',
+                            showCancelButton: true,
+                            focusConfirm: false,
+                            confirmButtonText: "@lang('messages.confirmDelete')",
+                            cancelButtonText: "@lang('app.cancel')",
+                            customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                            showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                            buttonsStyling: false
+                        }).then(function (result) {
+                            if (result.isConfirmed) applyQuickAction();
+                        });
+                    } else {
+                        applyQuickAction();
+                    }
+                });
+
+                // ---- Set date range from URL params (replaces the broken $(document).ready block) ----
+                @if (!is_null(request('start')) && !is_null(request('end')))
+                    var $range = $('#datatableRange');
+                    if ($range.length && $range.data('daterangepicker')) {
+                        $range.val('{{ request('start') }}' + ' @lang('app.to') ' + '{{ request('end') }}');
+                        $range.data('daterangepicker').setStartDate("{{ request('start') }}");
+                        $range.data('daterangepicker').setEndDate("{{ request('end') }}");
+                        if (typeof window.showTable === 'function') window.showTable();
+                    }
+                @endif
             }
 
-            var projectID = $('#filter_project_id').val();
-            if (!projectID) {
-                projectID = 0;
-            }
-            var contract_type = $('#contract_type').val();
-            var client = $('#client').val();
-            var searchText = $('#search-text-field').val();
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['contract_type'] = contract_type;
-            data['client'] = client;
-            data['searchText'] = searchText;
+            // ===================================================
+            // Delegated listeners — attached to document ONCE.
+            // They survive all Turbo navigations automatically.
+            // Each is guarded with a contracts-table existence check.
+            // ===================================================
 
-        });
-        const showTable = () => {
-            window.LaravelDataTables["contracts-table"].draw(false);
-        }
+            // Filter dropdowns: listen to both native 'change' AND
+            // Bootstrap-Select's 'changed.bs.select' event
+            $(document)
+                .off('change.contractsF changed.bs.select.contractsF')
+                .on('change.contractsF changed.bs.select.contractsF', '#client, #contract_type', function () {
+                    if (!document.getElementById('contracts-table')) return;
+                    var hasFilters = ($('#contract_type').val() !== 'all') ||
+                                     ($('#client').val() && $('#client').val() !== 'all');
+                    $('#reset-filters').toggleClass('d-none', !hasFilters);
+                    if (typeof window.showTable === 'function') window.showTable();
+                });
 
-        $('#client, #contract_type').on('change keyup', function() {
-            if ($('#contract_type').val() != "all") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else if ($('#client').val() != "all") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else {
+            // Search text field
+            $(document).off('keyup.contractsSearch').on('keyup.contractsSearch', '#search-text-field', function () {
+                if (!document.getElementById('contracts-table')) return;
+                if ($(this).val() !== '') $('#reset-filters').removeClass('d-none');
+                if (typeof window.showTable === 'function') window.showTable();
+            });
+
+            // Reset filters button
+            $(document).off('click.contractsReset').on('click.contractsReset', '#reset-filters', function () {
+                if (!document.getElementById('contracts-table')) return;
+                var $form = $('#filter-form');
+                if ($form.length) $form[0].reset();
+                $('.filter-box .select-picker').selectpicker('refresh');
                 $('#reset-filters').addClass('d-none');
-                showTable();
-            }
-        });
+                if (typeof window.showTable === 'function') window.showTable();
+            });
 
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            }
-        });
-
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        $('#quick-action-type').change(function() {
-            const actionValue = $(this).val();
-            if (actionValue != '') {
-                $('#quick-action-apply').removeAttr('disabled');
-
-                if (actionValue == 'change-status') {
-                    $('.quick-action-field').addClass('d-none');
-                    $('#change-status-action').removeClass('d-none');
-                } else {
-                    $('.quick-action-field').addClass('d-none');
-                }
-            } else {
-                $('#quick-action-apply').attr('disabled', true);
-                $('.quick-action-field').addClass('d-none');
-            }
-        });
-
-        $('#quick-action-apply').click(function() {
-            const actionValue = $('#quick-action-type').val();
-            if (actionValue == 'delete') {
+            // Delete row (table rows are dynamically rendered — must use delegation)
+            $(document).off('click.contractsDel').on('click.contractsDel', '.delete-table-row', function () {
+                if (!document.getElementById('contracts-table')) return;
+                var id = $(this).data('contract-id');
                 Swal.fire({
                     title: "@lang('messages.sweetAlertTitle')",
                     text: "@lang('messages.recoverRecord')",
@@ -229,111 +278,69 @@
                     focusConfirm: false,
                     confirmButtonText: "@lang('messages.confirmDelete')",
                     cancelButtonText: "@lang('app.cancel')",
-                    customClass: {
-                        confirmButton: 'btn btn-primary mr-3',
-                        cancelButton: 'btn btn-secondary'
-                    },
-                    showClass: {
-                        popup: 'swal2-noanimation',
-                        backdrop: 'swal2-noanimation'
-                    },
+                    customClass: { confirmButton: 'btn btn-primary mr-3', cancelButton: 'btn btn-secondary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
-                }).then((result) => {
+                }).then(function (result) {
                     if (result.isConfirmed) {
-                        applyQuickAction();
+                        $.easyAjax({
+                            type: 'POST',
+                            url: "{{ route('contracts.destroy', ':id') }}".replace(':id', id),
+                            data: { '_token': "{{ csrf_token() }}", '_method': 'DELETE' },
+                            success: function (response) {
+                                if (response.status === 'success') {
+                                    if (typeof window.showTable === 'function') window.showTable();
+                                }
+                            }
+                        });
                     }
                 });
-
-            } else {
-                applyQuickAction();
-            }
-        });
-
-        $('body').on('click', '.delete-table-row', function() {
-            var id = $(this).data('contract-id');
-            Swal.fire({
-                title: "@lang('messages.sweetAlertTitle')",
-                text: "@lang('messages.recoverRecord')",
-                icon: 'warning',
-                showCancelButton: true,
-                focusConfirm: false,
-                confirmButtonText: "@lang('messages.confirmDelete')",
-                cancelButtonText: "@lang('app.cancel')",
-                customClass: {
-                    confirmButton: 'btn btn-primary mr-3',
-                    cancelButton: 'btn btn-secondary'
-                },
-                showClass: {
-                    popup: 'swal2-noanimation',
-                    backdrop: 'swal2-noanimation'
-                },
-                buttonsStyling: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    var url = "{{ route('contracts.destroy', ':id') }}";
-                    url = url.replace(':id', id);
-
-                    var token = "{{ csrf_token() }}";
-
-                    $.easyAjax({
-                        type: 'POST',
-                        url: url,
-                        data: {
-                            '_token': token,
-                            '_method': 'DELETE'
-                        },
-                        success: function(response) {
-                            if (response.status == "success") {
-                                showTable();
-                            }
-                        }
-                    });
-                }
             });
-        });
 
-        const applyQuickAction = () => {
-            var rowdIds = $("#contracts-table input:checkbox:checked").map(function() {
+            // Sign modal — namespaced to prevent listener accumulation on re-navigation
+            $(document).off('click.contractsSign').on('click.contractsSign', '.sign-modal', function () {
+                if (!document.getElementById('contracts-table')) return;
+                var id  = $(this).data('contract-id');
+                var url = "{{ route('companySignStore.sign', ':id') }}".replace(':id', id);
+                $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_LG, url);
+            });
+
+            // ===================================================
+            // Hook into turbo:load so initContractsPage() re-runs
+            // after every Turbo navigation to this page.
+            // ===================================================
+            document.addEventListener('turbo:load', function () {
+                initContractsPage();
+            });
+
+            // Also run immediately for a full-page (non-Turbo) load
+            initContractsPage();
+
+        })();
+
+        // applyQuickAction lives outside the IIFE so it can be called from within
+        function applyQuickAction() {
+            var rowdIds = $('#contracts-table input:checkbox:checked').map(function () {
                 return $(this).val();
             }).get();
 
-            var url = "{{ route('contracts.apply_quick_action') }}?row_ids=" + rowdIds;
-
             $.easyAjax({
-                url: url,
+                url: "{{ route('contracts.apply_quick_action') }}?row_ids=" + rowdIds,
                 container: '#quick-action-form',
-                type: "POST",
+                type: 'POST',
                 disableButton: true,
-                buttonSelector: "#quick-action-apply",
+                buttonSelector: '#quick-action-apply',
                 data: $('#quick-action-form').serialize(),
-                success: function(response) {
-                    if (response.status == 'success') {
-                        showTable();
-                        resetActionButtons();
-                        deSelectAll();
+                success: function (response) {
+                    if (response.status === 'success') {
+                        if (typeof window.showTable === 'function') window.showTable();
+                        if (typeof resetActionButtons === 'function') resetActionButtons();
+                        if (typeof deSelectAll === 'function') deSelectAll();
                         $('#quick-action-form').hide();
                     }
                 }
-            })
-        };
-
-        $(document).ready(function() {
-            @if (!is_null(request('start')) && !is_null(request('end')))
-                $('#datatableRange').val('{{ request('start') }}' +
-                    ' @lang('app.to') ' + '{{ request('end') }}');
-                $('#datatableRange').data('daterangepicker').setStartDate("{{ request('start') }}");
-                $('#datatableRange').data('daterangepicker').setEndDate("{{ request('end') }}");
-                showTable();
-            @endif
-        });
-
-        $('body').on('click', '.sign-modal', function() {
-            var id = $(this).data('contract-id');
-            url = "{{ route('companySignStore.sign', ':id') }}";
-            url = url.replace(':id', id);
-            console.log(url);
-            $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_LG, url);
-        });
+            });
+        }
     </script>
 @endpush

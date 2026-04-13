@@ -611,12 +611,15 @@
         $body.on('change' + namespace, '#selectAssignee', checkLeaves);
 
         $body.on('click' + namespace, '#save-task-form', function() {
-            var note = document.getElementById('description').children[0].innerHTML;
-            document.getElementById('description-text').value = note;
-            var users = $('#description span[data-id]').map(function(){ return $(this).attr('data-id'); }).get();
-            $('#mentionUserId').val(users.join(','));
+            var $form = $('#save-task-data-form');
+            var $desc = $form.find('#description');
+            var note = $desc.find('.ql-editor').html() || ($desc.children()[0] ? $desc.children()[0].innerHTML : '');
+            $form.find('#description-text').val(note);
+            
+            var users = $desc.find('span[data-id]').map(function(){ return $(this).attr('data-id'); }).get();
+            $form.find('#mentionUserId').val(users.join(','));
 
-            var data = $('#save-task-data-form').serialize() + '&mention_user_id=' + users.join(',');
+            var data = $form.serialize() + '&mention_user_id=' + users.join(',');
 
             $.easyAjax({
                 url: "{{ route('tasks.update', $task->id) }}",

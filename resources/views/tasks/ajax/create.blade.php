@@ -630,17 +630,25 @@
         quillMention(@json($userData), '#description');
 
         $body.on('click' + namespace, '#save-more-task-form', function () {
-            $('#description-text').val(document.getElementById('description').children[0].innerHTML);
-            var data = $('#save-task-data-form').serialize() + '&add_more=true';
+            var $form = $('#save-task-data-form');
+            var $desc = $form.find('#description');
+            var note = $desc.find('.ql-editor').html() || ($desc.children()[0] ? $desc.children()[0].innerHTML : '');
+            $form.find('#description-text').val(note);
+            
+            var data = $form.serialize() + '&add_more=true';
             saveTask(data, "{{ route('tasks.store') }}?taskId={{$task ? $task->id : ''}}", "#save-more-task-form");
         });
 
         $body.on('click' + namespace, '#save-task-form', function () {
-            $('#description-text').val(document.getElementById('description').children[0].innerHTML);
-            var mention_user_id = $('#description span[data-id]').map(function(){ return $(this).attr('data-id'); }).get();
-            $('#mentionUserId').val(mention_user_id.join(','));
+            var $form = $('#save-task-data-form');
+            var $desc = $form.find('#description');
+            var note = $desc.find('.ql-editor').html() || ($desc.children()[0] ? $desc.children()[0].innerHTML : '');
+            $form.find('#description-text').val(note);
+            
+            var mention_user_id = $desc.find('span[data-id]').map(function(){ return $(this).attr('data-id'); }).get();
+            $form.find('#mentionUserId').val(mention_user_id.join(','));
 
-            var data = $('#save-task-data-form').serialize() + '&mention_user_id=' + mention_user_id.join(',');
+            var data = $form.serialize() + '&mention_user_id=' + mention_user_id.join(',');
             saveTask(data, "{{ route('tasks.store') }}?taskId={{$task ? $task->id : ''}}", "#save-task-form");
         });
 

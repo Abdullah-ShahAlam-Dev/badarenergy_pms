@@ -560,6 +560,7 @@
 
             taskDropzone.on('queuecomplete', function() {
                 window.location.href = "{{ route('tasks.index') }}";
+                setTimeout(function() { window.location.reload(); }, 1500);
             });
 
             taskDropzone.on('error', function (file, message) {
@@ -635,9 +636,11 @@
                             window.LaravelDataTables["allTasks-table"].draw(false);
                         } else {
                             window.location.href = response.redirectUrl;
+                            setTimeout(function() { window.location.reload(); }, 1500);
                         }
                     } else {
                         window.location.href = response.redirectUrl;
+                        setTimeout(function() { window.location.reload(); }, 1500);
                     }
                 }
             });

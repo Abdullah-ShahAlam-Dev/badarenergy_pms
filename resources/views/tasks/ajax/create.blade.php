@@ -527,6 +527,7 @@
 
             taskDropzone.on('queuecomplete', function () {
                 window.location.href = localStorage.getItem("redirect_task");
+                setTimeout(function() { window.location.reload(); }, 1500);
             });
 
             taskDropzone.on('error', function (file, message) {
@@ -666,6 +667,7 @@
                             $('#add_more').val(false);
                         } else {
                             window.location.href = response.redirectUrl;
+                            setTimeout(function() { window.location.reload(); }, 1500);
                         }
 
                         if (typeof showTable === 'function') showTable();

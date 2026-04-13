@@ -74,131 +74,142 @@
 @push('scripts')
     @include('sections.datatable_js')
 
-    <script type="text/javascript">
-
-        function setDate()
-        {
-            var start = moment().clone().startOf('month');
-            var end = moment();
-
-            $('#datatableRange2').daterangepicker({
-                locale: daterangeLocale,
-                linkedCalendars: false,
-                startDate: start,
-                endDate: end,
-                ranges: daterangeConfig
-            }, cb);
-        }
-
-        $(function() {
-            setDate()
-            $('#datatableRange2').on('apply.daterangepicker', function(ev, picker) {
-                showTable();
-            });
-        });
-
-    </script>
-
     <script>
-        $('#leave-report-table').on('preXhr.dt', function(e, settings, data) {
-            var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+        (function () {
 
-            var startDate = $('#datatableRange2').val();
+            // ─────────────────────────────────────────────────────────
+            // setDate — re-initializes the daterangepicker each nav
+            // ─────────────────────────────────────────────────────────
+            function setDate() {
+                if (!document.getElementById('datatableRange2')) return;
+                var start = moment().clone().startOf('month');
+                var end   = moment();
 
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                $('#datatableRange2').daterangepicker({
+                    locale: daterangeLocale,
+                    linkedCalendars: false,
+                    startDate: start,
+                    endDate: end,
+                    ranges: daterangeConfig
+                }, cb);
             }
 
+            // ─────────────────────────────────────────────────────────
+            // initLeaveReport — re-runs on every turbo:load navigation
+            // ─────────────────────────────────────────────────────────
+            function initLeaveReport() {
+                if (!document.getElementById('leave-report-table')) return;
 
-            var employeeId = $('#employee_id').val();
-            if (!employeeId) {
-                employeeId = 0;
-            }
+                // Re-initialize daterangepicker on fresh element
+                setDate();
 
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['employeeId'] = employeeId;
-            data['_token'] = '{{ csrf_token() }}';
-        });
+                // Bind daterangepicker apply on fresh element
+                $('#datatableRange2').off('apply.daterangepicker.leaveRep')
+                    .on('apply.daterangepicker.leaveRep', function () {
+                        if (typeof window.showTable === 'function') window.showTable();
+                    });
 
-        const showTable = () => {
-            window.LaravelDataTables["leave-report-table"].draw(false);
-        }
-
-        $('#employee_id')
-            .on('change keyup',
-                function() {
-                    if ($('#employee_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else {
-                        $('#reset-filters').addClass('d-none');
-                        showTable();
+                // showTable: null-guarded
+                window.showTable = function () {
+                    if (window.LaravelDataTables && window.LaravelDataTables['leave-report-table']) {
+                        window.LaravelDataTables['leave-report-table'].draw(false);
                     }
+                };
+
+                // preXhr — re-attach to fresh DOM element
+                $('#leave-report-table').off('preXhr.dt.leaveRep').on('preXhr.dt.leaveRep', function (e, settings, data) {
+                    var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+                    var startDateVal    = $('#datatableRange2').val();
+                    var startDate = null, endDate = null;
+
+                    if (startDateVal !== '' && dateRangePicker) {
+                        startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                        endDate   = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                    }
+
+                    var employeeId = $('#employee_id').val() || 0;
+
+                    data['startDate']   = startDate;
+                    data['endDate']     = endDate;
+                    data['employeeId']  = employeeId;
+                    data['_token']      = '{{ csrf_token() }}';
+                });
+            }
+
+            // ─────────────────────────────────────────────────────────
+            // Delegated listeners — survive all Turbo navigations
+            // ─────────────────────────────────────────────────────────
+            $(document)
+                .off('change.leaveRepF changed.bs.select.leaveRepF')
+                .on('change.leaveRepF changed.bs.select.leaveRepF', '#employee_id', function () {
+                    if (!document.getElementById('leave-report-table')) return;
+                    var hasFilter = $(this).val() && $(this).val() !== 'all';
+                    $('#reset-filters').toggleClass('d-none', !hasFilter);
+                    if (typeof window.showTable === 'function') window.showTable();
                 });
 
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-            setDate();
-
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        $('#leave-report-table').on('click', '.view-leaves', function(event) {
-            var dateRangePicker = $('#datatableRange2').data('daterangepicker');
-
-            var startDate = $('#datatableRange2').val();
-
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
-            }
-
-
-            event.preventDefault();
-            var id = $(this).data('user-id');
-            var url = "{{ route('leave-report.show', ':id') }}?startDate=" + encodeURIComponent(startDate) +
-                '&endDate=' + encodeURIComponent(endDate);
-            url = url.replace(':id', id);
-
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_XL, url);
-        });
-
-    </script>
-    <script>
-        $("body").on("click", ".ajax-tab", function(event) {
-            event.preventDefault();
-
-            $('.task-tabs .ajax-tab').removeClass('active');
-            $(this).addClass('active');
-
-            const requestUrl = this.href;
-
-            $.easyAjax({
-                url: requestUrl,
-                blockUI: true,
-                container: "#nav-tabContent",
-                historyPush: false,
-                data: {
-                    'json': true
-                },
-                success: function(response) {
-                    if (response.status == "success") {
-                        $('#nav-tabContent').html(response.html);
-                    }
-                }
+            $(document).off('click.leaveRepReset').on('click.leaveRepReset', '#reset-filters', function () {
+                if (!document.getElementById('leave-report-table')) return;
+                var $form = $('#filter-form');
+                if ($form.length) $form[0].reset();
+                setDate();
+                $('.filter-box .select-picker').selectpicker('refresh');
+                $('#reset-filters').addClass('d-none');
+                if (typeof window.showTable === 'function') window.showTable();
             });
-        });
 
+            // view-leaves modal — dynamic table rows so must be delegated
+            $(document).off('click.leaveRepView').on('click.leaveRepView', '.view-leaves', function (event) {
+                if (!document.getElementById('leave-report-table')) return;
+                event.preventDefault();
+
+                var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+                var startDateVal    = $('#datatableRange2').val();
+                var startDate = null, endDate = null;
+
+                if (startDateVal !== '' && dateRangePicker) {
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate   = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                }
+
+                var id  = $(this).data('user-id');
+                var url = "{{ route('leave-report.show', ':id') }}?startDate=" + encodeURIComponent(startDate) +
+                    '&endDate=' + encodeURIComponent(endDate);
+                url = url.replace(':id', id);
+
+                $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+                $.ajaxModal(MODAL_XL, url);
+            });
+
+            // ajax-tab delegated click
+            $(document).off('click.leaveRepTab').on('click.leaveRepTab', '.ajax-tab', function (event) {
+                if (!document.getElementById('leave-report-table')) return;
+                event.preventDefault();
+                $('.task-tabs .ajax-tab').removeClass('active');
+                $(this).addClass('active');
+                $.easyAjax({
+                    url: this.href,
+                    blockUI: true,
+                    container: '#nav-tabContent',
+                    historyPush: false,
+                    data: { 'json': true },
+                    success: function (response) {
+                        if (response.status === 'success') {
+                            $('#nav-tabContent').html(response.html);
+                        }
+                    }
+                });
+            });
+
+            // ─────────────────────────────────────────────────────────
+            // Turbo:load hook + immediate call for full-page loads
+            // ─────────────────────────────────────────────────────────
+            document.addEventListener('turbo:load', function () {
+                initLeaveReport();
+            });
+
+            initLeaveReport();
+
+        })();
     </script>
 @endpush

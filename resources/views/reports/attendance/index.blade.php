@@ -74,80 +74,81 @@
 @push('scripts')
     @include('sections.datatable_js')
 
-    <script type="text/javascript">
-        function setDate()
-        {
-            var start = moment().clone().startOf('month');
-            var end = moment();
-
-            $('#datatableRange2').daterangepicker({
-                locale: daterangeLocale,
-                linkedCalendars: false,
-                startDate: start,
-                endDate: end,
-                ranges: daterangeConfig
-            }, cb);
-        }
-
-        $(function() {
-            setDate();
-
-            $('#datatableRange2').on('apply.daterangepicker', function(ev, picker) {
-                showTable();
-            });
-
-        });
-    </script>
-
     <script>
-        $('#attendance-report-table').on('preXhr.dt', function(e, settings, data) {
-            var employeeID = $('#employee_id').val();
+        (function () {
 
-            var dateRangePicker = $('#datatableRange2').data('daterangepicker');
-            var startDate = $('#datatableRange2').val();
-
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+            function setDate() {
+                if (!document.getElementById('datatableRange2')) return;
+                var start = moment().clone().startOf('month');
+                var end   = moment();
+                $('#datatableRange2').daterangepicker({
+                    locale: daterangeLocale,
+                    linkedCalendars: false,
+                    startDate: start,
+                    endDate: end,
+                    ranges: daterangeConfig
+                }, cb);
             }
 
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['employee'] = employeeID;
-            data['_token'] = '{{ csrf_token() }}';
-        });
+            function initAttendanceReport() {
+                if (!document.getElementById('attendance-report-table')) return;
 
-        const showTable = () => {
-            window.LaravelDataTables["attendance-report-table"].draw(false);
-        }
+                setDate();
 
-        $('#employee_id')
-            .on('change keyup',
-                function() {
-                    if ($('#employee_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else {
-                        $('#reset-filters').addClass('d-none');
-                        showTable();
+                $('#datatableRange2').off('apply.daterangepicker.attRep')
+                    .on('apply.daterangepicker.attRep', function () {
+                        if (typeof window.showTable === 'function') window.showTable();
+                    });
+
+                window.showTable = function () {
+                    if (window.LaravelDataTables && window.LaravelDataTables['attendance-report-table']) {
+                        window.LaravelDataTables['attendance-report-table'].draw(false);
                     }
+                };
+
+                $('#attendance-report-table').off('preXhr.dt.attRep').on('preXhr.dt.attRep', function (e, settings, data) {
+                    var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+                    var startDateVal    = $('#datatableRange2').val();
+                    var startDate = null, endDate = null;
+
+                    if (startDateVal !== '' && dateRangePicker) {
+                        startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                        endDate   = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                    }
+
+                    data['startDate'] = startDate;
+                    data['endDate']   = endDate;
+                    data['employee']  = $('#employee_id').val() || 'all';
+                    data['_token']    = '{{ csrf_token() }}';
+                });
+            }
+
+            $(document)
+                .off('change.attRepF changed.bs.select.attRepF')
+                .on('change.attRepF changed.bs.select.attRepF', '#employee_id', function () {
+                    if (!document.getElementById('attendance-report-table')) return;
+                    var hasFilter = $(this).val() && $(this).val() !== 'all';
+                    $('#reset-filters').toggleClass('d-none', !hasFilter);
+                    if (typeof window.showTable === 'function') window.showTable();
                 });
 
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-
-            setDate();
-            $('#datatableRange2').on('apply.daterangepicker', function(ev, picker) {
-                showTable();
+            $(document).off('click.attRepReset').on('click.attRepReset', '#reset-filters', function () {
+                if (!document.getElementById('attendance-report-table')) return;
+                var $form = $('#filter-form');
+                if ($form.length) $form[0].reset();
+                setDate();
+                $('.filter-box .select-picker').selectpicker('refresh');
+                $('#reset-filters').addClass('d-none');
+                if (typeof window.showTable === 'function') window.showTable();
             });
 
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
+            document.addEventListener('turbo:load', function () {
+                initAttendanceReport();
+            });
+
+            initAttendanceReport();
+
+        })();
     </script>
 
 @endpush

@@ -137,60 +137,54 @@
 @include('sections.datatable_js')
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    function setDate() {
-        var start = moment().clone().startOf('month');
-        var end = moment();
+    (function () {
 
-        $('#datatableRange2').daterangepicker({
-            locale: daterangeLocale,
-            linkedCalendars: false,
-            startDate: start,
-            endDate: end,
-            ranges: daterangeConfig
-        }, cb);
-    }
-</script>
-<script>
-    $(function() {
-        setDate()
-        $('#datatableRange2').on('apply.daterangepicker', function(ev, picker) {
-            showTable();
-        });
+        // ─────────────────────────────────────────────────────────
+        // setDate — re-initializes the daterangepicker each nav
+        // ─────────────────────────────────────────────────────────
+        function setDate() {
+            if (!document.getElementById('datatableRange2')) return;
+            var start = moment().clone().startOf('month');
+            var end   = moment();
 
+            $('#datatableRange2').daterangepicker({
+                locale: daterangeLocale,
+                linkedCalendars: false,
+                startDate: start,
+                endDate: end,
+                ranges: daterangeConfig
+            }, cb);
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // barChart — loads expense chart data from server
+        // ─────────────────────────────────────────────────────────
         function barChart() {
-            var startDate = $('#datatableRange2').val();
+            if (!document.getElementById('expense-report-table')) return;
 
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+            var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+            var startDateVal    = $('#datatableRange2').val();
+            var startDate = null, endDate = null;
+
+            if (startDateVal !== '' && dateRangePicker) {
                 startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                endDate   = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
             }
 
-            var data = new Array();
-            var projectID = $('#project_id').val();
-            var employeeID = $('#employee_id').val();
-            var categoryID = $('#category_id').val();
-            var searchText = $('#search-text-field').val();
-
-            var url = "{{ route('expense-report.chart') }}";
-
             $.easyAjax({
-                url: url,
+                url: "{{ route('expense-report.chart') }}",
                 container: '#e',
                 blockUI: true,
-                type: "POST",
+                type: 'POST',
                 data: {
-                    startDate: startDate,
-                    endDate: endDate,
-                    categoryID: categoryID,
-                    projectID: projectID,
-                    employeeID: employeeID,
-                    _token: '{{ csrf_token() }}'
+                    startDate:  startDate,
+                    endDate:    endDate,
+                    categoryID: $('#category_id').val() || 'all',
+                    projectID:  $('#project_id').val()  || 'all',
+                    employeeID: $('#employee_id').val() || 'all',
+                    _token:     '{{ csrf_token() }}'
                 },
-                success: function(response) {
+                success: function (response) {
                     $('#e .card-body').html(response.html);
                     $('#expense-chart-card').html(response.html2);
                     $('#totalExpense').html(response.totalExpenses);
@@ -198,87 +192,93 @@
             });
         }
 
-        barChart();
+        // ─────────────────────────────────────────────────────────
+        // initExpenseReport — re-runs on every turbo:load
+        // ─────────────────────────────────────────────────────────
+        function initExpenseReport() {
+            if (!document.getElementById('expense-report-table')) return;
 
-        $('#expense-report-table').on('preXhr.dt', function(e, settings, data) {
+            // Re-initialize daterangepicker on fresh element
+            setDate();
 
-            var dateRangePicker = $('#datatableRange2').data('daterangepicker');
-            var startDate = $('#datatableRange2').val();
+            // Bind daterangepicker apply on fresh element
+            $('#datatableRange2').off('apply.daterangepicker.expRep')
+                .on('apply.daterangepicker.expRep', function () {
+                    if (typeof window.showTable === 'function') window.showTable();
+                });
 
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
-            }
+            // showTable: null-guarded
+            window.showTable = function () {
+                if (window.LaravelDataTables && window.LaravelDataTables['expense-report-table']) {
+                    window.LaravelDataTables['expense-report-table'].draw(false);
+                    barChart();
+                }
+            };
 
-            var projectID = $('#project_id').val();
-            if (!projectID) {
-                projectID = 0;
-            }
-            var employeeID = $('#employee_id').val();
-            var categoryID = $('#category_id').val();
-            var searchText = $('#search-text-field').val();
+            // preXhr — re-attach to fresh DOM element each navigation
+            $('#expense-report-table').off('preXhr.dt.expRep').on('preXhr.dt.expRep', function (e, settings, data) {
+                var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+                var startDateVal    = $('#datatableRange2').val();
+                var startDate = null, endDate = null;
 
-            data['categoryID'] = categoryID;
-            data['employeeID'] = employeeID;
-            data['projectID'] = projectID;
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['searchText'] = searchText;
-        });
+                if (startDateVal !== '' && dateRangePicker) {
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate   = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                }
 
-        const showTable = () => {
-            window.LaravelDataTables["expense-report-table"].draw(false);
+                data['categoryID']  = $('#category_id').val() || 'all';
+                data['employeeID']  = $('#employee_id').val() || 'all';
+                data['projectID']   = $('#project_id').val()  || 'all';
+                data['startDate']   = startDate;
+                data['endDate']     = endDate;
+                data['searchText']  = $('#search-text-field').val() || '';
+            });
+
+            // Run chart immediately on page load/re-load
             barChart();
         }
 
-        $('#category_id, #employee_id, #project_id')
-            .on('change keyup',
-                function() {
-                    if ($('#project_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#category_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#project_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#employee_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else {
-                        $('#reset-filters').addClass('d-none');
-                        showTable();
-                    }
+        // ─────────────────────────────────────────────────────────
+        // Delegated listeners — survive all Turbo navigations
+        // ─────────────────────────────────────────────────────────
+        var filterSel = '#category_id, #employee_id, #project_id';
+
+        $(document)
+            .off('change.expRepF changed.bs.select.expRepF')
+            .on('change.expRepF changed.bs.select.expRepF', filterSel, function () {
+                if (!document.getElementById('expense-report-table')) return;
+                var anyActive = $(filterSel).toArray().some(function (el) {
+                    return $(el).val() && $(el).val() !== 'all';
                 });
+                $('#reset-filters').toggleClass('d-none', !anyActive);
+                if (typeof window.showTable === 'function') window.showTable();
+            });
 
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            }
+        $(document).off('keyup.expRepSearch').on('keyup.expRepSearch', '#search-text-field', function () {
+            if (!document.getElementById('expense-report-table')) return;
+            if ($(this).val() !== '') $('#reset-filters').removeClass('d-none');
+            if (typeof window.showTable === 'function') window.showTable();
         });
 
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-            setDate()
-
-            $('.filter-box .select-picker').selectpicker("refresh");
+        $(document).off('click.expRepReset').on('click.expRepReset', '#reset-filters, #reset-filters-2', function () {
+            if (!document.getElementById('expense-report-table')) return;
+            var $form = $('#filter-form');
+            if ($form.length) $form[0].reset();
+            setDate();
+            $('.filter-box .select-picker').selectpicker('refresh');
             $('#reset-filters').addClass('d-none');
-            showTable();
+            if (typeof window.showTable === 'function') window.showTable();
         });
 
-        $('#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
+        // ─────────────────────────────────────────────────────────
+        // Turbo:load hook + immediate call for full-page loads
+        // ─────────────────────────────────────────────────────────
+        document.addEventListener('turbo:load', function () {
+            initExpenseReport();
         });
 
-    });
+        initExpenseReport();
+
+    })();
 </script>
 @endpush

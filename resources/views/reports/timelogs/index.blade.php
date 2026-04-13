@@ -142,156 +142,152 @@
 @push('scripts')
     @include('sections.datatable_js')
 
-    <script type="text/javascript">
-
-        function getDate()  {
-            var start = moment().clone().startOf('month');
-            var end = moment();
-
-            $('#datatableRange2').daterangepicker({
-                locale: daterangeLocale,
-                linkedCalendars: false,
-                startDate: start,
-                endDate: end,
-                ranges: daterangeConfig
-            }, cb);
-        }
-        $(function() {
-            getDate()
-            $('#datatableRange2').on('apply.daterangepicker', function(ev, picker) {
-                showTable();
-            });
-
-        });
-
-    </script>
-
-
     <script>
-        $('#timelogs-table').on('preXhr.dt', function(e, settings, data) {
+        (function () {
 
-            var dateRangePicker = $('#datatableRange2').data('daterangepicker');
-            var startDate = $('#datatableRange2').val();
+            // ─────────────────────────────────────────────────────────
+            // getDate — initializes the daterangepicker.
+            // Must re-run on each turbo:load because the input element
+            // is replaced when Turbo swaps the body.
+            // ─────────────────────────────────────────────────────────
+            function getDate() {
+                if (!document.getElementById('datatableRange2')) return;
+                var start = moment().clone().startOf('month');
+                var end   = moment();
 
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                $('#datatableRange2').daterangepicker({
+                    locale: daterangeLocale,
+                    linkedCalendars: false,
+                    startDate: start,
+                    endDate: end,
+                    ranges: daterangeConfig
+                }, cb);
             }
 
-            var projectID = $('#project_id').val();
-            var employee = $('#employee').val();
-            var client = $('#client').val();
-            var approved = $('#status').val();
-            var invoice = $('#invoice_generate').val();
-            var searchText = $('#search-text-field').val();
+            // ─────────────────────────────────────────────────────────
+            // pieChart — reads current filter values and loads chart
+            // ─────────────────────────────────────────────────────────
+            function pieChart() {
+                if (!document.getElementById('timelogs-table')) return;
+                var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+                var startDateVal    = $('#datatableRange2').val();
+                var startDate = null, endDate = null;
 
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['projectId'] = projectID;
-            data['employee'] = employee;
-            data['client'] = client;
-            data['approved'] = approved;
-            data['invoice'] = invoice;
-            data['searchText'] = searchText;
-        });
-        const showTable = () => {
-            window.LaravelDataTables["timelogs-table"].draw(false);
-            pieChart();
-        }
-
-        $('#project_id, #employee, #client, #status, #invoice_generate').on('change keyup',
-            function() {
-                if ($('#status').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#employee').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#client').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#project_id').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else if ($('#invoice_generate').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else {
-                    $('#reset-filters').addClass('d-none');
-                    showTable();
+                if (startDateVal !== '' && dateRangePicker) {
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate   = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
                 }
+
+                $.easyAjax({
+                    url: "{{ route('time-log-report.chart') }}",
+                    container: '#task-chart-card',
+                    blockUI: true,
+                    type: 'POST',
+                    data: {
+                        startDate:  startDate,
+                        endDate:    endDate,
+                        projectId:  $('#project_id').val()      || 'all',
+                        employee:   $('#employee').val()        || 'all',
+                        client:     $('#client').val()          || 'all',
+                        approved:   $('#status').val()          || 'all',
+                        invoice:    $('#invoice_generate').val() || 'all',
+                        _token:     '{{ csrf_token() }}'
+                    },
+                    success: function (response) {
+                        $('#task-chart-card').html(response.html);
+                    }
+                });
+            }
+
+            // ─────────────────────────────────────────────────────────
+            // initTimelogsReport — re-runs on every turbo:load
+            // ─────────────────────────────────────────────────────────
+            function initTimelogsReport() {
+                if (!document.getElementById('timelogs-table')) return;
+
+                // Re-initialize the daterangepicker on the fresh element
+                getDate();
+
+                // Bind daterangepicker apply event on the fresh element
+                $('#datatableRange2').off('apply.daterangepicker.timelogRep')
+                    .on('apply.daterangepicker.timelogRep', function () {
+                        if (typeof window.showTable === 'function') window.showTable();
+                    });
+
+                // showTable: null-guarded
+                window.showTable = function () {
+                    if (window.LaravelDataTables && window.LaravelDataTables['timelogs-table']) {
+                        window.LaravelDataTables['timelogs-table'].draw(false);
+                        pieChart();
+                    }
+                };
+
+                // preXhr — re-attach to fresh DOM element
+                $('#timelogs-table').off('preXhr.dt.timelogRep').on('preXhr.dt.timelogRep', function (e, settings, data) {
+                    var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+                    var startDateVal    = $('#datatableRange2').val();
+                    var startDate = null, endDate = null;
+
+                    if (startDateVal !== '' && dateRangePicker) {
+                        startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                        endDate   = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                    }
+
+                    data['startDate']  = startDate;
+                    data['endDate']    = endDate;
+                    data['projectId']  = $('#project_id').val()      || 'all';
+                    data['employee']   = $('#employee').val()        || 'all';
+                    data['client']     = $('#client').val()          || 'all';
+                    data['approved']   = $('#status').val()          || 'all';
+                    data['invoice']    = $('#invoice_generate').val() || 'all';
+                    data['searchText'] = $('#search-text-field').val() || '';
+                });
+
+                // Run chart immediately on page load/re-load
+                pieChart();
+            }
+
+            // ─────────────────────────────────────────────────────────
+            // Delegated listeners — survive all Turbo navigations
+            // ─────────────────────────────────────────────────────────
+            var filterSel = '#project_id, #employee, #client, #status, #invoice_generate';
+
+            $(document)
+                .off('change.timelogRepF changed.bs.select.timelogRepF')
+                .on('change.timelogRepF changed.bs.select.timelogRepF', filterSel, function () {
+                    if (!document.getElementById('timelogs-table')) return;
+                    var anyActive = $(filterSel).toArray().some(function (el) {
+                        return $(el).val() && $(el).val() !== 'all';
+                    });
+                    $('#reset-filters').toggleClass('d-none', !anyActive);
+                    if (typeof window.showTable === 'function') window.showTable();
+                });
+
+            $(document).off('keyup.timelogRepSearch').on('keyup.timelogRepSearch', '#search-text-field', function () {
+                if (!document.getElementById('timelogs-table')) return;
+                if ($(this).val() !== '') $('#reset-filters').removeClass('d-none');
+                if (typeof window.showTable === 'function') window.showTable();
             });
 
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            }
-        });
-
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-            getDate()
-
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        $('#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        function pieChart() {
-            var dateRangePicker2 = $('#datatableRange2').data('daterangepicker');
-            var startDate = $('#datatableRange2').val();
-
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker2.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker2.endDate.format('{{ company()->moment_date_format }}');
-            }
-
-            var data = new Array();
-            var projectID = $('#project_id').val();
-            var employee = $('#employee').val();
-            var client = $('#client').val();
-            var approved = $('#status').val();
-            var invoice = $('#invoice_generate').val();
-            var searchText = $('#search-text-field').val();
-
-            var url = "{{ route('time-log-report.chart') }}";
-
-            $.easyAjax({
-                url: url,
-                container: '#task-chart-card',
-                blockUI: true,
-                type: "POST",
-                data: {
-                    startDate: startDate,
-                    endDate: endDate,
-                    projectId: projectID,
-                    employee: employee,
-                    client: client,
-                    approved: approved,
-                    invoice: invoice,
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    $('#task-chart-card').html(response.html);
-                }
+            $(document).off('click.timelogRepReset').on('click.timelogRepReset', '#reset-filters, #reset-filters-2', function () {
+                if (!document.getElementById('timelogs-table')) return;
+                var $form = $('#filter-form');
+                if ($form.length) $form[0].reset();
+                getDate();
+                $('.filter-box .select-picker').selectpicker('refresh');
+                $('#reset-filters').addClass('d-none');
+                if (typeof window.showTable === 'function') window.showTable();
             });
-        }
-        pieChart();
 
+            // ─────────────────────────────────────────────────────────
+            // Turbo:load hook + immediate call for full-page loads
+            // ─────────────────────────────────────────────────────────
+            document.addEventListener('turbo:load', function () {
+                initTimelogsReport();
+            });
+
+            initTimelogsReport();
+
+        })();
     </script>
 @endpush

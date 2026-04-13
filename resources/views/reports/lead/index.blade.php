@@ -72,82 +72,79 @@
 @push('scripts')
     @include('sections.datatable_js')
 
-    <script type="text/javascript">
-
-        function getDate()  {
-            var start = moment().clone().startOf('month');
-            var end = moment();
-
-            $('#datatableRange2').daterangepicker({
-                locale: daterangeLocale,
-                linkedCalendars: false,
-                startDate: start,
-                endDate: end,
-                ranges: daterangeConfig
-            }, cb);
-        }
-        $(function() {
-            getDate()
-            $('#datatableRange2').on('apply.daterangepicker', function(ev, picker) {
-                showTable();
-            });
-
-        });
-
-    </script>
-
-
     <script>
-        $('#lead-report-table').on('preXhr.dt', function(e, settings, data) {
+        (function () {
 
-            var dateRangePicker = $('#datatableRange2').data('daterangepicker');
-            var startDate = $('#datatableRange2').val();
-
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+            function getDate() {
+                if (!document.getElementById('datatableRange2')) return;
+                var start = moment().clone().startOf('month');
+                var end   = moment();
+                $('#datatableRange2').daterangepicker({
+                    locale: daterangeLocale,
+                    linkedCalendars: false,
+                    startDate: start,
+                    endDate: end,
+                    ranges: daterangeConfig
+                }, cb);
             }
 
-            var agent = $('#agent').val();
+            function initLeadReport() {
+                if (!document.getElementById('lead-report-table')) return;
 
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['agent'] = agent;
-        });
-        const showTable = () => {
-            window.LaravelDataTables["lead-report-table"].draw(false);
-        }
+                getDate();
 
-        $('#agent').on('change keyup',
-            function() {
-                if ($('#agent').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else {
-                    $('#reset-filters').addClass('d-none');
-                    showTable();
-                }
+                $('#datatableRange2').off('apply.daterangepicker.leadRep')
+                    .on('apply.daterangepicker.leadRep', function () {
+                        if (typeof window.showTable === 'function') window.showTable();
+                    });
+
+                window.showTable = function () {
+                    if (window.LaravelDataTables && window.LaravelDataTables['lead-report-table']) {
+                        window.LaravelDataTables['lead-report-table'].draw(false);
+                    }
+                };
+
+                $('#lead-report-table').off('preXhr.dt.leadRep').on('preXhr.dt.leadRep', function (e, settings, data) {
+                    var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+                    var startDateVal    = $('#datatableRange2').val();
+                    var startDate = null, endDate = null;
+
+                    if (startDateVal !== '' && dateRangePicker) {
+                        startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                        endDate   = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                    }
+
+                    data['startDate'] = startDate;
+                    data['endDate']   = endDate;
+                    data['agent']     = $('#agent').val() || 'all';
+                });
+            }
+
+            $(document)
+                .off('change.leadRepF changed.bs.select.leadRepF')
+                .on('change.leadRepF changed.bs.select.leadRepF', '#agent', function () {
+                    if (!document.getElementById('lead-report-table')) return;
+                    var hasFilter = $(this).val() && $(this).val() !== 'all';
+                    $('#reset-filters').toggleClass('d-none', !hasFilter);
+                    if (typeof window.showTable === 'function') window.showTable();
+                });
+
+            $(document).off('click.leadRepReset').on('click.leadRepReset', '#reset-filters, #reset-filters-2', function () {
+                if (!document.getElementById('lead-report-table')) return;
+                var $form = $('#filter-form');
+                if ($form.length) $form[0].reset();
+                getDate();
+                $('.filter-box .select-picker').selectpicker('refresh');
+                $('#reset-filters').addClass('d-none');
+                if (typeof window.showTable === 'function') window.showTable();
             });
 
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-            getDate()
+            document.addEventListener('turbo:load', function () {
+                initLeadReport();
+            });
 
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
+            initLeadReport();
 
-        $('#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
+        })();
     </script>
 @endpush

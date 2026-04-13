@@ -186,151 +186,132 @@
     @include('sections.datatable_js')
 
     <script>
-        $('#allTasks-table').on('preXhr.dt', function(e, settings, data) {
+        (function () {
 
-            var dateRangePicker = $('#datatableRange').data('daterangepicker');
-            var startDate = $('#datatableRange').val();
+            // ─────────────────────────────────────────────────────────
+            // pieChart — reads current filter values and loads chart
+            // Defined outside init so it can be called from showTable
+            // ─────────────────────────────────────────────────────────
+            function pieChart() {
+                if (!document.getElementById('allTasks-table')) return;
 
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
-            }
+                var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                var startDateVal = $('#datatableRange').val();
+                var startDate = null, endDate = null;
 
-            var projectID = $('#project_id').val();
-            if (!projectID) {
-                projectID = 0;
-            }
-            var clientID = $('#clientID').val();
-            var assignedBY = $('#assignedBY').val();
-            var assignedTo = $('#assignedTo').val();
-            var status = $('#status').val();
-            var label = $('#label').val();
-            var category_id = $('#category_id').val();
-            var billable = $('#billable_task').val();
-            var searchText = $('#search-text-field').val();
+                if (startDateVal !== '' && dateRangePicker) {
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate   = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                }
 
-            data['clientID'] = clientID;
-            data['assignedBY'] = assignedBY;
-            data['assignedTo'] = assignedTo;
-            data['status'] = status;
-            data['label'] = label;
-            data['category_id'] = category_id;
-            data['billable'] = billable;
-            data['projectId'] = projectID;
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['searchText'] = searchText;
-        });
-        const showTable = () => {
-            window.LaravelDataTables["allTasks-table"].draw(false);
-            pieChart();
-        }
-
-        $('#billable_task, #status, #field, #clientID, #category_id, #assignedBY, #assignedTo, #label, #project_id')
-            .on('change keyup',
-                function() {
-                    if ($('#status').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#project_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#clientID').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#category_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#assignedBY').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#assignedTo').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#label').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#billable_task').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else {
-                        $('#reset-filters').addClass('d-none');
-                        showTable();
+                $.easyAjax({
+                    url: "{{ route('task-report.chart') }}",
+                    container: '#task-chart-card',
+                    blockUI: true,
+                    type: 'POST',
+                    data: {
+                        clientID:    $('#clientID').val()    || 'all',
+                        assignedBY:  $('#assignedBY').val()  || 'all',
+                        assignedTo:  $('#assignedTo').val()  || 'all',
+                        status:      $('#status').val()      || 'all',
+                        label:       $('#label').val()       || 'all',
+                        category_id: $('#category_id').val() || 'all',
+                        billable:    $('#billable_task').val() || 'all',
+                        projectId:   $('#project_id').val()  || 0,
+                        startDate:   startDate,
+                        endDate:     endDate,
+                        searchText:  $('#search-text-field').val() || '',
+                        _token:      '{{ csrf_token() }}'
+                    },
+                    success: function (response) {
+                        $('#task-chart-card').html(response.html);
                     }
                 });
-
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            }
-        });
-
-        $('#reset-filters,#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-
-        function pieChart() {
-            var data = new Array();
-            var dateRangePicker = $('#datatableRange').data('daterangepicker');
-            var startDate = $('#datatableRange').val();
-
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
             }
 
-            var projectID = $('#project_id').val();
-            if (!projectID) {
-                projectID = 0;
+            // ─────────────────────────────────────────────────────────
+            // initTasksReport — re-runs on every turbo:load navigation
+            // ─────────────────────────────────────────────────────────
+            function initTasksReport() {
+                if (!document.getElementById('allTasks-table')) return;
+
+                // showTable: safe null-guarded redraw
+                window.showTable = function () {
+                    if (window.LaravelDataTables && window.LaravelDataTables['allTasks-table']) {
+                        window.LaravelDataTables['allTasks-table'].draw(false);
+                        pieChart();
+                    }
+                };
+
+                // preXhr — re-attach to the fresh DOM element each navigation
+                $('#allTasks-table').off('preXhr.dt.tasksRep').on('preXhr.dt.tasksRep', function (e, settings, data) {
+                    var dateRangePicker = $('#datatableRange').data('daterangepicker');
+                    var startDateVal    = $('#datatableRange').val();
+                    var startDate = null, endDate = null;
+
+                    if (startDateVal !== '' && dateRangePicker) {
+                        startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                        endDate   = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                    }
+
+                    data['clientID']    = $('#clientID').val()    || 'all';
+                    data['assignedBY']  = $('#assignedBY').val()  || 'all';
+                    data['assignedTo']  = $('#assignedTo').val()  || 'all';
+                    data['status']      = $('#status').val()      || 'all';
+                    data['label']       = $('#label').val()       || 'all';
+                    data['category_id'] = $('#category_id').val() || 'all';
+                    data['billable']    = $('#billable_task').val() || 'all';
+                    data['projectId']   = $('#project_id').val()  || 0;
+                    data['startDate']   = startDate;
+                    data['endDate']     = endDate;
+                    data['searchText']  = $('#search-text-field').val() || '';
+                });
+
+                // Run chart immediately on page load
+                pieChart();
             }
-            var clientID = $('#clientID').val();
-            var assignedBY = $('#assignedBY').val();
-            var assignedTo = $('#assignedTo').val();
-            var status = $('#status').val();
-            var label = $('#label').val();
-            var category_id = $('#category_id').val();
-            var billable = $('#billable_task').val();
-            var searchText = $('#search-text-field').val();
 
-            var url = "{{ route('task-report.chart') }}";
+            // ─────────────────────────────────────────────────────────
+            // Delegated listeners — survive all Turbo navigations.
+            // Namespaced to prevent accumulation. Page-guarded.
+            // ─────────────────────────────────────────────────────────
+            var filterSel = '#billable_task, #status, #clientID, #category_id, #assignedBY, #assignedTo, #label, #project_id';
 
-            $.easyAjax({
-                url: url,
-                container: '#task-chart-card',
-                blockUI: true,
-                type: "POST",
-                data: {
-                    clientID: clientID,
-                    assignedBY: assignedBY,
-                    assignedTo: assignedTo,
-                    status: status,
-                    label: label,
-                    category_id: category_id,
-                    billable: billable,
-                    projectId: projectID,
-                    startDate: startDate,
-                    endDate: endDate,
-                    searchText: searchText,
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    $('#task-chart-card').html(response.html);
-                }
+            $(document)
+                .off('change.tasksRepF changed.bs.select.tasksRepF')
+                .on('change.tasksRepF changed.bs.select.tasksRepF', filterSel, function () {
+                    if (!document.getElementById('allTasks-table')) return;
+                    var anyActive = $(filterSel).toArray().some(function (el) {
+                        return $(el).val() && $(el).val() !== 'all';
+                    });
+                    $('#reset-filters').toggleClass('d-none', !anyActive);
+                    if (typeof window.showTable === 'function') window.showTable();
+                });
+
+            $(document).off('keyup.tasksRepSearch').on('keyup.tasksRepSearch', '#search-text-field', function () {
+                if (!document.getElementById('allTasks-table')) return;
+                if ($(this).val() !== '') $('#reset-filters').removeClass('d-none');
+                if (typeof window.showTable === 'function') window.showTable();
             });
-        }
-        pieChart();
 
+            $(document).off('click.tasksRepReset').on('click.tasksRepReset', '#reset-filters, #reset-filters-2', function () {
+                if (!document.getElementById('allTasks-table')) return;
+                var $form = $('#filter-form');
+                if ($form.length) $form[0].reset();
+                $('.filter-box .select-picker').selectpicker('refresh');
+                $('#reset-filters').addClass('d-none');
+                if (typeof window.showTable === 'function') window.showTable();
+            });
+
+            // ─────────────────────────────────────────────────────────
+            // Turbo:load hook + immediate call for full-page loads
+            // ─────────────────────────────────────────────────────────
+            document.addEventListener('turbo:load', function () {
+                initTasksReport();
+            });
+
+            initTasksReport();
+
+        })();
     </script>
 @endpush

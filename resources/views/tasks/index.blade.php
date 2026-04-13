@@ -335,9 +335,9 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <a href="#" id="download-task-template-btn" class="btn btn-success">
+                    <button type="button" id="download-task-template-btn" class="btn btn-success">
                         <i class="fa fa-download mr-1"></i> Download Template
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
@@ -771,24 +771,13 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
             });
 
             // Export Modal Logic
-            $body.on('show.bs.modal' + namespace, '#taskFormatExportModal', function () {
+            $doc.off('show.bs.modal' + namespace, '#taskFormatExportModal').on('show.bs.modal' + namespace, '#taskFormatExportModal', function () {
                 $('#export_project_id').selectpicker('refresh');
             });
 
-            $body.on('change' + namespace, '#export_project_id', function () {
-                var pid = $(this).val();
-                if (pid) {
-                    var url = '{{ route('task_format_export', ':pid') }}'.replace(':pid', pid);
-                    $('#download-task-template-btn').attr('href', url);
-                } else {
-                    $('#download-task-template-btn').attr('href', '#');
-                }
-            });
-
-            $body.on('click' + namespace, '#download-task-template-btn', function (e) {
+            $doc.off('click' + namespace, '#download-task-template-btn').on('click' + namespace, '#download-task-template-btn', function (e) {
                 var pid = $('#export_project_id').val();
                 if (!pid) {
-                    e.preventDefault();
                     Swal.fire({
                         icon: 'warning',
                         title: 'Project Required',
@@ -798,45 +787,43 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                     });
                     return;
                 }
+
+                var url = '{{ route('task_format_export', ':pid') }}'.replace(':pid', pid);
+                window.location.href = url; // Start download without Turbo
                 $('#taskFormatExportModal').modal('hide');
             });
 
             // Import Modal Logic
-            $body.on('show.bs.modal' + namespace, '#taskCsvImportModal', function () {
+            $doc.off('show.bs.modal' + namespace, '#taskCsvImportModal').on('show.bs.modal' + namespace, '#taskCsvImportModal', function () {
                 $('#import_project_id').selectpicker('refresh');
                 $('#import-result').addClass('d-none');
                 $('#import-success-msg, #import-error-msg').addClass('d-none').html('');
-                $('#task-csv-import-form')[0].reset();
+                var $form = $('#task-csv-import-form');
+                if ($form.length) $form[0].reset();
                 $('.custom-file-label').text('Choose CSV file...');
-                $('#import-csv-submit-btn').prop('disabled', false)
-                    .html('<i class="fa fa-upload mr-1"></i> Import Tasks');
+                $('#import-csv-submit-btn').prop('disabled', false).html('<i class="fa fa-upload mr-1"></i> Import Tasks');
             });
 
-            $body.on('change' + namespace, '#import_csv_file', function () {
+            $doc.off('change' + namespace, '#import_csv_file').on('change' + namespace, '#import_csv_file', function () {
                 var fileName = $(this).val().split('\\').pop();
                 $(this).siblings('.custom-file-label').text(fileName || 'Choose CSV file...');
             });
 
-            $body.on('submit' + namespace, '#task-csv-import-form', function (e) {
+            $doc.off('submit' + namespace, '#task-csv-import-form').on('submit' + namespace, '#task-csv-import-form', function (e) {
                 e.preventDefault();
                 var pid = $('#import_project_id').val();
                 if (!pid) {
-                    Swal.fire({ icon: 'warning', title: 'Project Required',
-                        text: 'Please select a project before importing.', timer: 2500, showConfirmButton: false });
+                    Swal.fire({ icon: 'warning', title: 'Project Required', text: 'Please select a project before importing.', timer: 2500, showConfirmButton: false });
                     return;
                 }
-
                 var fileInput = document.getElementById('import_csv_file');
-                if (!fileInput.files.length) {
-                    Swal.fire({ icon: 'warning', title: 'File Required',
-                        text: 'Please choose a CSV file to upload.', timer: 2500, showConfirmButton: false });
+                if (!fileInput || !fileInput.files.length) {
+                    Swal.fire({ icon: 'warning', title: 'File Required', text: 'Please choose a CSV file.', timer: 2500, showConfirmButton: false });
                     return;
                 }
-
                 var formData = new FormData(this);
-                var submitBtn = $('#import-csv-submit-btn');
-                submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Importing...');
-
+                var $submitBtn = $('#import-csv-submit-btn');
+                $submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Importing...');
                 $('#import-result').addClass('d-none');
                 $('#import-success-msg, #import-error-msg').addClass('d-none').html('');
 
@@ -847,24 +834,19 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                     processData: false,
                     contentType: false,
                     success: function (response) {
-                        submitBtn.prop('disabled', false).html('<i class="fa fa-upload mr-1"></i> Import Tasks');
+                        $submitBtn.prop('disabled', false).html('<i class="fa fa-upload mr-1"></i> Import Tasks');
                         $('#import-result').removeClass('d-none');
                         if (response.status === 'success') {
-                            var msg = '<strong>' + response.successCount + ' task(s) imported successfully!</strong>';
-                            $('#import-success-msg').removeClass('d-none').html(msg);
+                            $('#import-success-msg').removeClass('d-none').html('<strong>' + response.successCount + ' task(s) imported successfully!</strong>');
                             if (response.errorRows && response.errorRows.length > 0) {
-                                var errHtml = '<strong>Some rows were skipped:</strong><ul class="mb-0 mt-1">';
-                                $.each(response.errorRows, function (i, err) {
-                                    errHtml += '<li class="f-13">' + err + '</li>';
-                                });
-                                errHtml += '</ul>';
+                                var errHtml = '<strong>Some rows skipped:</strong><ul class="mb-0 mt-1">' + response.errorRows.map(e => '<li class="f-13">' + e + '</li>').join('') + '</ul>';
                                 $('#import-error-msg').removeClass('d-none').html(errHtml);
                             }
-                            showTable();
+                            if (typeof window.showTable === 'function') window.showTable();
                         }
                     },
                     error: function (xhr) {
-                        submitBtn.prop('disabled', false).html('<i class="fa fa-upload mr-1"></i> Import Tasks');
+                        $submitBtn.prop('disabled', false).html('<i class="fa fa-upload mr-1"></i> Import Tasks');
                         var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Import failed.';
                         Swal.fire({ icon: 'error', title: 'Import Failed', text: msg });
                     }

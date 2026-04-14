@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-title" content="Badar PMS">
     <meta name="apple-mobile-web-app-capable" content="yes">
 
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ companyOrGlobalSetting()->favicon_url }}">
+    <!-- <link rel="icon" type="image/png" sizes="16x16" href="{{ companyOrGlobalSetting()->favicon_url }}"> -->
 
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="{{ asset('vendor/css/all.min.css') }}">
@@ -41,7 +41,7 @@
 
     <title>@lang($pageTitle)</title>
     <meta name="msapplication-TileColor" content="#ffffff">
-    <meta name="msapplication-TileImage" content="{{ companyOrGlobalSetting()->favicon_url }}">
+    <!-- <meta name="msapplication-TileImage" content="{{ companyOrGlobalSetting()->favicon_url }}"> -->
     <meta name="theme-color" content="#ffffff">
     <meta name="csrf-token" content="{{ csrf_token() }}"/>
     <!-- PWA Manifest -->

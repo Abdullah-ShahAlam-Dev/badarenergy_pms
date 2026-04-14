@@ -4,7 +4,7 @@
     This version prevents Auth-redirect crashes and stale-cache issues.
 */
 
-const CACHE_NAME = 'badar-pms-v4';
+const CACHE_NAME = 'badar-pms-v5';
 const STATIC_ASSETS = [
     '/icons/icon-192.png',
     '/icons/icon-512.png',
@@ -36,8 +36,8 @@ self.addEventListener('fetch', event => {
 
     // CRITICAL: Bypass Service Worker for Authentication, API, and Side-Effecting requests
     if (
-        url.pathname.includes('/login') || 
-        url.pathname.includes('/logout') || 
+        url.pathname.includes('/login') ||
+        url.pathname.includes('/logout') ||
         url.pathname.includes('/api/') ||
         event.request.method !== 'GET'
     ) {
@@ -48,7 +48,7 @@ self.addEventListener('fetch', event => {
     if (event.request.mode === 'navigate') {
         event.respondWith(
             fetch(event.request)
-                .catch(() => caches.match(event.request)) 
+                .catch(() => caches.match(event.request))
         );
         return;
     }

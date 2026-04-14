@@ -11,24 +11,17 @@ class PwaController extends Controller
      */
     public function manifest()
     {
-        // 1. Identify Company (Session first, then Hostname, then Fallback)
+        // 1. Identify Company (Hostname first, then Fallback)
+        // Bypass session here because PWA manifest requests often don't send cookies
         $host = request()->getHost();
-        $companyId = session('companyOrGlobalSetting') ? session('companyOrGlobalSetting')->id : null;
 
-        $company = null;
+        $company = \App\Models\Company::where('company_url', 'like', "%$host%")
+                    ->orWhere('website', 'like', "%$host%")
+                    ->first();
 
-        if ($companyId) {
-            $company = \App\Models\Company::find($companyId);
-        }
-
+        // Fallback 1: If no company found by host, use the first company found in DB
+        // (This handles staging/local environments where hostname might not match exactly)
         if (!$company) {
-            $company = \App\Models\Company::where('company_url', 'like', "%$host%")
-                        ->orWhere('website', 'like', "%$host%")
-                        ->first();
-        }
-
-        // Fallback 1: If no company found by host, but there is only one company in DB, use it
-        if (!$company && \App\Models\Company::count() === 1) {
             $company = \App\Models\Company::first();
         }
 

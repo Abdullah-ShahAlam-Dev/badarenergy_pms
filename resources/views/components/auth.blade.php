@@ -8,12 +8,13 @@
     @php
         // Force fresh database query to bypass laravel cache for branding
         $pwaSettings = \App\Models\GlobalSetting::first();
+        $pwaFavicon = optional($pwaSettings)->favicon_url ?? asset('favicon.png');
     @endphp
-    <link rel="icon" type="image/png" href="{{ $pwaSettings->favicon_url }}?v={{ $pwaSettings->updated_at?->timestamp ?? time() }}">
+    <link rel="icon" type="image/png" href="{{ $pwaFavicon }}?v={{ optional($pwaSettings)->updated_at?->timestamp ?? time() }}">
     <!-- PWA -->
-    <link rel="manifest" href="{{ route('manifest.json') }}?v={{ $pwaSettings->updated_at?->timestamp ?? time() }}">
-    <link rel="apple-touch-icon" href="{{ $pwaSettings->favicon_url }}?v={{ $pwaSettings->updated_at?->timestamp ?? time() }}">
-    <meta name="apple-mobile-web-app-title" content="{{ $pwaSettings->global_app_name }}">
+    <link rel="manifest" href="/manifest.json?v={{ optional($pwaSettings)->updated_at?->timestamp ?? time() }}">
+    <link rel="apple-touch-icon" href="{{ $pwaFavicon }}?v={{ optional($pwaSettings)->updated_at?->timestamp ?? time() }}">
+    <meta name="apple-mobile-web-app-title" content="{{ optional($pwaSettings)->global_app_name ?? config('app.name') }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
 
     <meta name="msapplication-TileColor" content="#ffffff">

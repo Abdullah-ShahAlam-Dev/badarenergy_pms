@@ -103,6 +103,28 @@ class ThemeSettingController extends AccountBaseController
             $setting->favicon = Files::uploadLocalOrS3($request->favicon, 'favicon');
         }
 
+        // PWA icon for Android (192x192)
+        if ($request->pwa_icon_192_delete == 'yes') {
+            Files::deleteFile($setting->pwa_icon_192, 'pwa-icons');
+            $setting->pwa_icon_192 = null;
+        }
+
+        if ($request->hasFile('pwa_icon_192')) {
+            Files::deleteFile($setting->pwa_icon_192, 'pwa-icons');
+            $setting->pwa_icon_192 = Files::uploadLocalOrS3($request->pwa_icon_192, 'pwa-icons');
+        }
+
+        // PWA icon for Desktop / Windows (512x512)
+        if ($request->pwa_icon_512_delete == 'yes') {
+            Files::deleteFile($setting->pwa_icon_512, 'pwa-icons');
+            $setting->pwa_icon_512 = null;
+        }
+
+        if ($request->hasFile('pwa_icon_512')) {
+            Files::deleteFile($setting->pwa_icon_512, 'pwa-icons');
+            $setting->pwa_icon_512 = Files::uploadLocalOrS3($request->pwa_icon_512, 'pwa-icons');
+        }
+
         $setting->sidebar_logo_style = $request->sidebar_logo_style;
 
         $setting->save();

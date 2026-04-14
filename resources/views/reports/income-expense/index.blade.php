@@ -68,7 +68,6 @@
 @push('scripts')
     @include('sections.daterange_js')
 
-
     <script type="text/javascript">
         $(function() {
 
@@ -83,15 +82,12 @@
                 ranges: daterangeConfig
             }, cb);
 
-
             $('#datatableRange2').on('apply.daterangepicker', function(ev, picker) {
                 pieChart();
             });
 
-
             $('#reset-filters').click(function() {
                 $('#filter-form')[0].reset();
-
                 $('.filter-box .select-picker').selectpicker("refresh");
                 $('#reset-filters').addClass('d-none');
                 pieChart();
@@ -101,7 +97,6 @@
 
                 const dateRangePicker = $('#datatableRange2').data('daterangepicker');
                 let startDate = $('#datatableRange2').val();
-
                 let endDate;
 
                 if (startDate == '') {
@@ -112,10 +107,8 @@
                     endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
                 }
 
-                var url = "{{ route('income-expense-report.index') }}";
-
                 $.easyAjax({
-                    url: url,
+                    url: "{{ route('income-expense-report.index') }}",
                     container: '#task-chart-card',
                     blockUI: true,
                     data: {
@@ -134,7 +127,6 @@
                 $('#datatableRange2').data('daterangepicker').setStartDate("{{ request('start') }}");
                 $('#datatableRange2').data('daterangepicker').setEndDate("{{ request('end') }}");
             @endif
-
 
             pieChart();
         });

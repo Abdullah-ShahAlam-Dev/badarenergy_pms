@@ -7,9 +7,17 @@ $valuesTotal = array_sum($values);
     <canvas {{ $attributes }}></canvas>
 </div>
 <script>
-var ctx = document.getElementById("{{ $attributes['id'] }}");
+if (typeof window.MyPieCharts === 'undefined') {
+    window.MyPieCharts = {};
+}
+var chartId = "{{ $attributes['id'] }}";
+var ctx = document.getElementById(chartId);
 
-var myChart = new Chart(ctx, {
+if (window.MyPieCharts[chartId]) {
+    window.MyPieCharts[chartId].destroy();
+}
+
+window.MyPieCharts[chartId] = new Chart(ctx, {
   type: 'pie',
   data: {
   labels: [

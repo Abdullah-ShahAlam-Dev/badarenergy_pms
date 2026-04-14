@@ -71,82 +71,88 @@
 @push('scripts')
     @include('sections.datatable_js')
 
-    <script type="text/javascript">
-
-        function getDate()  {
-            var start = moment().clone().startOf('month');
-            var end = moment();
-
-            $('#datatableRange2').daterangepicker({
-                locale: daterangeLocale,
-                linkedCalendars: false,
-                startDate: start,
-                endDate: end,
-                ranges: daterangeConfig
-            }, cb);
-        }
-        $(function() {
-            getDate()
-            $('#datatableRange2').on('apply.daterangepicker', function(ev, picker) {
-                showTable();
-            });
-
-        });
-
-    </script>
-
-
     <script>
-        $('#sales-report-table').on('preXhr.dt', function(e, settings, data) {
+        (function() {
 
-            var dateRangePicker = $('#datatableRange2').data('daterangepicker');
-            var startDate = $('#datatableRange2').val();
+            function getDate() {
+                if (!document.getElementById('datatableRange2')) return;
+                var start = moment().clone().startOf('month');
+                var end = moment();
 
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                $('#datatableRange2').daterangepicker({
+                    locale: daterangeLocale,
+                    linkedCalendars: false,
+                    startDate: start,
+                    endDate: end,
+                    ranges: daterangeConfig
+                }, cb);
             }
 
-            var clientID = $('#clientID').val();
+            function initSalesReport() {
+                if (!document.getElementById('sales-report-table')) return;
 
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['clientID'] = clientID;
-        });
-        const showTable = () => {
-            window.LaravelDataTables["sales-report-table"].draw(false);
-        }
+                getDate();
 
-        $('#clientID').on('change keyup',
-            function() {
-                if ($('#clientID').val() != "all") {
-                    $('#reset-filters').removeClass('d-none');
-                    showTable();
-                } else {
-                    $('#reset-filters').addClass('d-none');
-                    showTable();
-                }
+                $('#datatableRange2').off('apply.daterangepicker.salesRep')
+                    .on('apply.daterangepicker.salesRep', function() {
+                        if (typeof window.showTable === 'function') window.showTable();
+                    });
+
+                var showTableTimeout;
+                window.showTable = function() {
+                    clearTimeout(showTableTimeout);
+                    showTableTimeout = setTimeout(function() {
+                        if (window.LaravelDataTables && window.LaravelDataTables['sales-report-table']) {
+                            window.LaravelDataTables['sales-report-table'].draw(false);
+                        }
+                    }, 500);
+                };
+
+                document.addEventListener('turbo:before-cache', function () {
+                    if (window.LaravelDataTables && window.LaravelDataTables['sales-report-table']) {
+                        window.LaravelDataTables['sales-report-table'].destroy();
+                        delete window.LaravelDataTables['sales-report-table'];
+                    }
+                }, { once: true });
+
+                $('#sales-report-table').off('preXhr.dt.salesRep').on('preXhr.dt.salesRep', function(e, settings, data) {
+                    var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+                    var startDateVal = $('#datatableRange2').val();
+                    var startDate = null, endDate = null;
+
+                    if (startDateVal !== '' && dateRangePicker) {
+                        startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                        endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                    }
+
+                    data['startDate'] = startDate;
+                    data['endDate'] = endDate;
+                    data['clientID'] = $('#clientID').val();
+                });
+            }
+
+            $(document).off('change.salesRepF changed.bs.select.salesRepF').on('change.salesRepF changed.bs.select.salesRepF', '#clientID', function() {
+                if (!document.getElementById('sales-report-table')) return;
+                $('#reset-filters').toggleClass('d-none', $(this).val() === "all");
+                if (typeof window.showTable === 'function') window.showTable();
             });
 
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-            getDate()
+            $(document).off('click.salesRepReset').on('click.salesRepReset', '#reset-filters, #reset-filters-2', function() {
+                if (!document.getElementById('sales-report-table')) return;
+                var $form = $('#filter-form');
+                if ($form.length) $form[0].reset();
+                getDate();
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                if (typeof window.showTable === 'function') window.showTable();
+            });
 
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
+            document.addEventListener('turbo:load', function() {
+                initSalesReport();
+            });
 
-        $('#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
+            initSalesReport();
 
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
+        })();
     </script>
 @endpush

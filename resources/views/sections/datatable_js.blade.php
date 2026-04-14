@@ -3,6 +3,11 @@
 {!! $dataTable->scripts() !!}
 
 <script>
+    // Suppress native DataTables alerts for aborted XHR requests on Turbo navigations
+    $.fn.dataTable.ext.errMode = 'none';
+    $('.table-responsive').on('error.dt', function(e, settings, techNote, message) {
+        console.warn('DataTables Async Warning (Expected during Turbo navigation):', message);
+    });
     $('.table-responsive').on('show.bs.dropdown', function () {
         $('.table-responsive').css( "overflow", "inherit" );
     });

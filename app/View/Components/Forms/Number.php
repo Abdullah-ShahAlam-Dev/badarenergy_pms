@@ -18,13 +18,14 @@ class Number extends Component
     public $maxValue;
     public $popover;
     public $fieldReadOnly;
+    public $step;
 
     /**
      * Create a new component instance.
      *
      * @return void
      */
-    public function __construct($fieldLabel, $fieldName, $fieldId,  $fieldRequired = false, $fieldValue = null,$fieldHelp = null, $minValue = 0, $maxValue = '', $popover = null, $fieldPlaceholder = null, $fieldReadOnly = false)
+    public function __construct($fieldLabel, $fieldName, $fieldId,  $fieldRequired = false, $fieldValue = null,$fieldHelp = null, $minValue = 0, $maxValue = '', $popover = null, $fieldPlaceholder = null, $fieldReadOnly = false, $step = null)
     {
         $this->fieldLabel = $fieldLabel;
         $this->fieldRequired = $fieldRequired;
@@ -37,6 +38,7 @@ class Number extends Component
         $this->popover = $popover;
         $this->fieldPlaceholder = $fieldPlaceholder;
         $this->fieldReadOnly = $fieldReadOnly;
+        $this->step = $step;
     }
 
     /**

@@ -235,13 +235,25 @@
             function initTasksReport() {
                 if (!document.getElementById('allTasks-table')) return;
 
-                // showTable: safe null-guarded redraw
+                // showTable: safe null-guarded redraw with Debounce to prevent overlapping AJAX freezes
+                var showTableTimeout;
                 window.showTable = function () {
-                    if (window.LaravelDataTables && window.LaravelDataTables['allTasks-table']) {
-                        window.LaravelDataTables['allTasks-table'].draw(false);
-                        pieChart();
-                    }
+                    clearTimeout(showTableTimeout);
+                    showTableTimeout = setTimeout(function() {
+                        if (window.LaravelDataTables && window.LaravelDataTables['allTasks-table']) {
+                            window.LaravelDataTables['allTasks-table'].draw(false);
+                            pieChart();
+                        }
+                    }, 500);
                 };
+
+                // Destroy DataTable object to prevent cache-locking on navigation Return
+                document.addEventListener('turbo:before-cache', function () {
+                    if (window.LaravelDataTables && window.LaravelDataTables['allTasks-table']) {
+                        window.LaravelDataTables['allTasks-table'].destroy();
+                        delete window.LaravelDataTables['allTasks-table'];
+                    }
+                }, { once: true });
 
                 // preXhr — re-attach to the fresh DOM element each navigation
                 $('#allTasks-table').off('preXhr.dt.tasksRep').on('preXhr.dt.tasksRep', function (e, settings, data) {

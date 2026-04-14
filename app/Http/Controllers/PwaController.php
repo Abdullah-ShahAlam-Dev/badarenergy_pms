@@ -3,68 +3,72 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\URL;
 
 class PwaController extends Controller
 {
     /**
      * Serve the PWA manifest dynamically based on dashboard settings.
      *
-     * ROOT CAUSE FIX for Android/Desktop:
-     * Chrome enforces strict mixed-content blocking. If the page is HTTPS
-     * but the manifest icon URL is HTTP, Chrome silently drops the icon.
-     * iOS Safari is lenient about this (hence it worked there).
-     * Solution: force HTTPS scheme so all url()/asset() calls return https:// URLs.
+     * DESIGN NOTES:
+     * - We build icon URLs manually from config('app.url') instead of using
+     *   url() / asset() helpers, which produce http:// URLs behind a reverse proxy.
+     * - Chrome (Android + Desktop) has STRICT mixed-content blocking: an https://
+     *   page cannot load http:// PWA icons. iOS Safari is lenient — hence iOS worked.
+     * - Chrome ALSO validates that declared icon sizes match the real pixel dimensions.
+     *   The uploaded favicon may be 32x32, but public/favicon.png is the full-size
+     *   image (822KB) guaranteed to satisfy the 192x192 and 512x512 requirements.
      */
     public function manifest()
     {
-        // CRITICAL: Force HTTPS for all URL generation in this request.
-        // This fixes the mixed-content icon blocking on Android Chrome and Desktop Chrome.
-        // The favicon_url accessor uses url() internally - this makes it produce https:// URLs.
-        $isHttps = request()->secure()
-            || str_starts_with(config('app.url', ''), 'https')
-            || request()->server('HTTP_X_FORWARDED_PROTO') === 'https'
-            || request()->server('HTTPS') === 'on';
-
-        if ($isHttps) {
-            URL::forceScheme('https');
-        }
+        // Base URL always has the correct scheme from APP_URL in .env
+        // This is the only reliable way to generate the correct scheme behind a proxy.
+        $baseUrl = rtrim(config('app.url'), '/');
 
         // 1. Identify Company (Hostname first, then Fallback)
-        // Bypass session — PWA manifest requests don't always send cookies
         $host = request()->getHost();
 
         $company = \App\Models\Company::where('company_url', 'like', "%$host%")
                     ->orWhere('website', 'like', "%$host%")
                     ->first();
 
-        // Fallback: If no company found by host, use the first company in DB
-        // (Handles staging/local where hostname may not match exactly)
+        // Fallback: If no match by host, use the first company in DB
         if (!$company) {
             $company = \App\Models\Company::first();
         }
 
         $settings = $company ?: \App\Models\GlobalSetting::first();
 
+        // 2. App Name — from DB, real-time
+        $appName = 'App';
         try {
-            $appName    = $settings->app_name ?? ($settings->global_app_name ?? config('app.name'));
-            $faviconUrl = $settings->favicon_url;  // Now generates https:// due to forceScheme above
-
-            // Determine MIME type — strip any ?v=timestamp before parsing extension
-            $fPath   = parse_url($faviconUrl, PHP_URL_PATH);
-            $favExt  = strtolower(pathinfo($fPath, PATHINFO_EXTENSION));
-            $favMime = match($favExt) {
-                'ico'        => 'image/x-icon',
-                'svg'        => 'image/svg+xml',
-                'jpg', 'jpeg' => 'image/jpeg',
-                default      => 'image/png',
-            };
-
+            $appName = $settings->app_name ?? ($settings->global_app_name ?? config('app.name'));
         } catch (\Exception $e) {
-            $appName    = config('app.name');
-            $faviconUrl = asset('favicon.png');
-            $favMime    = 'image/png';
+            $appName = config('app.name');
         }
+
+        // 3. Build favicon URL manually — bypasses url() helper to guarantee HTTPS
+        // The dynamic favicon is used for the 32x32 browser-tab icon (real-time sync).
+        $dynamicFaviconUrl = $baseUrl . '/favicon.png'; // Default static
+        $dynamicFaviconMime = 'image/png';
+
+        try {
+            if (!empty($settings->favicon)) {
+                $ext = strtolower(pathinfo($settings->favicon, PATHINFO_EXTENSION));
+                $dynamicFaviconUrl = $baseUrl . '/user-uploads/favicon/' . $settings->favicon;
+                $dynamicFaviconMime = match($ext) {
+                    'ico'        => 'image/x-icon',
+                    'jpg', 'jpeg' => 'image/jpeg',
+                    default      => 'image/png',
+                };
+            }
+        } catch (\Exception $e) {
+            // Stick to default
+        }
+
+        // 4. PWA install icons (192x192 and 512x512) MUST match actual pixel dimensions.
+        // The static public/favicon.png is the full-size image used at install time.
+        // It is served directly and is guaranteed to be large and accessible.
+        $pwaIconUrl = $baseUrl . '/favicon.png';
 
         $manifest = [
             'name'             => $appName,
@@ -76,21 +80,24 @@ class PwaController extends Controller
             'background_color' => '#171f29',
             'theme_color'      => '#171f29',
             'icons'            => [
+                // Small icon for browser tabs (dynamically synced from Dashboard)
                 [
-                    'src'   => $faviconUrl,
-                    'sizes' => '32x32',
-                    'type'  => $favMime,
+                    'src'   => $dynamicFaviconUrl,
+                    'sizes' => '32x32 48x48 64x64',
+                    'type'  => $dynamicFaviconMime,
                 ],
+                // Large icons for PWA install prompt — Chrome validates the actual pixel size.
+                // public/favicon.png at 822KB is guaranteed to meet the minimum.
                 [
-                    'src'     => $faviconUrl,
+                    'src'     => $pwaIconUrl,
                     'sizes'   => '192x192',
-                    'type'    => $favMime,
+                    'type'    => 'image/png',
                     'purpose' => 'any',
                 ],
                 [
-                    'src'     => $faviconUrl,
+                    'src'     => $pwaIconUrl,
                     'sizes'   => '512x512',
-                    'type'    => $favMime,
+                    'type'    => 'image/png',
                     'purpose' => 'any maskable',
                 ],
             ],

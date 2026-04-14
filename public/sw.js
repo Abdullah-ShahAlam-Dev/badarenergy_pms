@@ -4,7 +4,7 @@
     This version prevents Auth-redirect crashes and stale-cache issues.
 */
 
-const CACHE_NAME = 'badar-pms-v7'; // Bumping for dynamic changes
+const CACHE_NAME = 'badar-pms-v8'; // Bumped: bypass icon caching, force reinstall
 const STATIC_ASSETS = [];
 
 // 1. Install Event: Cache only critical static items
@@ -28,15 +28,19 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
 
-    // CRITICAL: Bypass Service Worker for Authentication, API, and Side-Effecting requests
+    // CRITICAL: Bypass Service Worker for Authentication, API, Side-Effecting,
+    // and Branding requests (manifest, favicon, icons)
     if (
         url.pathname.includes('/login') ||
         url.pathname.includes('/logout') ||
         url.pathname.includes('/manifest.json') ||
+        url.pathname.includes('/favicon') ||
+        url.pathname.includes('/user-uploads/favicon') ||
+        url.pathname.includes('/user-uploads/app-logo') ||
         url.pathname.includes('/api/') ||
         event.request.method !== 'GET'
     ) {
-        return; // Network-Only
+        return; // Network-Only — never cache branding or auth routes
     }
 
     // STRATEGY: Network-First for Navigation (Ensures session/auth stays accurate)

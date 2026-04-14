@@ -34,10 +34,12 @@ class PwaController extends Controller
             
             // Branding Assets
             $faviconUrl = $settings->favicon_url;
-            $logoUrl = $settings->logo_url;
-
-            // Determine MIME types
-            $favExt = pathinfo($faviconUrl, PATHINFO_EXTENSION);
+            
+            // CLEAN URLS: Strip query strings (?v=123) before getting extension
+            $fPath = parse_url($faviconUrl, PHP_URL_PATH);
+            
+            // Determine MIME type of favicon
+            $favExt = pathinfo($fPath, PATHINFO_EXTENSION);
             $favMime = match($favExt) {
                 'ico' => 'image/x-icon',
                 'svg' => 'image/svg+xml',
@@ -45,18 +47,10 @@ class PwaController extends Controller
                 default => 'image/png'
             };
 
-            $logoExt = pathinfo($logoUrl, PATHINFO_EXTENSION);
-            $logoMime = match($logoExt) {
-                'jpg', 'jpeg' => 'image/jpeg',
-                default => 'image/png'
-            };
-
         } catch (\Exception $e) {
             $appName = config('app.name');
             $faviconUrl = asset('favicon.png');
-            $logoUrl = asset('favicon.png');
             $favMime = 'image/png';
-            $logoMime = 'image/png';
         }
         
         // Brand color
@@ -77,15 +71,15 @@ class PwaController extends Controller
                     'type' => $favMime
                 ],
                 [
-                    'src' => $logoUrl,
+                    'src' => $faviconUrl,
                     'sizes' => '192x192',
-                    'type' => $logoMime,
+                    'type' => $favMime,
                     'purpose' => 'any'
                 ],
                 [
-                    'src' => $logoUrl,
+                    'src' => $faviconUrl,
                     'sizes' => '512x512',
-                    'type' => $logoMime,
+                    'type' => $favMime,
                     'purpose' => 'any maskable'
                 ]
             ]

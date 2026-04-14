@@ -93,7 +93,7 @@
                         <div class="alert alert-soft-info border-left border-info" style="border-left: 4px solid #17a2b8; background: #e8f7fa; border-radius: 6px; padding: 12px 16px;">
                             <h5 class="mb-1" style="color: #0c6b7e;">
                                 <i class="fa fa-mobile-alt mr-1"></i> PWA App Icons
-                                <span class="badge badge-success ml-2" style="font-size: 10px;">iOS ✅ Auto-handled by Favicon</span>
+                                <span class="badge badge-success ml-2" style="font-size: 10px;">iOS Auto-handled by Favicon</span>
                             </h5>
                             <p class="mb-0 f-13 text-dark-grey">
                                 <strong>iOS</strong> automatically uses your <em>Favicon</em> above — no extra setup needed. <br>

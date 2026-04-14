@@ -81,35 +81,45 @@ const dataTableRowCheck = (id) => {
 
 //select all rows in datatable
 const selectAllTable = (source) => {
-    checkboxes = document.getElementsByName("datatable_ids[]");
+    const checkboxes = document.getElementsByName("datatable_ids[]");
+    const isChecked = source.checked;
+    let anySelected = false;
+
     for (var i = 0, n = checkboxes.length; i < n; i++) {
+        const checkbox = checkboxes[i];
+        const $checkbox = $(checkbox);
+        
         // if disabled property is given to checkbox, it won't select particular checkbox.
-        if (!$("#" + checkboxes[i].id).prop('disabled')){
-            checkboxes[i].checked = source.checked;
+        if (!$checkbox.prop('disabled')) {
+            checkbox.checked = isChecked;
         }
-        if ($("#" + checkboxes[i].id).is(":checked")) {
-            $("#" + checkboxes[i].id)
-                .closest("tr")
-                .addClass("table-active");
-            $("#quick-actions")
-                .find("input, textarea, button, select")
-                .removeAttr("disabled");
-            if ($("#quick-action-type").val() == "") {
-                $("#quick-action-apply").attr("disabled", true);
-            }
-            $(".select-picker").selectpicker("refresh");
+
+        const $row = $checkbox.closest("tr");
+        if (checkbox.checked) {
+            $row.addClass("table-active");
+            anySelected = true;
         } else {
-            $("#" + checkboxes[i].id)
-                .closest("tr")
-                .removeClass("table-active");
-            resetActionButtons();
+            $row.removeClass("table-active");
         }
     }
 
-    if ($(".select-table-row:checked").length > 0) {
+    if (anySelected) {
         $("#quick-action-form").fadeIn();
+        $("#quick-actions")
+            .find("input, textarea, button, select")
+            .removeAttr("disabled");
+
+        if ($("#quick-action-type").val() == "") {
+            $("#quick-action-apply").attr("disabled", true);
+        }
     } else {
         $("#quick-action-form").fadeOut();
+        resetActionButtons();
+    }
+
+    // Refresh select pickers ONCE at the end for massive performance boost
+    if (anySelected) {
+        $(".select-picker").selectpicker("refresh");
     }
 };
 

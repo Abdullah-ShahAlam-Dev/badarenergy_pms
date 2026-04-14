@@ -106,6 +106,13 @@
                     }
                 };
 
+                document.addEventListener('turbo:before-cache', function () {
+                    if (window.LaravelDataTables && window.LaravelDataTables['attendance-report-table']) {
+                        window.LaravelDataTables['attendance-report-table'].destroy();
+                        delete window.LaravelDataTables['attendance-report-table'];
+                    }
+                }, { once: true });
+
                 $('#attendance-report-table').off('preXhr.dt.attRep').on('preXhr.dt.attRep', function (e, settings, data) {
                     var dateRangePicker = $('#datatableRange2').data('daterangepicker');
                     var startDateVal    = $('#datatableRange2').val();
@@ -118,7 +125,7 @@
 
                     data['startDate'] = startDate;
                     data['endDate']   = endDate;
-                    data['employee']  = $('#employee_id').val() || 'all';
+                    data['employee']  = $('#employee_id').val();
                     data['_token']    = '{{ csrf_token() }}';
                 });
             }

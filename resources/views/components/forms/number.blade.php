@@ -4,6 +4,7 @@
 
     <input type="number" class="form-control height-35 f-14" placeholder="{{ $fieldPlaceholder }}"
            value="{{ $fieldValue }}" name="{{ $fieldName }}" id="{{ $fieldId }}" min="{{ $minValue }}"
+            @if ($step) step="{{ $step }}" @endif
             @if ($maxValue)
             max="{{ $maxValue }}"
             @endif

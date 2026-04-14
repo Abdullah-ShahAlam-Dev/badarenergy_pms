@@ -98,144 +98,133 @@
 @push('scripts')
     @include('sections.datatable_js')
 
-    <script type="text/javascript">
-
-        function getDate() {
-            var start = moment().clone().startOf('month');
-            var end = moment();
-
-            $('#datatableRange2').daterangepicker({
-                locale: daterangeLocale,
-                linkedCalendars: false,
-                startDate: start,
-                endDate: end,
-                ranges: daterangeConfig
-            }, cb);
-        }
-
-        $(function() {
-            getDate()
-            $('#datatableRange2').on('apply.daterangepicker', function(ev, picker) {
-                showTable();
-            });
-        });
-
-    </script>
-
-
     <script>
-        $('#payments-table').on('preXhr.dt', function(e, settings, data) {
+        (function() {
 
-            var dateRangePicker = $('#datatableRange2').data('daterangepicker');
-            var startDate = $('#datatableRange2').val();
+            function getDate() {
+                if (!document.getElementById('datatableRange2')) return;
+                var start = moment().clone().startOf('month');
+                var end = moment();
 
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                $('#datatableRange2').daterangepicker({
+                    locale: daterangeLocale,
+                    linkedCalendars: false,
+                    startDate: start,
+                    endDate: end,
+                    ranges: daterangeConfig
+                }, cb);
             }
 
-            var projectID = $('#project_id').val();
-            if (!projectID) {
-                projectID = 0;
-            }
-            var clientID = $('#clientID').val();
+            function pieChart() {
+                if (!document.getElementById('payments-table')) return;
+                var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+                var startDateVal = $('#datatableRange2').val();
+                var startDate = null, endDate = null;
 
-            var searchText = $('#search-text-field').val();
+                if (startDateVal !== '' && dateRangePicker) {
+                    startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                }
 
-            data['clientID'] = clientID;
-            data['projectID'] = projectID;
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['searchText'] = searchText;
-        });
-        const showTable = () => {
-            window.LaravelDataTables["payments-table"].draw(false);
-            pieChart();
-        }
-
-        $('#clientID, #project_id, #status')
-            .on('change keyup',
-                function() {
-                    if ($('#project_id').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#status').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#clientID').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else {
-                        $('#reset-filters').addClass('d-none');
-                        showTable();
+                $.easyAjax({
+                    url: "{{ route('finance-report.chart') }}",
+                    container: '#task-chart-card',
+                    blockUI: true,
+                    type: "POST",
+                    data: {
+                        startDate: startDate,
+                        endDate: endDate,
+                        projectID: $('#project_id').val(),
+                        clientID: $('#clientID').val(),
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        $('#task-chart-card .card-body').html(response.html);
+                        $('#totalEarnings').html(response.totalEarnings);
                     }
                 });
-
-        $('#search-text-field').on('keyup', function() {
-            if ($('#search-text-field').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            }
-        });
-
-        $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-            getDate()
-
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        $('#reset-filters-2').click(function() {
-            $('#filter-form')[0].reset();
-
-            $('.filter-box .select-picker').selectpicker("refresh");
-            $('#reset-filters').addClass('d-none');
-            showTable();
-        });
-
-        function pieChart() {
-            var dateRangePicker = $('#datatableRange2').data('daterangepicker');
-            var startDate = $('#datatableRange2').val();
-
-            if (startDate == '') {
-                startDate = null;
-                endDate = null;
-            } else {
-                startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
             }
 
-            var data = new Array();
-            var projectID = $('#project_id').val();
-            var clientID = $('#clientID').val();
-            var searchText = $('#search-text-field').val();
+            function initFinanceReport() {
+                if (!document.getElementById('payments-table')) return;
 
-            var url = "{{ route('finance-report.chart') }}";
+                getDate();
 
-            $.easyAjax({
-                url: url,
-                container: '#task-chart-card',
-                blockUI: true,
-                type: "POST",
-                data: {
-                    startDate: startDate,
-                    endDate: endDate,
-                    projectID: projectID,
-                    clientID: clientID,
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    $('#task-chart-card .card-body').html(response.html);
-                    $('#totalEarnings').html(response.totalEarnings);
-                }
+                $('#datatableRange2').off('apply.daterangepicker.finRep')
+                    .on('apply.daterangepicker.finRep', function() {
+                        if (typeof window.showTable === 'function') window.showTable();
+                    });
+
+                var showTableTimeout;
+                window.showTable = function() {
+                    clearTimeout(showTableTimeout);
+                    showTableTimeout = setTimeout(function() {
+                        if (window.LaravelDataTables && window.LaravelDataTables['payments-table']) {
+                            window.LaravelDataTables['payments-table'].draw(false);
+                            pieChart();
+                        }
+                    }, 500);
+                };
+
+                document.addEventListener('turbo:before-cache', function () {
+                    if (window.LaravelDataTables && window.LaravelDataTables['payments-table']) {
+                        window.LaravelDataTables['payments-table'].destroy();
+                        delete window.LaravelDataTables['payments-table'];
+                    }
+                }, { once: true });
+
+                $('#payments-table').off('preXhr.dt.finRep').on('preXhr.dt.finRep', function(e, settings, data) {
+                    var dateRangePicker = $('#datatableRange2').data('daterangepicker');
+                    var startDateVal = $('#datatableRange2').val();
+                    var startDate = null, endDate = null;
+
+                    if (startDateVal !== '' && dateRangePicker) {
+                        startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
+                        endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                    }
+
+                    data['clientID'] = $('#clientID').val();
+                    data['projectID'] = $('#project_id').val() || 0;
+                    data['startDate'] = startDate;
+                    data['endDate'] = endDate;
+                    data['searchText'] = $('#search-text-field').val();
+                });
+
+                pieChart();
+            }
+
+            var filterSel = '#clientID, #project_id, #status';
+            $(document).off('change.finRepF changed.bs.select.finRepF').on('change.finRepF changed.bs.select.finRepF', filterSel, function() {
+                if (!document.getElementById('payments-table')) return;
+                var anyActive = $(filterSel).toArray().some(function(el) {
+                    return $(el).val() && $(el).val() !== 'all';
+                });
+                $('#reset-filters').toggleClass('d-none', !anyActive);
+                if (typeof window.showTable === 'function') window.showTable();
             });
-        }
-        pieChart();
 
+            $(document).off('keyup.finRepSearch').on('keyup.finRepSearch', '#search-text-field', function() {
+                if (!document.getElementById('payments-table')) return;
+                $('#reset-filters').toggleClass('d-none', $(this).val() === "");
+                if (typeof window.showTable === 'function') window.showTable();
+            });
+
+            $(document).off('click.finRepReset').on('click.finRepReset', '#reset-filters, #reset-filters-2', function() {
+                if (!document.getElementById('payments-table')) return;
+                var $form = $('#filter-form');
+                if ($form.length) $form[0].reset();
+                getDate();
+                $('.filter-box .select-picker').selectpicker("refresh");
+                $('#reset-filters').addClass('d-none');
+                if (typeof window.showTable === 'function') window.showTable();
+            });
+
+            document.addEventListener('turbo:load', function() {
+                initFinanceReport();
+            });
+
+            initFinanceReport();
+
+        })();
     </script>
 @endpush

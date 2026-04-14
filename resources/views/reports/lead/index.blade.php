@@ -98,11 +98,24 @@
                         if (typeof window.showTable === 'function') window.showTable();
                     });
 
+                // showTable: safe null-guarded redraw with Debounce to prevent overlapping AJAX freezes
+                var showTableTimeout;
                 window.showTable = function () {
-                    if (window.LaravelDataTables && window.LaravelDataTables['lead-report-table']) {
-                        window.LaravelDataTables['lead-report-table'].draw(false);
-                    }
+                    clearTimeout(showTableTimeout);
+                    showTableTimeout = setTimeout(function() {
+                        if (window.LaravelDataTables && window.LaravelDataTables['lead-report-table']) {
+                            window.LaravelDataTables['lead-report-table'].draw(false);
+                        }
+                    }, 500);
                 };
+
+                // Destroy DataTable object to prevent cache-locking on navigation Return
+                document.addEventListener('turbo:before-cache', function () {
+                    if (window.LaravelDataTables && window.LaravelDataTables['lead-report-table']) {
+                        window.LaravelDataTables['lead-report-table'].destroy();
+                        delete window.LaravelDataTables['lead-report-table'];
+                    }
+                }, { once: true });
 
                 $('#lead-report-table').off('preXhr.dt.leadRep').on('preXhr.dt.leadRep', function (e, settings, data) {
                     var dateRangePicker = $('#datatableRange2').data('daterangepicker');

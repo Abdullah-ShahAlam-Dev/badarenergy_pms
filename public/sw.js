@@ -4,9 +4,10 @@
     This version prevents Auth-redirect crashes and stale-cache issues.
 */
 
-const CACHE_NAME = 'badar-pms-v2';
+const CACHE_NAME = 'badar-pms-v4';
 const STATIC_ASSETS = [
-    '/favicon.png',
+    '/icons/icon-192.png',
+    '/icons/icon-512.png',
 ];
 
 // 1. Install Event: Cache only critical static items

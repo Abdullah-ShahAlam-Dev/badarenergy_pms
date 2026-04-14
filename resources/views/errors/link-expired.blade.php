@@ -6,7 +6,7 @@
 
     <title>{{ __('messages.forbidden') }}</title>
 
-    <link rel="icon" type="image/png" href="{{ global_setting()->favicon_url }}?v={{ global_setting()->updated_at??->timestamp ?? time() }}">
+    <link rel="icon" type="image/png" href="{{ global_setting()->favicon_url }}?v={{ global_setting()->updated_at?->timestamp ?? time() }}">
     <!-- PWA -->
     <link rel="manifest" href="{{ route('manifest.json') }}?v={{ global_setting()->updated_at?->timestamp ?? time() }}">
     <link rel="apple-touch-icon" href="{{ global_setting()->favicon_url }}?v={{ global_setting()->updated_at?->timestamp ?? time() }}">

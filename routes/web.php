@@ -1,3 +1,5 @@
+<?php
+
 use App\Http\Controllers\PwaController;
 use Illuminate\Support\Facades\Route;
 

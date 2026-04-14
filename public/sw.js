@@ -4,7 +4,7 @@
     This version prevents Auth-redirect crashes and stale-cache issues.
 */
 
-const CACHE_NAME = 'badar-pms-v6'; // Bumping for dynamic changes
+const CACHE_NAME = 'badar-pms-v7'; // Bumping for dynamic changes
 const STATIC_ASSETS = [];
 
 // 1. Install Event: Cache only critical static items

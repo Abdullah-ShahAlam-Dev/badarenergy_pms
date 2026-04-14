@@ -7,11 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- PWA -->
-    <link rel="manifest" href="{{ route('manifest.json') }}?v={{ companyOrGlobalSetting()->updated_at?->timestamp ?? time() }}">
-    <link rel="apple-touch-icon" href="{{ companyOrGlobalSetting()->favicon_url }}?v={{ companyOrGlobalSetting()->updated_at?->timestamp ?? time() }}">
-    <meta name="apple-mobile-web-app-title" content="{{ companyOrGlobalSetting()->app_name ?? companyOrGlobalSetting()->global_app_name }}">
+    @php
+        $pwaSettings = companyOrGlobalSetting();
+        // Force fresh database query to bypass session/laravel cache for branding
+        $pwaSettings = $pwaSettings->id ? \App\Models\Company::find($pwaSettings->id) : \App\Models\GlobalSetting::first();
+    @endphp
+    <link rel="manifest" href="{{ route('manifest.json') }}?v={{ $pwaSettings->updated_at?->timestamp ?? time() }}">
+    <link rel="apple-touch-icon" href="{{ $pwaSettings->favicon_url }}?v={{ $pwaSettings->updated_at?->timestamp ?? time() }}">
+    <meta name="apple-mobile-web-app-title" content="{{ $pwaSettings->app_name ?? $pwaSettings->global_app_name }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="icon" type="image/png" href="{{ companyOrGlobalSetting()->favicon_url }}?v={{ companyOrGlobalSetting()->updated_at?->timestamp ?? time() }}">
+    <link rel="icon" type="image/png" href="{{ $pwaSettings->favicon_url }}?v={{ $pwaSettings->updated_at?->timestamp ?? time() }}">
 
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="{{ asset('vendor/css/all.min.css') }}">

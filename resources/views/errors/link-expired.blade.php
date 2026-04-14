@@ -6,11 +6,15 @@
 
     <title>{{ __('messages.forbidden') }}</title>
 
-    <link rel="icon" type="image/png" href="{{ global_setting()->favicon_url }}?v={{ global_setting()->updated_at?->timestamp ?? time() }}">
+    @php
+        // Force fresh database query to bypass laravel cache for branding
+        $pwaSettings = \App\Models\GlobalSetting::first();
+    @endphp
+    <link rel="icon" type="image/png" href="{{ $pwaSettings->favicon_url }}?v={{ $pwaSettings->updated_at?->timestamp ?? time() }}">
     <!-- PWA -->
-    <link rel="manifest" href="{{ route('manifest.json') }}?v={{ global_setting()->updated_at?->timestamp ?? time() }}">
-    <link rel="apple-touch-icon" href="{{ global_setting()->favicon_url }}?v={{ global_setting()->updated_at?->timestamp ?? time() }}">
-    <meta name="apple-mobile-web-app-title" content="{{ global_setting()->global_app_name }}">
+    <link rel="manifest" href="{{ route('manifest.json') }}?v={{ $pwaSettings->updated_at?->timestamp ?? time() }}">
+    <link rel="apple-touch-icon" href="{{ $pwaSettings->favicon_url }}?v={{ $pwaSettings->updated_at?->timestamp ?? time() }}">
+    <meta name="apple-mobile-web-app-title" content="{{ $pwaSettings->global_app_name }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
 
     <!-- Fonts -->
@@ -518,7 +522,7 @@
 <div class="relative flex items-top justify-center min-h-screen bg-gray-100 dark:bg-gray-900 sm:items-center sm:pt-0">
     <div class="max-w-xl mx-auto sm:px-6 lg:px-8">
         <div class="text-center mb-4">
-            <img src="{{ global_setting()->logo_url }}" alt="Logo" style="max-height: 50px;" class="mx-auto rounded">
+            <img src="{{ $pwaSettings->logo_url }}" alt="Logo" style="max-height: 50px;" class="mx-auto rounded">
         </div>
 
 

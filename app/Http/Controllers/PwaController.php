@@ -32,11 +32,31 @@ class PwaController extends Controller
             // Use the actual App Name set in Dashboard (Force reload from DB)
             $appName = $settings->app_name ?? ($settings->global_app_name ?? config('app.name'));
             
-            // Use the high-res favicon
+            // Branding Assets
             $faviconUrl = $settings->favicon_url;
+            $logoUrl = $settings->logo_url;
+
+            // Determine MIME types
+            $favExt = pathinfo($faviconUrl, PATHINFO_EXTENSION);
+            $favMime = match($favExt) {
+                'ico' => 'image/x-icon',
+                'svg' => 'image/svg+xml',
+                'jpg', 'jpeg' => 'image/jpeg',
+                default => 'image/png'
+            };
+
+            $logoExt = pathinfo($logoUrl, PATHINFO_EXTENSION);
+            $logoMime = match($logoExt) {
+                'jpg', 'jpeg' => 'image/jpeg',
+                default => 'image/png'
+            };
+
         } catch (\Exception $e) {
             $appName = config('app.name');
             $faviconUrl = asset('favicon.png');
+            $logoUrl = asset('favicon.png');
+            $favMime = 'image/png';
+            $logoMime = 'image/png';
         }
         
         // Brand color
@@ -53,13 +73,19 @@ class PwaController extends Controller
             'icons' => [
                 [
                     'src' => $faviconUrl,
-                    'sizes' => '192x192',
-                    'type' => 'image/png'
+                    'sizes' => '32x32 48x48',
+                    'type' => $favMime
                 ],
                 [
-                    'src' => $faviconUrl,
+                    'src' => $logoUrl,
+                    'sizes' => '192x192',
+                    'type' => $logoMime,
+                    'purpose' => 'any'
+                ],
+                [
+                    'src' => $logoUrl,
                     'sizes' => '512x512',
-                    'type' => 'image/png',
+                    'type' => $logoMime,
                     'purpose' => 'any maskable'
                 ]
             ]

@@ -40,13 +40,21 @@ class AttendanceReportDataTable extends BaseDataTable
     {
         $request = $this->request();
         $startDate = now($this->company->timezone)->startOfMonth();
-        $endDate = $endDate = now($this->company->timezone);
+        $endDate   = now($this->company->timezone);
+        $diff      = 0;
 
-        if ($request->startDate != '') {
-            // if this month filter's end date is not equal to now
-            $diff = ($endDate->lt(Carbon::createFromFormat($this->company->date_format, $request->endDate))) ? $endDate->diffInDays(Carbon::createFromFormat($this->company->date_format, $request->endDate)) : 0;
-            $startDate = Carbon::createFromFormat($this->company->date_format, $request->startDate)->startOfDay();
-            $endDate = $endDate = Carbon::createFromFormat($this->company->date_format, $request->endDate)->endOfDay();
+        if ($request->startDate != '' && $request->startDate != 'null') {
+            try {
+                $parseEndDate = Carbon::createFromFormat($this->company->date_format, $request->endDate);
+                
+                // if this month filter's end date is not equal to now
+                $diff = ($endDate->lt($parseEndDate)) ? $endDate->diffInDays($parseEndDate) : 0;
+
+                $startDate = Carbon::createFromFormat($this->company->date_format, $request->startDate)->startOfDay();
+                $endDate   = $parseEndDate->endOfDay();
+            } catch (\Exception $e) {
+                // Fallback to defaults if parsing fails
+            }
         }
 
         $period = CarbonPeriod::create($startDate, $endDate);
@@ -67,7 +75,6 @@ class AttendanceReportDataTable extends BaseDataTable
             array_push($holidays, $item->date);
         }
 
-        $this->totalWorkingDays = $this->totalWorkingDays;
         $this->daysPresent = 0;
         $this->extraDays = 0;
 

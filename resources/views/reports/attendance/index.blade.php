@@ -125,7 +125,7 @@
 
                     data['startDate'] = startDate;
                     data['endDate']   = endDate;
-                    data['employee']  = $('#employee_id').val() || 'all';
+                    data['employee']  = $('#employee_id').val();
                     data['_token']    = '{{ csrf_token() }}';
                 });
             }

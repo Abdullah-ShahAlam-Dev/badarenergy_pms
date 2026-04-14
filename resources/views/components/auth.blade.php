@@ -5,8 +5,13 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ $globalSetting->favicon_url }}">
-    <link rel="manifest" href="{{ $globalSetting->favicon_url }}">
+    <link rel="icon" type="image/png" href="{{ $globalSetting->favicon_url }}?v={{ $globalSetting->updated_at?->timestamp ?? time() }}">
+    <!-- PWA -->
+    <link rel="manifest" href="{{ route('manifest.json') }}?v={{ $globalSetting->updated_at?->timestamp ?? time() }}">
+    <link rel="apple-touch-icon" href="{{ $globalSetting->favicon_url }}?v={{ $globalSetting->updated_at?->timestamp ?? time() }}">
+    <meta name="apple-mobile-web-app-title" content="{{ $globalSetting->global_app_name }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
     <meta name="msapplication-TileColor" content="#ffffff">
     <meta name="msapplication-TileImage" content="{{ $globalSetting->favicon_url }}">
     <meta name="theme-color" content="#ffffff">

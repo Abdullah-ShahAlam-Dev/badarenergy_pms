@@ -6,6 +6,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
+    <!-- PWA -->
+    <link rel="manifest" href="{{ route('manifest.json') }}?v={{ companyOrGlobalSetting()->updated_at?->timestamp ?? time() }}">
+    <link rel="apple-touch-icon" href="{{ companyOrGlobalSetting()->favicon_url }}?v={{ companyOrGlobalSetting()->updated_at?->timestamp ?? time() }}">
+    <meta name="apple-mobile-web-app-title" content="{{ companyOrGlobalSetting()->app_name ?? companyOrGlobalSetting()->global_app_name }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="{{ asset('vendor/css/all.min.css') }}">
 
@@ -23,8 +29,7 @@
     <meta name="msapplication-TileColor" content="#ffffff">
     <meta name="msapplication-TileImage" content="{{ isset($company)?$company->favicon_url:global_setting()->favicon_url }}">
     <meta name="theme-color" content="#ffffff">
-    <link rel="icon" type="image/png" sizes="16x16"
-          href="{{ isset($company)?$company->favicon_url:global_setting()->favicon_url }}">
+    <link rel="icon" type="image/png" href="{{ companyOrGlobalSetting()->favicon_url }}?v={{ companyOrGlobalSetting()->updated_at?->timestamp ?? time() }}">
 
     @include('sections.theme_css')
 

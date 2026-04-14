@@ -1,6 +1,8 @@
-<?php
-
+use App\Http\Controllers\PwaController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('manifest.json', [PwaController::class, 'manifest'])->name('manifest.json');
+
 use App\Http\Controllers\GdprController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\TaskController;

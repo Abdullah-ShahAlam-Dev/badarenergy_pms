@@ -7,6 +7,13 @@
 
         <title>{{ __('messages.404Title') }}</title>
 
+        <link rel="icon" type="image/png" href="{{ global_setting()->favicon_url }}?v={{ global_setting()->updated_at?->timestamp ?? time() }}">
+        <!-- PWA -->
+        <link rel="manifest" href="{{ route('manifest.json') }}?v={{ global_setting()->updated_at?->timestamp ?? time() }}">
+        <link rel="apple-touch-icon" href="{{ global_setting()->favicon_url }}?v={{ global_setting()->updated_at?->timestamp ?? time() }}">
+        <meta name="apple-mobile-web-app-title" content="{{ global_setting()->global_app_name }}">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.gstatic.com">
 
@@ -19,6 +26,9 @@
     <body class="antialiased">
         <div class="relative flex items-top justify-center min-h-screen bg-gray-100 dark:bg-gray-900 sm:items-center sm:pt-0">
             <div class="max-w-xl mx-auto sm:px-6 lg:px-8">
+                <div class="text-center mb-4">
+                    <img src="{{ global_setting()->logo_url }}" alt="Logo" style="max-height: 50px;" class="mx-auto rounded">
+                </div>
                 <div class="flex items-center pt-8 sm:justify-start sm:pt-0">
                     <div class="px-4 text-lg text-gray-500 border-r border-gray-400 tracking-wider">
                         404

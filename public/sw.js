@@ -4,17 +4,11 @@
     This version prevents Auth-redirect crashes and stale-cache issues.
 */
 
-const CACHE_NAME = 'badar-pms-v5';
-const STATIC_ASSETS = [
-    '/icons/icon-192.png',
-    '/icons/icon-512.png',
-];
+const CACHE_NAME = 'badar-pms-v6'; // Bumping for dynamic changes
+const STATIC_ASSETS = [];
 
 // 1. Install Event: Cache only critical static items
 self.addEventListener('install', event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
-    );
     self.skipWaiting();
 });
 
@@ -38,6 +32,7 @@ self.addEventListener('fetch', event => {
     if (
         url.pathname.includes('/login') ||
         url.pathname.includes('/logout') ||
+        url.pathname.includes('/manifest.json') ||
         url.pathname.includes('/api/') ||
         event.request.method !== 'GET'
     ) {

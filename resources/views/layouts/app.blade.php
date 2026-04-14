@@ -6,12 +6,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <!-- PWA iOS Tags -->
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
-    <meta name="apple-mobile-web-app-title" content="Badar PMS">
+    <!-- PWA -->
+    <link rel="manifest" href="{{ route('manifest.json') }}?v={{ companyOrGlobalSetting()->updated_at?->timestamp ?? time() }}">
+    <link rel="apple-touch-icon" href="{{ companyOrGlobalSetting()->favicon_url }}?v={{ companyOrGlobalSetting()->updated_at?->timestamp ?? time() }}">
+    <meta name="apple-mobile-web-app-title" content="{{ companyOrGlobalSetting()->app_name ?? companyOrGlobalSetting()->global_app_name }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
-
-    <!-- <link rel="icon" type="image/png" sizes="16x16" href="{{ companyOrGlobalSetting()->favicon_url }}"> -->
+    <link rel="icon" type="image/png" href="{{ companyOrGlobalSetting()->favicon_url }}?v={{ companyOrGlobalSetting()->updated_at?->timestamp ?? time() }}">
 
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="{{ asset('vendor/css/all.min.css') }}">
@@ -43,9 +43,8 @@
     <meta name="msapplication-TileColor" content="#ffffff">
     <!-- <meta name="msapplication-TileImage" content="{{ companyOrGlobalSetting()->favicon_url }}"> -->
     <meta name="theme-color" content="#ffffff">
+    <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}"/>
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="{{ asset('manifest.json') }}">
     @isset($activeSettingMenu)
         <style>
             .preloader-container {

@@ -291,6 +291,7 @@ $addProductPermission = user()->permission('add_product');
                 data: $('#save-lead-data-form').serialize(),
                 success: function(response) {
                     window.location.href = response.redirectUrl;
+                    setTimeout(function() { window.location.reload(); }, 1500);
                 }
             });
         });

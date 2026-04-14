@@ -312,6 +312,7 @@ $addProductPermission = user()->permission('add_product');
                         }
                     } else {
                         window.location.href = response.redirectUrl;
+                        setTimeout(function() { window.location.reload(); }, 1500);
                     }
 
                     if (typeof showTable !== 'undefined' && typeof showTable === 'function') {
@@ -322,24 +323,28 @@ $addProductPermission = user()->permission('add_product');
         };
 
         $body.on('click' + namespace, '#save-more-lead-form', function() {
+            var $form = $('#save-lead-data-form');
             if (add_lead_note_permission == 'all' || add_lead_note_permission == 'added' || add_lead_note_permission == 'both') {
-                var note = document.getElementById('note').children[0].innerHTML;
-                document.getElementById('note-text').value = note;
+                var $note = $form.find('#note');
+                var noteContent = $note.find('.ql-editor').html() || ($note.children()[0] ? $note.children()[0].innerHTML : '');
+                $form.find('#note-text').val(noteContent);
             }
 
             var url = "{{ route('leads.store') }}";
-            var data = $('#save-lead-data-form').serialize() + '&add_more=true';
+            var data = $form.serialize() + '&add_more=true';
             saveLead(data, url, "#save-more-lead-form");
         });
 
         $body.on('click' + namespace, '#save-lead-form', function() {
+            var $form = $('#save-lead-data-form');
             if (add_lead_note_permission == 'all' || add_lead_note_permission == 'added' || add_lead_note_permission == 'both') {
-                var note = document.getElementById('note').children[0].innerHTML;
-                document.getElementById('note-text').value = note;
+                var $note = $form.find('#note');
+                var noteContent = $note.find('.ql-editor').html() || ($note.children()[0] ? $note.children()[0].innerHTML : '');
+                $form.find('#note-text').val(noteContent);
             }
 
             var url = "{{ route('leads.store') }}";
-            var data = $('#save-lead-data-form').serialize();
+            var data = $form.serialize();
             saveLead(data, url, "#save-lead-form");
         });
 

@@ -101,28 +101,31 @@ class ThemeSettingController extends AccountBaseController
 
         if ($request->hasFile('favicon')) {
             $setting->favicon = Files::uploadLocalOrS3($request->favicon, 'favicon');
-        }
 
-        // PWA icon for Android (192x192)
-        if ($request->pwa_icon_192_delete == 'yes') {
-            Files::deleteFile($setting->pwa_icon_192, 'pwa-icons');
-            $setting->pwa_icon_192 = null;
-        }
+            // Auto-generate PWA and Apple Touch icons from Favicon
+            try {
+                $sizes = [
+                    192 => 'icon-192x192-' . $setting->id . '.png',
+                    512 => 'icon-512x512-' . $setting->id . '.png',
+                    180 => 'icon-180x180-' . $setting->id . '.png',
+                    32  => 'icon-32x32-' . $setting->id . '.png'
+                ];
 
-        if ($request->hasFile('pwa_icon_192')) {
-            Files::deleteFile($setting->pwa_icon_192, 'pwa-icons');
-            $setting->pwa_icon_192 = Files::uploadLocalOrS3($request->pwa_icon_192, 'pwa-icons');
-        }
+                $pwaDir = 'pwa-icons';
 
-        // PWA icon for Desktop / Windows (512x512)
-        if ($request->pwa_icon_512_delete == 'yes') {
-            Files::deleteFile($setting->pwa_icon_512, 'pwa-icons');
-            $setting->pwa_icon_512 = null;
-        }
+                foreach ($sizes as $size => $filename) {
+                    $img = \Intervention\Image\ImageManagerStatic::make($request->file('favicon')->getRealPath());
+                    $img->fit($size, $size)->encode('png');
 
-        if ($request->hasFile('pwa_icon_512')) {
-            Files::deleteFile($setting->pwa_icon_512, 'pwa-icons');
-            $setting->pwa_icon_512 = Files::uploadLocalOrS3($request->pwa_icon_512, 'pwa-icons');
+                    \Illuminate\Support\Facades\Storage::disk(config('filesystems.default'))->put(
+                        $pwaDir . '/' . $filename,
+                        (string)$img,
+                        ['visibility' => 'public']
+                    );
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('PWA Icon Generation Failed: ' . $e->getMessage());
+            }
         }
 
         $setting->sidebar_logo_style = $request->sidebar_logo_style;

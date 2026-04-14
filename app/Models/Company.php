@@ -332,33 +332,7 @@ class Company extends BaseModel
         return asset_url_local_s3('favicon/' . $this->favicon);
     }
 
-    /**
-     * PWA icon for Android home screen — should be at least 192×192px square PNG.
-     * Falls back to the favicon if not uploaded.
-     */
-    public function getPwaIcon192UrlAttribute()
-    {
-        if (!empty($this->pwa_icon_192)) {
-            return asset_url_local_s3('pwa-icons/' . $this->pwa_icon_192);
-        }
 
-        // Fallback to favicon
-        return $this->favicon_url;
-    }
-
-    /**
-     * PWA icon for Desktop/Windows install prompt — should be at least 512×512px square PNG.
-     * Falls back to pwa_icon_192 or favicon if not uploaded.
-     */
-    public function getPwaIcon512UrlAttribute()
-    {
-        if (!empty($this->pwa_icon_512)) {
-            return asset_url_local_s3('pwa-icons/' . $this->pwa_icon_512);
-        }
-
-        // Fallback to 192 icon or favicon
-        return $this->pwa_icon_192_url;
-    }
 
     public function paymentGatewayCredentials(): HasOne
     {

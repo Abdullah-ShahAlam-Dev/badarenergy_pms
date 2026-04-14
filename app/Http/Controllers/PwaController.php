@@ -10,9 +10,8 @@ class PwaController extends Controller
      * Serve the PWA manifest dynamically based on dashboard settings.
      *
      * Icon strategy (platform-specific):
-     *  - iOS        → handled by <link rel="apple-touch-icon"> in layout (favicon field)
-     *  - Android    → pwa_icon_192 field (min 192×192 square PNG)
-     *  - Desktop    → pwa_icon_512 field (min 512×512 square PNG)
+     *  - All platforms are driven by a single-source-of-truth favicon system.
+     *  - The system auto-generates 192x192, 512x512, 180x180, and 32x32 static assets.
      *
      * All URLs are built using config('app.url') to guarantee HTTPS even behind a
      * reverse proxy where url()/asset() helpers produce http:// URLs.
@@ -40,37 +39,13 @@ class PwaController extends Controller
             $appName = config('app.name');
         }
 
-        // 3. Build icon URLs with guaranteed-HTTPS base
-        //    Each icon falls back to the previous tier → public/favicon.png as last resort.
-        $fallbackIcon = $baseUrl . '/favicon.png';
+        // 3. Build icon URLs relying strictly on the auto-generated single-source-of-truth assets
+        $version = time();
 
-        // 192×192 icon for Android home screen
-        $icon192 = $fallbackIcon;
-        if (!empty($settings->pwa_icon_192)) {
-            $icon192 = $baseUrl . '/user-uploads/pwa-icons/' . $settings->pwa_icon_192;
-        } elseif (!empty($settings->favicon)) {
-            $icon192 = $baseUrl . '/user-uploads/favicon/' . $settings->favicon;
-        }
-
-        // 512×512 icon for Desktop/Windows install prompt & Android splash screen
-        $icon512 = $icon192; // fallback to 192 tier
-        if (!empty($settings->pwa_icon_512)) {
-            $icon512 = $baseUrl . '/user-uploads/pwa-icons/' . $settings->pwa_icon_512;
-        }
-
-        // Small favicon icon (browser tab) — always from favicon field
-        $iconSmall = $fallbackIcon;
-        if (!empty($settings->favicon)) {
-            $ext       = strtolower(pathinfo($settings->favicon, PATHINFO_EXTENSION));
-            $iconSmall = $baseUrl . '/user-uploads/favicon/' . $settings->favicon;
-            $smallMime = match($ext) {
-                'ico'        => 'image/x-icon',
-                'jpg', 'jpeg' => 'image/jpeg',
-                default      => 'image/png',
-            };
-        } else {
-            $smallMime = 'image/png';
-        }
+        $icon192 = $baseUrl . '/user-uploads/pwa-icons/icon-192x192-' . $settings->id . '.png?v=' . $version;
+        $icon512 = $baseUrl . '/user-uploads/pwa-icons/icon-512x512-' . $settings->id . '.png?v=' . $version;
+        $iconSmall = $baseUrl . '/user-uploads/pwa-icons/icon-32x32-' . $settings->id . '.png?v=' . $version;
+        $smallMime = 'image/png';
 
         $manifest = [
             'name'             => $appName,

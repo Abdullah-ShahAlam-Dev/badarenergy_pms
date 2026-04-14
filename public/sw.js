@@ -4,7 +4,7 @@
     This version prevents Auth-redirect crashes and stale-cache issues.
 */
 
-const CACHE_NAME = 'badar-pms-v8'; // Bumped: bypass icon caching, force reinstall
+const CACHE_NAME = 'badar-pms-v9'; // Bumped: bypass icon caching, force reinstall
 const STATIC_ASSETS = [];
 
 // 1. Install Event: Cache only critical static items
@@ -37,6 +37,7 @@ self.addEventListener('fetch', event => {
         url.pathname.includes('/favicon') ||
         url.pathname.includes('/user-uploads/favicon') ||
         url.pathname.includes('/user-uploads/app-logo') ||
+        url.pathname.includes('/user-uploads/pwa-icons') ||
         url.pathname.includes('/api/') ||
         event.request.method !== 'GET'
     ) {

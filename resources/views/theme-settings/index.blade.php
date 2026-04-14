@@ -86,46 +86,13 @@
                                       :fieldValue="company()->favicon_url"
                                       fieldName="favicon" fieldId="favicon"
                                       :popover="__('messages.fileFormat.ImageFile')"/>
-                    </div>
-
-                    {{-- ===================== PWA ICON SECTION ===================== --}}
-                    <div class="col-lg-12 mt-3 mb-2">
-                        <div class="alert alert-soft-info border-left border-info" style="border-left: 4px solid #17a2b8; background: #e8f7fa; border-radius: 6px; padding: 12px 16px;">
-                            <h5 class="mb-1" style="color: #0c6b7e;">
-                                <i class="fa fa-mobile-alt mr-1"></i> PWA App Icons
-                                <span class="badge badge-success ml-2" style="font-size: 10px;">iOS Auto-handled by Favicon</span>
-                            </h5>
-                            <p class="mb-0 f-13 text-dark-grey">
-                                <strong>iOS</strong> automatically uses your <em>Favicon</em> above — no extra setup needed. <br>
-                                <strong>Android</strong> and <strong>Desktop/Windows</strong> require dedicated high-resolution square icons for the install prompt and home screen. Upload them below.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-6">
-                        <x-forms.file allowedFileExtensions="png jpg jpeg" class="mr-0 mr-lg-2 mr-md-2"
-                            fieldLabel="PWA Icon — Android (192×192)"
-                            fieldName="pwa_icon_192" fieldId="pwa_icon_192"
-                            :fieldValue="company()->pwa_icon_192_url"
-                            popover="Used for the Android home screen when a user adds your app. Must be a perfectly square PNG, minimum 192×192 pixels. Transparent backgrounds are supported." />
                         <small class="text-muted d-block mt-1" style="font-size: 11px;">
                             <i class="fa fa-info-circle text-info"></i>
-                            Required: <strong>Square PNG, min 192×192px</strong>. Recommended: 512×512px or larger for crisp display on high-DPI screens.
+                            System auto-generates all required platform icons (Android, iOS, Windows).
                         </small>
                     </div>
 
-                    <div class="col-lg-6">
-                        <x-forms.file allowedFileExtensions="png jpg jpeg" class="mr-0 mr-lg-2 mr-md-2"
-                            fieldLabel="PWA Icon — Desktop / Windows (512×512)"
-                            fieldName="pwa_icon_512" fieldId="pwa_icon_512"
-                            :fieldValue="company()->pwa_icon_512_url"
-                            popover="Used for the Desktop (Windows/Mac/Linux) install prompt and splash screen. Must be a perfectly square PNG, minimum 512×512 pixels. If not uploaded, will fall back to the Android icon." />
-                        <small class="text-muted d-block mt-1" style="font-size: 11px;">
-                            <i class="fa fa-info-circle text-info"></i>
-                            Required: <strong>Square PNG, min 512×512px</strong>. This also controls the splash screen icon on Android.
-                        </small>
-                    </div>
-                    {{-- ===================== END PWA ICON SECTION ===================== --}}
+
 
                     <div class="col-lg-6">
                         <div class="form-group my-3">

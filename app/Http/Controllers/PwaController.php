@@ -23,28 +23,29 @@ class PwaController extends Controller
 
         // 1. Company detection (Hostname → first-company fallback)
         $host    = request()->getHost();
-        $company = \App\Models\Company::where('company_url', 'like', "%$host%")
-                    ->orWhere('website', 'like', "%$host%")
+        $company = \App\Models\Company::where('website', 'like', "%$host%")
                     ->first()
                     ?? \App\Models\Company::first();
 
+        // 2. Global fallback settings
         $settings = $company ?: \App\Models\GlobalSetting::first();
 
-        // 2. App Name — dynamic from dashboard
+        // 3. App Name — dynamic from dashboard with safe fallbacks
         try {
-            $appName = $settings->app_name
-                ?? $settings->global_app_name
+            $appName = $settings?->app_name
+                ?? $settings?->global_app_name
                 ?? config('app.name');
         } catch (\Exception $e) {
             $appName = config('app.name');
         }
 
-        // 3. Build icon URLs relying strictly on the auto-generated single-source-of-truth assets
+        // 4. Build icon URLs relying strictly on the auto-generated assets
         $version = time();
+        $settingId = $settings?->id ?? 'default';
 
-        $icon192 = $baseUrl . '/user-uploads/pwa-icons/icon-192x192-' . $settings->id . '.png?v=' . $version;
-        $icon512 = $baseUrl . '/user-uploads/pwa-icons/icon-512x512-' . $settings->id . '.png?v=' . $version;
-        $iconSmall = $baseUrl . '/user-uploads/pwa-icons/icon-32x32-' . $settings->id . '.png?v=' . $version;
+        $icon192 = $baseUrl . '/user-uploads/pwa-icons/icon-192x192-' . $settingId . '.png?v=' . $version;
+        $icon512 = $baseUrl . '/user-uploads/pwa-icons/icon-512x512-' . $settingId . '.png?v=' . $version;
+        $iconSmall = $baseUrl . '/user-uploads/pwa-icons/icon-32x32-' . $settingId . '.png?v=' . $version;
         $smallMime = 'image/png';
 
         $manifest = [

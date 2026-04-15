@@ -53,6 +53,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}"/>
     @isset($activeSettingMenu)
+        <meta name="turbo-visit-control" content="reload">
         <style>
             .preloader-container {
                 margin-left: 510px;
@@ -68,8 +69,6 @@
                 transition: filter .2s ease-out;
                 margin-right: 4px;
             }
-
-
         </style>
     @endisset
 
@@ -149,7 +148,7 @@
 
 
     <!-- MAIN CONTAINER START -->
-    <section class="main-container bg-additional-grey mb-5 mb-sm-0" id="fullscreen">
+    <section class="main-container bg-additional-grey mb-5 mb-sm-0" id="fullscreen" @isset($activeSettingMenu) data-turbo="false" @endisset>
 
         <div class="preloader-container d-flex justify-content-center align-items-center">
             <div class="spinner-border" role="status" aria-hidden="true"></div>

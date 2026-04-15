@@ -63,7 +63,7 @@
                                 </div>
                         </div>
                     </a>
-                    <a href="{{ route('profile-settings.index') }}" data-toggle="tooltip"
+                    <a href="{{ route('profile-settings.index') }}" data-toggle="tooltip" data-turbo="false"
                         data-original-title="{{ __('app.menu.profileSettings') }}">
                             <i class="side-icon bi bi-pencil-square"></i>
                     </a>

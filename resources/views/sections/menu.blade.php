@@ -363,7 +363,7 @@
 
 <!-- NAV ITEM - REPORTS COLLAPASE MENU -->
     <!-- NAV ITEM - SETTINGS -->
-    <x-menu-item icon="gear" :text="__('app.menu.settings')"
+    <x-menu-item icon="gear" :text="__('app.menu.settings')" data-turbo="false"
                  :link="($sidebarUserPermissions['manage_company_setting'] == 4 ? route('company-settings.index') : route('profile-settings.index'))">
         <x-slot name="iconPath">
             <path

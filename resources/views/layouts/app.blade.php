@@ -465,7 +465,7 @@
     }
 
     // Force close mobile menu immediately when any link inside it is clicked
-    $('body').on('click', '.sidebar-menu a', function() {
+    $('body').on('click', '.sidebar-menu a:not(.accordionItemHeading)', function() {
         if (typeof closeMobileMenu === 'function') {
             closeMobileMenu();
         }

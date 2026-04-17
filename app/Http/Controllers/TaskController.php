@@ -1192,27 +1192,30 @@ class TaskController extends AccountBaseController
         $project          = Project::findOrFail($request->project_id);
         $taskBoardColumn  = TaskboardColumn::where('slug', 'incomplete')->first();
 
-        $file    = $request->file('import_file');
-        $content = file_get_contents($file->getRealPath());
+        $filePath = $request->file('import_file')->getRealPath();
+        $handle   = fopen($filePath, 'r');
 
-        // Strip UTF-8 BOM so it never contaminates the first header cell
-        if (substr($content, 0, 3) === "\xEF\xBB\xBF") {
-            $content = substr($content, 3);
+        if (!$handle) {
+            return Reply::error('Cannot open file.');
         }
 
-        // Normalise line endings (Windows \r\n, old Mac \r, Unix \n)
-        $content = str_replace(["\r\n", "\r"], "\n", trim($content));
-        $lines   = explode("\n", $content);
-
-        if (empty($lines) || trim($lines[0]) === '') {
-            return Reply::error('CSV file is empty or the header row is missing.');
+        // Strip UTF-8 BOM if present
+        $bom = fread($handle, 3);
+        if ($bom !== "\xEF\xBB\xBF") {
+            rewind($handle);
         }
 
         // ── Step 1: Detect delimiter from the header line ───────────────────────
-        $delimiter  = $this->detectCsvDelimiter($lines[0]);
+        $firstLine = fgets($handle);
+        if (!$firstLine) {
+            fclose($handle);
+            return Reply::error('CSV file is empty or the header row is missing.');
+        }
+        $delimiter = $this->detectCsvDelimiter($firstLine);
 
         // ── Step 2: Parse header row → build name→index map ─────────────────────
-        $headerCells = str_getcsv($lines[0], $delimiter);
+        // Parse the first line we just read to map columns
+        $headerCells = str_getcsv($firstLine, $delimiter);
         $colMap      = [];
         foreach ($headerCells as $idx => $cell) {
             $colMap[$this->normCsvHeader($cell)] = $idx;
@@ -1226,35 +1229,30 @@ class TaskController extends AccountBaseController
         DB::beginTransaction();
 
         try {
-            // Skip index 0 (header), iterate from 1
-            for ($i = 1; $i < count($lines); $i++) {
-                $lineStr = $lines[$i];
-
-                // Skip blank lines
-                if (trim($lineStr) === '') {
+            // fgetcsv() respects logical rows even with multiline quoted fields
+            while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+                // Skip empty or invalid rows
+                if (empty($row) || (count($row) === 1 && $row[0] === null)) {
                     continue;
                 }
-
-                $row = str_getcsv($lineStr, $delimiter);
 
                 // Helper: get a cell value by trying one or more normalised header keys
                 $get = function (string ...$keys) use ($row, $colMap): string {
                     foreach ($keys as $key) {
-                        $norm = $this->normCsvHeader($key);   // normalise the lookup key too
+                        $norm = $this->normCsvHeader($key);
                         $idx  = $colMap[$norm] ?? null;
                         if ($idx !== null && isset($row[$idx])) {
-                            return trim((string) $row[$idx]);
+                            return trim((string)$row[$idx]);
                         }
                     }
                     return '';
                 };
 
-                // Title is required — column header is "Title *"
-                // normCsvHeader('Title *') → 'title_'  so we look up both 'Title *' and 'Title'
+                // Title is required
                 $title = $get('Title *', 'Title', 'heading', 'Task Title', 'Task');
 
                 if ($title === '') {
-                    continue;   // skip rows without a title silently
+                    continue; // Skip rows without a title
                 }
 
                 try {
@@ -1271,7 +1269,8 @@ class TaskController extends AccountBaseController
                     $task->days            = is_numeric($daysRaw) ? (float) $daysRaw : null;
                     $task->uom             = $get('UOM', 'uom', 'Unit') ?: null;
                     $task->qty             = is_numeric($qtyRaw)  ? (float) $qtyRaw  : null;
-                    // Dates: start_date defaults to today; due_date null — user completes later
+                    
+                    // Business Logic: default start_date to today, due_date null
                     $task->start_date      = Carbon::today()->format('Y-m-d');
                     $task->due_date        = null;
                     $task->priority        = 'medium';
@@ -1291,6 +1290,7 @@ class TaskController extends AccountBaseController
                 }
             }
 
+            fclose($handle);
             DB::commit();
 
             return Reply::successWithData(
@@ -1302,6 +1302,9 @@ class TaskController extends AccountBaseController
             );
 
         } catch (\Exception $e) {
+            if (is_resource($handle)) {
+                fclose($handle);
+            }
             DB::rollBack();
             return Reply::error($e->getMessage());
         }

@@ -306,12 +306,13 @@ class TasksDataTable extends BaseDataTable
                 }
 
                 $name = '';
+                $description = (is_null($row->description) || $row->description == '') ? __('messages.noDescriptionAdded') : mb_strimwidth(strip_tags($row->description), 0, 250, '...');
 
                 if (!is_null($row->project_id) && !is_null($row->id)) {
-                    $name .= '<h5 class="f-13 text-darkest-grey mb-0">' . $row->heading . '</a></h5><div class="text-muted f-11">' . $row->project_name . '</div>';
+                    $name .= '<h5 class="f-13 text-darkest-grey mb-0"><span class="task-hover-card" data-description="' . htmlspecialchars($description) . '">' . $row->heading . '</span></h5><div class="text-muted f-11">' . $row->project_name . '</div>';
                 }
                 else if (!is_null($row->id)) {
-                    $name .= $row->heading;
+                    $name .= '<span class="task-hover-card" data-description="' . htmlspecialchars($description) . '">' . $row->heading . '</span>';
                 }
 
                 return BaseModel::clickAbleLink(route('tasks.show', [$row->id]), $name, $subTask . ' ' . $private . ' ' . $pin . ' ' . $timer . ' ' . $labels);
@@ -423,14 +424,14 @@ class TasksDataTable extends BaseDataTable
         $model->leftJoin('users as creator_user', 'creator_user.id', '=', 'tasks.created_by')
             ->leftJoin('task_labels', 'task_labels.task_id', '=', 'tasks.id')
             ->selectRaw(
-                'tasks.id, tasks.completed_on, tasks.task_short_code, tasks.start_date, tasks.added_by, projects.project_name, projects.project_admin, tasks.heading, client.name as clientName, creator_user.name as created_by, creator_user.image as created_image, tasks.board_column_id,
+                'tasks.id, tasks.description, tasks.completed_on, tasks.task_short_code, tasks.start_date, tasks.added_by, projects.project_name, projects.project_admin, tasks.heading, client.name as clientName, creator_user.name as created_by, creator_user.image as created_image, tasks.board_column_id,
              tasks.due_date, taskboard_columns.column_name as board_column, taskboard_columns.label_color,
               tasks.project_id, tasks.is_private ,( select count(*) from pinned where pinned.task_id = tasks.id and pinned.user_id = ' . user()->id . ') as pinned_task'
             )
             ->addSelect('tasks.company_id') // Company_id is fetched so the we have fetch company relation with it)
             ->with('users', 'activeTimerAll', 'boardColumn', 'activeTimer', 'timeLogged', 'timeLogged.breaks', 'userActiveTimer', 'userActiveTimer.activeBreak', 'labels', 'taskUsers')
             ->withCount('activeTimerAll', 'completedSubtasks', 'subtasks')
-            ->groupBy('tasks.id', 'tasks.completed_on', 'tasks.task_short_code', 'tasks.start_date', 'tasks.added_by', 'projects.project_name', 'projects.project_admin', 'tasks.heading', 'client.name', 'creator_user.name', 'creator_user.image', 'tasks.board_column_id', 'tasks.due_date', 'taskboard_columns.column_name', 'taskboard_columns.label_color', 'tasks.project_id', 'tasks.is_private', 'tasks.company_id');
+            ->groupBy('tasks.id', 'tasks.description', 'tasks.completed_on', 'tasks.task_short_code', 'tasks.start_date', 'tasks.added_by', 'projects.project_name', 'projects.project_admin', 'tasks.heading', 'client.name', 'creator_user.name', 'creator_user.image', 'tasks.board_column_id', 'tasks.due_date', 'taskboard_columns.column_name', 'taskboard_columns.label_color', 'tasks.project_id', 'tasks.is_private', 'tasks.company_id');
 
         if ($request->pinned == 'pinned') {
             $model->join('pinned', 'pinned.task_id', 'tasks.id');

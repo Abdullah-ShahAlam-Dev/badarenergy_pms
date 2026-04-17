@@ -6,61 +6,66 @@
     <style>
         .task-hover-card {
             cursor: pointer;
-            transition: color 0.2s;
-            position: relative;
+            transition: all 0.2s ease;
+            display: inline-block;
         }
         .task-hover-card:hover {
             color: #1d82f5 !important;
             text-decoration: underline;
+            transform: translateX(3px);
         }
         #task-hover-card-popup {
-            position: fixed;
-            z-index: 9999;
+            position: absolute;
+            z-index: 10000;
             width: 320px;
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
             pointer-events: none;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transform: translateY(15px) scale(0.95);
-            border: 1px solid rgba(0,0,0,0.05);
-            overflow: hidden;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            transform: translateY(8px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
-        #task-hover-card-popup::before {
+        #task-hover-card-popup::after {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
+            left: 20px;
+            width: 3px;
+            height: calc(100% - 32px);
             background: #1d82f5;
+            top: 16px;
+            border-radius: 2px;
         }
         #task-hover-card-popup.show {
             opacity: 1;
             visibility: visible;
-            transform: translateY(0) scale(1);
+            transform: translateY(0);
         }
         .hover-card-header {
             font-weight: 700;
-            color: #1d2124;
-            margin-bottom: 12px;
-            font-size: 15px;
+            color: #1a1f23;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding-left: 12px;
             display: flex;
             align-items: center;
-        }
-        .hover-card-header i {
-            color: #1d82f5;
-            margin-right: 8px;
+            opacity: 0.6;
         }
         .hover-card-body {
-            font-size: 13px;
-            color: #555;
+            font-size: 14px;
+            color: #444;
             line-height: 1.6;
-            word-wrap: break-word;
+            padding-left: 12px;
+            font-family: inherit;
         }
     </style>
 @endpush
@@ -913,9 +918,10 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                 });
             });
 
-            // --- TASK HOVER CARD LOGIC ---
+            // --- TASK HOVER CARD LOGIC (OPTIMIZED) ---
             if ($('#task-hover-card-popup').length === 0) {
-                $('body').append('<div id="task-hover-card-popup"><div class="hover-card-header"><i class="fa fa-info-circle"></i> Task Overview</div><div class="hover-card-body"></div></div>');
+                // Pre-append the popup skeleton to the body for reuse
+                $('body').append('<div id="task-hover-card-popup"><div class="hover-card-header">Task Description</div><div class="hover-card-body"></div></div>');
             }
 
             var hoverTimer;
@@ -931,30 +937,39 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
                     
                     var offset = $this.offset();
                     var popupHeight = $hoverPopup.outerHeight();
-                    var topPos = offset.top - popupHeight - 15;
+                    var windowWidth = $(window).width();
                     
-                    // Flip to bottom if not enough space on top
-                    if (topPos < $(window).scrollTop() + 50) {
-                        topPos = offset.top + $this.outerHeight() + 15;
+                    // Calculation for Absolute Positioning
+                    // We target 12px above the element
+                    var topPos = offset.top - popupHeight - 12;
+                    
+                    // Fallback: If not enough space above, show below
+                    if (topPos < $(window).scrollTop() + 10) {
+                        topPos = offset.top + $this.outerHeight() + 12;
                     }
 
                     var leftPos = offset.left;
-                    // Keep inside window bounds
-                    if (leftPos + 320 > $(window).width()) {
-                        leftPos = $(window).width() - 340;
+                    // Prevent overflow on right side
+                    if (leftPos + 330 > windowWidth) {
+                        leftPos = windowWidth - 340;
+                    }
+                    // Prevent overflow on left side (for mobile/small screens)
+                    if (leftPos < 10) {
+                        leftPos = 10;
                     }
 
                     $hoverPopup.css({
                         top: topPos + 'px',
                         left: leftPos + 'px'
                     }).addClass('show');
-                }, 400); // 400ms delay for natural feel
+                }, 350); // Balanced delay for responsiveness
             });
 
             $doc.on('mouseleave', '.task-hover-card', function() {
                 clearTimeout(hoverTimer);
                 $hoverPopup.removeClass('show');
             });
+            // -----------------------------
 
             // Turbo Lifecycle Cleanup
             document.addEventListener('turbo:before-cache', function cleanup() {

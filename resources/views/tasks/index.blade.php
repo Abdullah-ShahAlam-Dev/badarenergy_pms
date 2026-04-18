@@ -356,7 +356,7 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
 
         <!-- Add Task Export Buttons End -->
         <!-- Task Box Start -->
-        <div class="d-flex flex-column w-tables rounded mt-3 bg-white table-responsive">
+        <div class="d-flex flex-column w-tables rounded mt-3 bg-white table-responsive" data-turbo-prefetch="false">
 
             {!! $dataTable->table(['class' => 'table table-hover border-0 w-100']) !!}
 

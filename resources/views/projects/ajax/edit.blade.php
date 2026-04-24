@@ -378,7 +378,7 @@ $createPublicProjectPermission = user()->permission('create_public_project');
 
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script>
-    (function() {
+    $(document).ready(function() {
         var $body = $('body');
         var namespace = '.projectEdit';
 
@@ -593,7 +593,7 @@ $createPublicProjectPermission = user()->permission('create_public_project');
             else if (typeof destroy_editor === 'function') destroy_editor('#project_summary');
             document.removeEventListener('turbo:before-cache', cleanup);
         }, { once: true });
-    })();
+    });
 
     function checkboxChange(parentClass, id){
         var checkedData = '';

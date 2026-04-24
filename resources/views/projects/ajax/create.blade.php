@@ -317,7 +317,7 @@
 
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script>
-    (function() {
+    $(document).ready(function() {
         var $body = $('body');
         var namespace = '.projectCreate';
         var projectCreateDropzone;
@@ -592,7 +592,7 @@
             }
             document.removeEventListener('turbo:before-cache', cleanup);
         }, { once: true });
-    })();
+    });
 
     function checkboxChange(parentClass, id) {
         let checkedData = '';

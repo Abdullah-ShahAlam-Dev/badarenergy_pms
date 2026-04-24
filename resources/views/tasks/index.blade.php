@@ -482,6 +482,8 @@ $viewUnassignedTasksPermission = user()->permission('view_unassigned_tasks');
             var $doc = $(document);
             var namespace = '.tasksIndex';
 
+            $doc.off(namespace);
+
             $('#allTasks-table').on('preXhr.dt' + namespace, function(e, settings, data) {
                 var dateRangePicker = $('#datatableRange').data('daterangepicker');
                 var startDate = $('#datatableRange').val();

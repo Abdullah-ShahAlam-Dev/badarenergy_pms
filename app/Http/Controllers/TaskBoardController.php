@@ -439,7 +439,7 @@ class TaskBoardController extends AccountBaseController
                 $result['boardColumns'][$key]['tasks'] = $tasks;
             }
 
-            if (request()->projectID != 'all') {
+            if ($request->projectID != 'all' && !is_null($request->projectID) && $request->projectID != 0 && $request->projectID != '') {
                 $this->project = Project::findOrFail($request->projectID);
             }
 

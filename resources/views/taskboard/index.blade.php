@@ -239,6 +239,9 @@ $addTaskPermission = user()->permission('add_tasks');
         (function() {
             var $body = $('body');
             var namespace = '.taskBoard';
+
+            $body.off(namespace);
+            $(document).off(namespace);
             var dp1, dp2;
 
             function initDatePickers() {

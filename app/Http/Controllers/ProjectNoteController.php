@@ -27,6 +27,9 @@ class ProjectNoteController extends AccountBaseController
     public function create()
     {
         $this->viewProjectPermission = user()->permission('add_project_note');
+        if (!request('project')) {
+            abort(404, 'Project not found');
+        }
         $this->project = Project::findOrFail(request('project'));
         abort_403(!(in_array($this->viewProjectPermission, ['all']) || $this->project->project_admin == user()->id));
 

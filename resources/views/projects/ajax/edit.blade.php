@@ -9,6 +9,14 @@ $createPublicProjectPermission = user()->permission('create_public_project');
 
 @endphp
 
+<meta name="turbo-cache-control" content="no-cache">
+<script>
+    // Force Turbo to clear cache for the current URL to prevent stale data on re-edit
+    if (window.Turbo) {
+        Turbo.cache.clear();
+    }
+</script>
+
 <link rel="stylesheet" href="{{ asset('vendor/css/dropzone.min.css') }}">
 
 <div class="row">
@@ -382,6 +390,7 @@ $createPublicProjectPermission = user()->permission('create_public_project');
         var $body = $('body');
         var namespace = '.projectEdit';
 
+        // Ensure we start with a clean slate for event listeners
         $body.off(namespace);
 
         $('.custom-date-picker').each(function(ind, el) {
@@ -588,9 +597,7 @@ $createPublicProjectPermission = user()->permission('create_public_project');
         init(RIGHT_MODAL);
 
         document.addEventListener('turbo:before-cache', function cleanup() {
-            $body.off(namespace);
-            if (typeof destory_editor === 'function') destory_editor('#project_summary');
-            else if (typeof destroy_editor === 'function') destroy_editor('#project_summary');
+            // No-op here, we clean up at the start of the next initialization
             document.removeEventListener('turbo:before-cache', cleanup);
         }, { once: true });
     });

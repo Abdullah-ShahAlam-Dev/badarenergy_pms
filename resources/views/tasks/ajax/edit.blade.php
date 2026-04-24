@@ -8,6 +8,12 @@
 @endphp
 
 <meta name="turbo-cache-control" content="no-cache">
+<script>
+    // Force Turbo to clear cache for the current URL to prevent stale data on re-edit
+    if (window.Turbo) {
+        Turbo.cache.clear();
+    }
+</script>
 
 <link rel="stylesheet" href="{{ asset('vendor/css/dropzone.min.css') }}">
 
@@ -432,6 +438,9 @@
     $(document).ready(function() {
         var $body = $('body');
         var namespace = '.taskEdit';
+
+        // Ensure we start with a clean slate for event listeners
+        $body.off(namespace);
         var dp1, dp2;
         var taskDropzone;
 
@@ -719,16 +728,10 @@
 
         init(RIGHT_MODAL);
 
-        window.addEventListener('turbo:before-cache', function cleanup() {
-            $body.off(namespace);
-            if (dp1) dp1.destroy();
-            if (dp2) dp2.destroy();
-            if (taskDropzone) {
-                taskDropzone.destroy();
-                window.taskDropzone = undefined;
-            }
-            destory_editor('#description');
-            window.removeEventListener('turbo:before-cache', cleanup);
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            // No-op here, we clean up at the start of the next initialization
+            // to ensure buttons stay responsive as long as the modal is visible
+            document.removeEventListener('turbo:before-cache', cleanup);
         }, { once: true });
     });
 

@@ -145,12 +145,14 @@ $deleteFilePermission = user()->permission('delete_project_files');
                 $.easyBlockUI();
             });
 
-            taskDropzone.on('queuecomplete', function(file) {
-                if (file.length > 0 && file[0].xhr) {
-                    var taskView = JSON.parse(file[0].xhr.response).view;
-                    taskDropzone.removeAllFiles();
-                    $('#task-file-list').html(taskView);
+            taskDropzone.on('successmultiple', function(files, response) {
+                if (response.view) {
+                    $('#task-file-list').html(response.view);
                 }
+            });
+
+            taskDropzone.on('queuecomplete', function() {
+                taskDropzone.removeAllFiles();
                 $.easyUnblockUI();
             });
 
@@ -168,6 +170,7 @@ $deleteFilePermission = user()->permission('delete_project_files');
                 $(grp).find(".help-block").remove();
                 $(grp).append('<div class="help-block invalid-feedback">' + message + '</div>').addClass("has-error");
                 $(label).addClass("is-invalid");
+                $.easyUnblockUI();
             });
         }
 

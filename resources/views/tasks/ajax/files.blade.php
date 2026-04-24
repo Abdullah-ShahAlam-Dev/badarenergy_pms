@@ -123,6 +123,7 @@
                 addRemoveLinks: true,
                 parallelUploads: DROPZONE_MAX_FILES,
                 acceptedFiles: DROPZONE_FILE_ALLOW,
+                timeout: 0,
                 init: function () {
                     window.taskFileDropzone = this;
                 }
@@ -133,15 +134,17 @@
                 $.easyBlockUI();
             });
 
-            taskFileDropzone.on('queuecomplete', function (file) {
-                if (file.length > 0 && file[0].xhr) {
-                    var response = JSON.parse(file[0].xhr.response);
-                    if (response?.error?.message) {
-                        $('.error-block').removeClass('d-none');
-                        $('#error').html(response?.error?.message);
-                    }
+            taskFileDropzone.on('successmultiple', function (files, response) {
+                if (response?.error?.message) {
+                    $('.error-block').removeClass('d-none');
+                    $('#error').html(response?.error?.message);
+                }
+                if (response.view) {
                     $('#task-file-list').html(response.view);
                 }
+            });
+
+            taskFileDropzone.on('queuecomplete', function () {
                 taskFileDropzone.removeAllFiles();
                 $.easyUnblockUI();
             });
@@ -152,6 +155,7 @@
                 $grp.find(".help-block").remove();
                 $grp.append('<div class="help-block invalid-feedback">' + message + '</div>').addClass("has-error");
                 $grp.siblings("label").addClass("is-invalid");
+                $.easyUnblockUI();
             });
         }
 

@@ -5,7 +5,7 @@
             <span class="d-inline-block text-truncate mw-300">{{ $pageTitle }}</span>
 
             <span class="text-lightest f-12 f-w-500 ml-2 mw-250 text-truncate">
-                <a href="{{ route('dashboard') }}" class="text-lightest">@lang('app.menu.home')</a> &bull;
+                <a href="{{ route('dashboard') }}" class="text-lightest" data-turbo="false">@lang('app.menu.home')</a> &bull;
                 @php
                     $link = '';
                 @endphp

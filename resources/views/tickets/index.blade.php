@@ -22,8 +22,8 @@
             <p class="mb-0 pr-2 f-14 text-dark-grey d-flex align-items-center">@lang('app.status')</p>
             <div class="select-status">
                 <select class="form-control select-picker" name="status" id="ticket-status">
-                    <option {{ request('status') == 'all' ? 'selected' : '' }} value="all">@lang('app.all')</option>
-                    <option {{ (request('status') == 'open' || request('status') == '' ) ? 'selected' : '' }} value="open">
+                    <option {{ (request('status') == 'all' || request('status') == '') ? 'selected' : '' }} value="all">@lang('app.all')</option>
+                    <option {{ request('status') == 'open' ? 'selected' : '' }} value="open">
                         @lang('modules.tickets.totalOpenTickets')</option>
                     <option {{ request('status') == 'pending' ? 'selected' : '' }} value="pending">
                         @lang('modules.tickets.totalPendingTickets')</option>
@@ -73,10 +73,7 @@
                             <select class="form-control select-picker" name="group_id" id="group_id" data-live-search="true"
                                 data-container="body" data-size="8">
                                 @if ($groups)
-                                    @if ($viewPermission == 'all')
                                     <option value="all">@lang('app.all')</option>
-                                    @endif
-
                                     @foreach ($groups as $group)
                                         <option value = "{{$group->id}}">{{$group->group_name}}</option>
                                     @endforeach
@@ -98,10 +95,7 @@
                             <select class="form-control select-picker" name="agent_id" id="agent_id" data-live-search="true"
                                 data-container="body" data-size="8">
                                 @if ($groups)
-                                    @if ($viewPermission == 'all')
                                     <option value="all">@lang('app.all')</option>
-                                    @endif
-
                                     @foreach ($groups as $group)
                                         <optgroup label="{{ mb_ucwords($group->group_name) }}">
                                             @foreach ($group->enabledAgents as $agent)

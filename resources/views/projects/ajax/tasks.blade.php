@@ -212,7 +212,7 @@ $projectArchived = $project->trashed();
             });
         });
 
-        $body.on('change' + namespace, '#allTasks-table .change-status', function() {
+        $table.on('change' + namespace, '.change-status', function() {
             var url = "{{ route('tasks.change_status') }}";
             var token = "{{ csrf_token() }}";
             var id = $(this).data('task-id');

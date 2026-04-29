@@ -9,7 +9,7 @@ $projectBudgetPermission = user()->permission('view_project_budget');
 $memberIds = $project->members->pluck('user_id')->toArray();
 @endphp
 
-<div class="d-lg-flex">
+<div class="d-lg-flex" id="project-overview-section">
     <div class="w-100 py-0 py-lg-3 py-md-0 ">
         <div class="d-flex align-items-center flex-lg-row-reverse mb-4">
             @if (!$project->trashed())
@@ -318,7 +318,7 @@ $memberIds = $project->members->pluck('user_id')->toArray();
             })
         });
 
-        $body.on('change' + namespace, '.change-status', function() {
+        $('#project-overview-section').on('change' + namespace, '.change-status', function() {
             var status = $(this).val();
             var url = "{{ route('projects.update_status', $project->id) }}";
             var token = '{{ csrf_token() }}';

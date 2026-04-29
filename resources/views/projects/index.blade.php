@@ -370,7 +370,7 @@ $deleteProjectPermission = user()->permission('delete_projects');
                 window.showTable();
             });
 
-            $doc.on('change' + namespace, '.change-status', function() {
+            $('#projects-table').on('change' + namespace, '.change-status', function() {
                 var url = "{{ route('projects.change_status') }}";
                 var token = "{{ csrf_token() }}";
                 var id = $(this).data('project-id');

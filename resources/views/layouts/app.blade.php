@@ -52,7 +52,7 @@
     <meta name="theme-color" content="#ffffff">
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}"/>
-    @isset($activeSettingMenu)
+    @if(isset($activeSettingMenu) || request()->routeIs('dashboard*'))
         <meta name="turbo-visit-control" content="reload">
         <style>
             .preloader-container {
@@ -148,7 +148,7 @@
 
 
     <!-- MAIN CONTAINER START -->
-    <section class="main-container bg-additional-grey mb-5 mb-sm-0" id="fullscreen" @isset($activeSettingMenu) data-turbo="false" @endisset>
+    <section class="main-container bg-additional-grey mb-5 mb-sm-0" id="fullscreen" @if(isset($activeSettingMenu) || request()->routeIs('dashboard*')) data-turbo="false" @endif>
 
         <div class="preloader-container d-flex justify-content-center align-items-center">
             <div class="spinner-border" role="status" aria-hidden="true"></div>

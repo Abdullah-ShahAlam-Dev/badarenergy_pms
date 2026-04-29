@@ -527,14 +527,21 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
         // Cleanup before re-binding
         $body.off(namespace);
 
-        if (typeof quillImageLoad === 'function') {
-            quillImageLoad('#description');
+        // Quill must be initialized lazily when reply section is shown
+        // (it cannot initialize on display:none elements)
+        var quillInitialized = false;
+        function initQuillIfNeeded() {
+            if (!quillInitialized && typeof quillImageLoad === 'function') {
+                quillImageLoad('#description');
+                quillInitialized = true;
+            }
         }
 
         $body.on('click' + namespace, '.reply-button', function() {
             $('#reply-section-action').toggleClass('d-none d-flex');
             $('#reply-section-action-2').toggleClass('d-none flex-row');
             $('#reply-section').removeClass('d-none');
+            initQuillIfNeeded();
             window.scrollTo(0, document.body.scrollHeight);
         });
 

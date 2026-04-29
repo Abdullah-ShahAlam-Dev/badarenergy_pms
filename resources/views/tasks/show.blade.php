@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@push('meta')
+    <meta name="turbo-cache-control" content="no-cache">
+@endpush
+
 @section('filter-section')
     <!-- FILTER START -->
     <!-- PROJECT HEADER START -->

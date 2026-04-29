@@ -52,8 +52,9 @@
     <meta name="theme-color" content="#ffffff">
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}"/>
-    @if(isset($activeSettingMenu) || request()->routeIs('dashboard*'))
+    @if(isset($activeSettingMenu) || request()->routeIs('dashboard*') || request()->routeIs('tasks.show') || request()->routeIs('tasks.edit') || request()->routeIs('tickets.*'))
         <meta name="turbo-visit-control" content="reload">
+        <meta name="turbo-cache-control" content="no-cache">
         <style>
             .preloader-container {
                 margin-left: 510px;

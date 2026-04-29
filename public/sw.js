@@ -1,18 +1,18 @@
 /* 
-    Badar PMS Service Worker - v2
-    Strategy: Network-First (Pages) + Stale-While-Revalidate (Assets)
-    This version prevents Auth-redirect crashes and stale-cache issues.
+    Badar PMS Service Worker - v3
+    Strategy: Network-First (ALL HTML/AJAX) + Stale-While-Revalidate (True Static Assets only)
+    This version eliminates stale ticket/task status in modals and detail views.
 */
 
-const CACHE_NAME = 'badar-pms-v9'; // Bumped: bypass icon caching, force reinstall
+const CACHE_NAME = 'badar-pms-v10';
 const STATIC_ASSETS = [];
 
-// 1. Install Event: Cache only critical static items
+// 1. Install Event
 self.addEventListener('install', event => {
     self.skipWaiting();
 });
 
-// 2. Activate Event: Clean up all previous broken caches
+// 2. Activate Event: Clean up all previous caches
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys => Promise.all(
@@ -24,12 +24,16 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// 3. The Smart Fetch Handler: Handles Laravel Auth and Redirects Safely
+// 3. Fetch Handler
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
 
-    // CRITICAL: Bypass Service Worker for Authentication, API, Side-Effecting,
-    // and Branding requests (manifest, favicon, icons)
+    // Never intercept non-GET requests (POST, PUT, DELETE etc)
+    if (event.request.method !== 'GET') {
+        return;
+    }
+
+    // Never intercept auth, API, or branding routes
     if (
         url.pathname.includes('/login') ||
         url.pathname.includes('/logout') ||
@@ -38,36 +42,48 @@ self.addEventListener('fetch', event => {
         url.pathname.includes('/user-uploads/favicon') ||
         url.pathname.includes('/user-uploads/app-logo') ||
         url.pathname.includes('/user-uploads/pwa-icons') ||
-        url.pathname.includes('/api/') ||
-        event.request.method !== 'GET'
+        url.pathname.includes('/api/')
     ) {
-        return; // Network-Only — never cache branding or auth routes
+        return;
     }
 
-    // STRATEGY: Network-First for Navigation (Ensures session/auth stays accurate)
-    if (event.request.mode === 'navigate') {
+    // STRATEGY: Network-First for ALL HTML (navigation + AJAX partials)
+    // This covers: page navigations, modal AJAX loads, ticket/task detail views
+    const acceptHeader = event.request.headers.get('Accept') || '';
+    if (
+        event.request.mode === 'navigate' ||
+        acceptHeader.includes('text/html')
+    ) {
         event.respondWith(
-            fetch(event.request)
-                .catch(() => caches.match(event.request))
+            fetch(event.request).catch(() => caches.match(event.request))
         );
         return;
     }
 
-    // STRATEGY: Stale-While-Revalidate for Assets (CSS, JS, Fonts, Images)
-    event.respondWith(
-        caches.match(event.request).then(cachedResponse => {
-            const fetchPromise = fetch(event.request).then(networkResponse => {
-                // Background update of the cache
-                if (networkResponse && networkResponse.status === 200) {
-                    const responseToCache = networkResponse.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(event.request, responseToCache);
-                    });
-                }
-                return networkResponse;
-            }).catch(() => null);
-
-            return cachedResponse || fetchPromise;
-        })
+    // STRATEGY: Stale-While-Revalidate ONLY for true static assets (CSS, JS, fonts, images)
+    const isStaticAsset = (
+        url.pathname.match(/\.(css|js|woff2?|ttf|eot|otf|png|jpg|jpeg|gif|svg|ico|webp)(\?.*)?$/)
     );
+
+    if (isStaticAsset) {
+        event.respondWith(
+            caches.match(event.request).then(cachedResponse => {
+                const fetchPromise = fetch(event.request).then(networkResponse => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        const responseToCache = networkResponse.clone();
+                        caches.open(CACHE_NAME).then(cache => {
+                            cache.put(event.request, responseToCache);
+                        });
+                    }
+                    return networkResponse;
+                }).catch(() => null);
+
+                return cachedResponse || fetchPromise;
+            })
+        );
+        return;
+    }
+
+    // Everything else: Network-only (no caching)
+    event.respondWith(fetch(event.request));
 });

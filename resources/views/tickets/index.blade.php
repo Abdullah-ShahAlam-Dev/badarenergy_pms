@@ -72,8 +72,8 @@
                         <div class="select-others">
                             <select class="form-control select-picker" name="group_id" id="group_id" data-live-search="true"
                                 data-container="body" data-size="8">
+                                <option value="all">@lang('app.all')</option>
                                 @if ($groups)
-                                    <option value="all">@lang('app.all')</option>
                                     @foreach ($groups as $group)
                                         <option value = "{{$group->id}}">{{$group->group_name}}</option>
                                     @endforeach
@@ -94,8 +94,8 @@
                         <div class="select-others">
                             <select class="form-control select-picker" name="agent_id" id="agent_id" data-live-search="true"
                                 data-container="body" data-size="8">
+                                <option value="all">@lang('app.all')</option>
                                 @if ($groups)
-                                    <option value="all">@lang('app.all')</option>
                                     @foreach ($groups as $group)
                                         <optgroup label="{{ mb_ucwords($group->group_name) }}">
                                             @foreach ($group->enabledAgents as $agent)
@@ -302,6 +302,12 @@ $addTicketPermission = user()->permission('add_tickets');
                 } else if (dateRangePicker) {
                     startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
                     endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                } else {
+                    var dates = startDate.split(' @lang("app.to") ');
+                    if (dates.length == 2) {
+                        startDate = dates[0];
+                        endDate = dates[1];
+                    }
                 }
 
                 @if (request('startDate') != '' && request('endDate') != '')
@@ -309,8 +315,8 @@ $addTicketPermission = user()->permission('add_tickets');
                     endDate = '{{ request('endDate') }}';
                 @endif
 
-                var agentId = $('#agent_id').val() || 0;
-                var groupId = $('#group_id').val() || 0;
+                var agentId = $('#agent_id').val() || 'all';
+                var groupId = $('#group_id').val() || 'all';
                 var status = $('#ticket-status').val() || 0;
                 var priority = $('#priority').val() || 0;
                 var channelId = $('#channel_id').val() || 0;
@@ -509,10 +515,16 @@ $addTicketPermission = user()->permission('add_tickets');
                 } else if (dateRangePicker) {
                     startDate = dateRangePicker.startDate.format('{{ company()->moment_date_format }}');
                     endDate = dateRangePicker.endDate.format('{{ company()->moment_date_format }}');
+                } else {
+                    var dates = startDate.split(' @lang("app.to") ');
+                    if (dates.length == 2) {
+                        startDate = dates[0];
+                        endDate = dates[1];
+                    }
                 }
 
-                var groupId = $('#group_id').val() || 0;
-                var agentId = $('#agent_id').val() || 0;
+                var groupId = $('#group_id').val() || 'all';
+                var agentId = $('#agent_id').val() || 'all';
                 var status = $('#ticket-status').val() || 0;
                 var priority = $('#priority').val() || 0;
                 var channelId = $('#channel_id').val() || 0;

@@ -337,13 +337,21 @@ class TicketController extends AccountBaseController
         $tickets = Ticket::with('agent');
 
         if (!is_null($request->startDate) && $request->startDate != '') {
-            $startDate = Carbon::createFromFormat($this->company->date_format, $request->startDate)->toDateString();
-            $tickets->where(DB::raw('DATE(`updated_at`)'), '>=', $startDate);
+            try {
+                $startDate = Carbon::createFromFormat($this->company->date_format, $request->startDate)->toDateString();
+                $tickets->where(DB::raw('DATE(`updated_at`)'), '>=', $startDate);
+            } catch (\Exception $e) {
+                // Ignore invalid date format (e.g. full range string from Turbo cache)
+            }
         }
 
         if (!is_null($request->endDate) && $request->endDate != '') {
-            $endDate = Carbon::createFromFormat($this->company->date_format, $request->endDate)->toDateString();
-            $tickets->where(DB::raw('DATE(`updated_at`)'), '<=', $endDate);
+            try {
+                $endDate = Carbon::createFromFormat($this->company->date_format, $request->endDate)->toDateString();
+                $tickets->where(DB::raw('DATE(`updated_at`)'), '<=', $endDate);
+            } catch (\Exception $e) {
+                // Ignore invalid date format
+            }
         }
 
         if (!is_null($request->agentId) && $request->agentId != 'all') {
@@ -360,6 +368,10 @@ class TicketController extends AccountBaseController
 
         if (!is_null($request->typeId) && $request->typeId != 'all') {
             $tickets->where('type_id', '=', $request->typeId);
+        }
+
+        if (!is_null($request->ticketStatus) && $request->ticketStatus != 'all' && $request->ticketStatus != '' && $request->ticketStatus != 0) {
+            $tickets->where('status', '=', $request->ticketStatus);
         }
 
         if ($viewPermission == 'added') {

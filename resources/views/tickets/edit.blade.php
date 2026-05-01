@@ -54,12 +54,12 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                 class="fa fa-clipboard-list mr-0 mr-lg-2 mr-md-2"></i><span class="d-none d-lg-block d-md-block">add
                 note</span></a> --}}
 
-        <div id="ticket-closed" @if ($ticket->status == 'closed') style="display:none" @endif>
+        {{-- <div id="ticket-closed" @if ($ticket->status == 'closed') style="display:none" @endif>
             <a href="javascript:;" data-status="closed"
                 class="d-flex align-items-center height-44 text-dark-grey text-capitalize border-right-grey px-3 submit-ticket"><i
                     class="fa fa-times-circle mr-0 mr-lg-2 mr-md-2"></i><span
                     class="d-none d-lg-block d-md-block">@lang('app.close')</span></a>
-        </div>
+        </div> --}}
 
         @if ($deleteTicketPermission == 'all' || ($deleteTicketPermission == 'owned' && $ticket->agent_id == user()->id))
             <a href="javascript:;"

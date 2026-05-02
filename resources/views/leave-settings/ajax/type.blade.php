@@ -19,7 +19,7 @@
                 <tr id="type-{{ $leaveType->id }}">
                     <td>
                         <p class="f-w-500 mb-0"><i class="fa fa-circle mr-1 text-yellow"
-                                style="color: {{ $leaveType->color }}"></i>{{ mb_ucwords($leaveType->type_name) }}
+                                style="color: {{ $leaveType->color }}"></i>{{ mb_ucwords($leaveType->type_name ?? '') }}
                         </p>
                     </td>
                     <td> {{ $leaveType->no_of_leaves }}</td>
@@ -34,7 +34,7 @@
                     <td>
                         <ol class="pl-3">
                             @foreach ($departments as $department)
-                                @if(!is_null($leaveType->department) && in_array($department->id, json_decode($leaveType->department)))
+                                @if(!is_null($leaveType->department) && in_array($department->id, (array)json_decode($leaveType->department)))
                                     <li>{{$department->team_name}}</li>
                                 @endif
                             @endforeach
@@ -43,7 +43,7 @@
                     <td>
                         <ol class="pl-3">
                             @foreach ($designations as $designation)
-                                @if(!is_null($leaveType->designation) && in_array($designation->id, json_decode($leaveType->designation)))
+                                @if(!is_null($leaveType->designation) && in_array($designation->id, (array)json_decode($leaveType->designation)))
                                     <li>{{$designation->name}}</li>
                                 @endif
                             @endforeach

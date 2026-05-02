@@ -32,7 +32,7 @@ class LeaveSettingController extends AccountBaseController
 
         switch ($tab) {
         case 'general':
-            $this->leavePermission = LeaveSetting::first();
+            $this->leavePermission = LeaveSetting::first() ?: new LeaveSetting();
             $this->view = 'leave-settings.ajax.general';
                 break;
         default:

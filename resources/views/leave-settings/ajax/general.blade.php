@@ -38,7 +38,7 @@
             <select name="permission" class="form-control select-picker manager-permission"
                     onchange="changeStatus(this.value)">
                 <option
-                    @if ($leavePermission->manager_permission == 'pre-approve') @endif value="pre-approve">@lang('modules.leaves.preApprove')</option>
+                    @if ($leavePermission->manager_permission == 'pre-approve') selected @endif value="pre-approve">@lang('modules.leaves.preApprove')</option>
                 <option @if ($leavePermission->manager_permission == 'approved') selected
                         @endif value="approved">@lang('modules.leaves.approve')</option>
                 <option @if ($leavePermission->manager_permission == 'cannot-approve') selected
@@ -78,7 +78,7 @@
 
         var url = "{{ route('leaves-settings.changePermission') }}";
         var token = "{{ csrf_token() }}";
-        var id = {{$leavePermission->id}};
+        var id = "{{$leavePermission->id}}";
 
         $.easyAjax({
             type: 'POST',

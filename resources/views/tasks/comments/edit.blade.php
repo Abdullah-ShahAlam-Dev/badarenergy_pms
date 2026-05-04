@@ -76,8 +76,6 @@
     const atValues = @json($taskuserData);
 
     $(document).ready(function() {
-        if (add_task_comments == "all" || add_task_comments == "added") {
-            quillMention(atValues, '#task-edit-comment');
-        }
+        quillMention(atValues, '#task-edit-comment');
     });
 </script>

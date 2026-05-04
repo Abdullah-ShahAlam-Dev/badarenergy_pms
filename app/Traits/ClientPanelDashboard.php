@@ -80,6 +80,14 @@ trait ClientPanelDashboard
 
         $this->statusWiseProject = $this->projectStatusChartData();
 
+        // Unread popup notices
+        $this->unreadPopupNotices = \App\Models\Notice::select('notices.id', 'notices.heading', 'notices.description', 'notices.image')
+            ->join('notice_views', 'notice_views.notice_id', '=', 'notices.id')
+            ->where('notice_views.user_id', user()->id)
+            ->where('notice_views.read', 0)
+            ->where('notices.show_popup', 1)
+            ->get();
+
         return view('dashboard.client.index', $this->data);
     }
 

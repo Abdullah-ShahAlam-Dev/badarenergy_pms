@@ -734,6 +734,13 @@ class TaskController extends AccountBaseController
         // Sync task users
         $task->users()->sync($request->user_id);
 
+        // Sync cc users
+        if (!empty($request->cc_user_id)) {
+            $task->ccUsers()->sync($request->cc_user_id);
+        } else {
+            $task->ccUsers()->sync([]);
+        }
+
         return Reply::successWithData(__('messages.updateSuccess'), ['redirectUrl' => route('tasks.show', $id)]);
     }
 
@@ -776,6 +783,7 @@ class TaskController extends AccountBaseController
 
 
         $this->taskUsers = $taskUsers = $this->task->users->pluck('id')->toArray();
+        $this->isCcUser = $this->task->ccUsers->contains(user()->id) && !in_array(user()->id, $taskUsers) && $this->task->added_by != user()->id && !in_array('admin', user_roles());
 
         $taskuserData = [];
 
@@ -793,6 +801,7 @@ class TaskController extends AccountBaseController
         $this->taskSettings = TaskSetting::first();
         $viewTaskPermission = user()->permission('view_tasks');
         $mentionUser = $this->task->mentionTask->pluck('user_id')->toArray();
+        $ccUsers = $this->task->ccUsers->pluck('id')->toArray();
         abort_403(
             !(
             $viewTaskPermission == 'all'
@@ -804,13 +813,14 @@ class TaskController extends AccountBaseController
             || ($this->viewUnassignedTasksPermission == 'all' && in_array('employee', user_roles()))
             || ($this->task->project_id && $this->task->project->project_admin == user()->id )
             || ((!is_null($this->task->mentionTask)) && in_array(user()->id, $mentionUser))
+            || in_array(user()->id, $ccUsers)
             )
 
         );
 
         if (!$this->task->project_id || ($this->task->project_id && $this->task->project->project_admin != user()->id)) {
 
-            abort_403($this->viewUnassignedTasksPermission == 'none' && count($taskUsers) == 0 && ((is_null($this->task->mentionTask)) && in_array(user()->id, $mentionUser)));
+            abort_403($this->viewUnassignedTasksPermission == 'none' && count($taskUsers) == 0 && ((is_null($this->task->mentionTask)) && in_array(user()->id, $mentionUser)) && !in_array(user()->id, $ccUsers));
 
         }
 

@@ -225,6 +225,23 @@
                             </div>
 
                             <div class="col-md-12 col-lg-4">
+                                <div class="form-group my-3">
+                                    <x-forms.label fieldId="cc_users" :fieldLabel="__('CC Users')">
+                                    </x-forms.label>
+                                    <x-forms.input-group>
+                                        <select class="form-control multiple-users" multiple name="cc_user_id[]"
+                                                id="cc_users" data-live-search="true" data-size="8">
+                                            @foreach ($employees as $item)
+                                                <x-user-option :user="$item"
+                                                               :pill="true"
+                                                               :selected="false"/>
+                                            @endforeach
+                                        </select>
+                                    </x-forms.input-group>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12 col-lg-4">
                                 <x-forms.select fieldName="milestone_id" fieldId="milestone-id"
                                                 :fieldLabel="__('modules.projects.milestones')">
                                     <option value="">--</option>
@@ -547,6 +564,15 @@
             countSelectedText: (selected, total) => selected + " {{ __('app.membersSelected') }} "
         });
 
+        $("#cc_users").selectpicker({
+            actionsBox: true,
+            selectAllText: "{{ __('modules.permission.selectAll') }}",
+            deselectAllText: "{{ __('modules.permission.deselectAll') }}",
+            multipleSeparator: " ",
+            selectedTextFormat: "count > 8",
+            countSelectedText: (selected, total) => selected + " {{ __('app.membersSelected') }} "
+        });
+
         dp1 = datepicker('#task_start_date', {
             position: 'bl',
             onSelect: (instance, date) => {
@@ -610,6 +636,7 @@
                     destory_editor('#description');
                     quillMention(data.userData, '#description');
                     $('#selectAssignee').html(data.data).selectpicker('refresh');
+                    $('#cc_users').html(data.data).selectpicker('refresh');
                     $('.projectId').text(data.unique_id + '-');
                 }
             });

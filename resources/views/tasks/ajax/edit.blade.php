@@ -226,6 +226,32 @@
                             </div>
 
                             <div class="col-md-12 col-lg-4">
+                                <div class="form-group my-3">
+                                    <x-forms.label fieldId="cc_users" :fieldLabel="__('CC Users')">
+                                    </x-forms.label>
+                                    <x-forms.input-group>
+                                        <select class="form-control multiple-users" multiple name="cc_user_id[]"
+                                                id="cc_users" data-live-search="true" data-size="8">
+                                            @foreach ($employees as $employee)
+                                                @php
+                                                    $selected = '';
+                                                @endphp
+
+                                                @foreach ($task->ccUsers as $item)
+                                                    @if ($item->id == $employee->id)
+                                                        @php
+                                                            $selected = 'selected';
+                                                        @endphp
+                                                    @endif
+                                                @endforeach
+                                                <x-user-option :user="$employee" :pill="true" :selected="$selected"/>
+                                            @endforeach
+                                        </select>
+                                    </x-forms.input-group>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12 col-lg-4">
                                 <x-forms.select fieldName="milestone_id" fieldId="milestone-id"
                                     :fieldLabel="__('modules.projects.milestones')">
                                     <option value="">--</option>
@@ -515,6 +541,7 @@
                     destory_editor('#description');
                     quillMention(data.userData, '#description');
                     $('#selectAssignee').html(data.data).selectpicker('refresh');
+                    $('#cc_users').html(data.data).selectpicker('refresh');
                     $('.projectId').text(data.unique_id);
                 }
             });
@@ -582,6 +609,15 @@
         }
 
         $("#selectAssignee").selectpicker({
+            actionsBox: true,
+            selectAllText: "{{ __('modules.permission.selectAll') }}",
+            deselectAllText: "{{ __('modules.permission.deselectAll') }}",
+            multipleSeparator: " ",
+            selectedTextFormat: "count > 8",
+            countSelectedText: (selected, total) => selected + " {{ __('app.membersSelected') }} "
+        });
+
+        $("#cc_users").selectpicker({
             actionsBox: true,
             selectAllText: "{{ __('modules.permission.selectAll') }}",
             deselectAllText: "{{ __('modules.permission.deselectAll') }}",

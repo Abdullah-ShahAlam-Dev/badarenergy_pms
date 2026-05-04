@@ -1,6 +1,7 @@
 @php
     $editTaskCommentPermission = user()->permission('edit_task_comments');
     $deleteTaskCommentPermission = user()->permission('delete_task_comments');
+    $ccUserIds = isset($task) && $task->ccUsers ? $task->ccUsers->pluck('id')->toArray() : (isset($comments) && $comments->count() > 0 ? $comments->first()->task->ccUsers->pluck('id')->toArray() : []);
 @endphp
 
 @forelse ($comments as $comment)
@@ -11,8 +12,12 @@
             </div>
             <div class="card-body border-0 pl-0 py-1 ml-3">
                 <div class="row">
-                    <div class="col-md-6 d-inline-flex">
-                        <h4 class="card-title f-15 f-w-500 text-dark mr-3">{{ mb_ucwords($comment->user->name) }}</h4>
+                    <div class="col-md-6 d-inline-flex align-items-center">
+                        <h4 class="card-title f-15 f-w-500 text-dark mr-3 mb-0">{{ mb_ucwords($comment->user->name) }}
+                            @if(in_array($comment->user_id, $ccUserIds))
+                                <span class="badge badge-secondary ml-1 f-11">CC</span>
+                            @endif
+                        </h4>
                         <span class="cursor-pointer card-date f-11 text-lightest mb-0 comment-time" data-toggle="tooltip"
                         data-original-title="{{ $comment->created_at->timezone(company()->timezone)->translatedFormat(company()->date_format . ' ' . company()->time_format) }}">
                         {{$comment->created_at->timezone(company()->timezone)->diffForHumans()}}

@@ -334,6 +334,7 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
 
 
     /* NOTICE */
+    Route::post('notices/mark-read/{id}', [NoticeController::class, 'markRead'])->name('notices.mark_read');
     Route::post('notices/apply-quick-action', [NoticeController::class, 'applyQuickAction'])->name('notices.apply_quick_action');
     Route::resource('notices', NoticeController::class);
 

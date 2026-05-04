@@ -203,6 +203,14 @@ trait EmployeeDashboard
                     ->limit(10)
                     ->get();
             }
+
+            // Unread popup notices
+            $this->unreadPopupNotices = Notice::select('notices.id', 'notices.heading', 'notices.description', 'notices.image')
+                ->join('notice_views', 'notice_views.notice_id', '=', 'notices.id')
+                ->where('notice_views.user_id', user()->id)
+                ->where('notice_views.read', 0)
+                ->where('notices.show_popup', 1)
+                ->get();
         }
 
         $this->tickets = Ticket::where(function ($query) {

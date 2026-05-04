@@ -107,6 +107,46 @@
         html[data-turbo-preview] .preloader-container {
             display: none !important;
         }
+
+        .notice-popup-container {
+            max-height: 450px;
+            overflow-y: auto;
+            text-align: left;
+            padding: 10px;
+            border-top: 1px solid #f1f1f1;
+            margin-top: 15px;
+        }
+
+        .notice-popup-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-top: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .notice-swal-title {
+            font-size: 20px !important;
+            font-weight: 600 !important;
+            color: #28313c !important;
+        }
+
+        .notice-swal-popup {
+            border-radius: 12px !important;
+            padding-bottom: 20px !important;
+        }
+
+        .notice-swal-container .swal2-icon {
+            border: none !important;
+            font-size: 24px !important;
+        }
+
+        .notice-popup-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
     </style>
 
     {{-- Disable Turbo Caching globally to prevent zombie JS objects --}}
@@ -301,6 +341,69 @@
         document.addEventListener("turbo:load", function() {
             // console.log("Turbo Load: Resetting mobile menus and overlays");
             init();
+
+            // Login-based Popup Notice Feature
+            @if(isset($unreadPopupNotices) && $unreadPopupNotices->count() > 0)
+                (function() {
+                    const notices = @json($unreadPopupNotices);
+                    let currentIndex = 0;
+
+                    function showNotice(index) {
+                        if (index >= notices.length) return;
+
+                        const notice = notices[index];
+                        const isLast = (index === notices.length - 1);
+                        const imageHtml = notice.image_url ? `<div class="notice-popup-image mb-3"><img src="${notice.image_url}" alt="${notice.heading}"></div>` : '';
+
+                        Swal.fire({
+                            title: notice.heading,
+                            html: `${imageHtml}<div class="notice-popup-container ql-editor">${notice.description}</div>`,
+                            iconHtml: '<i class="fa fa-bullhorn text-info"></i>',
+                            showCancelButton: !isLast,
+                            confirmButtonText: isLast ? "@lang('app.close')" : "@lang('app.next') <i class='fa fa-arrow-right ml-2'></i>",
+                            cancelButtonText: "@lang('app.close')",
+                            customClass: {
+                                container: 'notice-swal-container',
+                                popup: 'notice-swal-popup',
+                                header: 'notice-swal-header',
+                                title: 'notice-swal-title',
+                                content: 'notice-swal-content',
+                                confirmButton: 'btn btn-primary',
+                                cancelButton: 'btn btn-secondary ml-2'
+                            },
+                            buttonsStyling: false,
+                            width: '650px',
+                            allowOutsideClick: false,
+                            showClass: {
+                                popup: 'animate__animated animate__fadeInDown animate__faster'
+                            },
+                            hideClass: {
+                                popup: 'animate__animated animate__fadeOutUp animate__faster'
+                            }
+                        }).then((result) => {
+                            // Mark as read via AJAX
+                            $.easyAjax({
+                                url: "{{ route('notices.mark_read', ':id') }}".replace(':id', notice.id),
+                                type: "POST",
+                                data: {
+                                    _token: "{{ csrf_token() }}"
+                                },
+                                success: function() {
+                                    if (result.isConfirmed && !isLast) {
+                                        showNotice(index + 1);
+                                    }
+                                }
+                            });
+                        });
+                    }
+
+                    // Only show once per page lifecycle to prevent repeat on back/forward if already dismissed
+                    if (!window.noticesShownThisSession) {
+                        showNotice(0);
+                        window.noticesShownThisSession = true;
+                    }
+                })();
+            @endif
             $(".preloader-container").fadeOut("fast", function () {
                 $(this).removeClass("d-flex");
             });

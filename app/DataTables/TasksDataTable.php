@@ -252,6 +252,29 @@ class TasksDataTable extends BaseDataTable
                 return ($row->clientName) ? $row->clientName : '--';
             }
         );
+        $datatables->editColumn(
+            'created_by', function ($row) {
+                if (is_null($row->created_by)) {
+                    return '--';
+                }
+
+                $name = mb_ucfirst($row->created_by);
+                $gravatarHash = md5(strtolower(trim($row->created_email)));
+                $imageUrl = ($row->created_image) ? asset_url_local_s3('avatar/' . $row->created_image) : 'https://www.gravatar.com/avatar/' . $gravatarHash . '.png?s=200&d=mp';
+                
+                $img = '<img src="' . $imageUrl . '" class="mr-2 taskEmployeeImg rounded-circle" alt="' . $name . '" title="' . $name . '">';
+                $link = route('employees.show', [$row->added_by]);
+
+                return '<div class="media align-items-center mw-250">
+                            <a href="' . $link . '" class="position-relative">' . $img . '</a>
+                            <div class="media-body">
+                                <h5 class="mb-0 f-12">
+                                    <a href="' . $link . '" class="text-darkest-grey">' . $name . '</a>
+                                </h5>
+                            </div>
+                        </div>';
+            }
+        );
 
         $datatables->addColumn(
             'task', function ($row) {
@@ -376,7 +399,7 @@ class TasksDataTable extends BaseDataTable
         // CustomField For export
         $customFieldColumns = CustomField::customFieldData($datatables, Task::CUSTOM_FIELD_MODEL);
 
-        $datatables->rawColumns(array_merge(['short_code', 'board_column','completed_on', 'action', 'clientName', 'due_date', 'users', 'heading', 'check', 'timeLogged', 'timer', 'start_date'], $customFieldColumns));
+        $datatables->rawColumns(array_merge(['short_code', 'board_column','completed_on', 'action', 'clientName', 'created_by', 'due_date', 'users', 'heading', 'check', 'timeLogged', 'timer', 'start_date'], $customFieldColumns));
 
         return $datatables;
     }
@@ -405,7 +428,8 @@ class TasksDataTable extends BaseDataTable
         $model = $model->leftJoin('projects', 'projects.id', '=', 'tasks.project_id')
             ->leftJoin('users as client', 'client.id', '=', 'projects.client_id')
             ->join('taskboard_columns', 'taskboard_columns.id', '=', 'tasks.board_column_id')
-            ->leftJoin('mention_users', 'mention_users.task_id', '=', 'tasks.id');
+            ->leftJoin('mention_users', 'mention_users.task_id', '=', 'tasks.id')
+            ->leftJoin('task_cc_users', 'task_cc_users.task_id', '=', 'tasks.id');
 
         if (($this->viewUnassignedTasksPermission == 'all'
             && !in_array('client', user_roles())
@@ -424,14 +448,14 @@ class TasksDataTable extends BaseDataTable
         $model->leftJoin('users as creator_user', 'creator_user.id', '=', 'tasks.created_by')
             ->leftJoin('task_labels', 'task_labels.task_id', '=', 'tasks.id')
             ->selectRaw(
-                'tasks.id, tasks.description, tasks.completed_on, tasks.task_short_code, tasks.start_date, tasks.added_by, projects.project_name, projects.project_admin, tasks.heading, client.name as clientName, creator_user.name as created_by, creator_user.image as created_image, tasks.board_column_id,
+                'tasks.id, tasks.description, tasks.completed_on, tasks.task_short_code, tasks.start_date, tasks.added_by, projects.project_name, projects.project_admin, tasks.heading, client.name as clientName, creator_user.name as created_by, creator_user.image as created_image, creator_user.email as created_email, tasks.board_column_id,
              tasks.due_date, taskboard_columns.column_name as board_column, taskboard_columns.label_color,
               tasks.project_id, tasks.is_private ,( select count(*) from pinned where pinned.task_id = tasks.id and pinned.user_id = ' . user()->id . ') as pinned_task'
             )
             ->addSelect('tasks.company_id') // Company_id is fetched so the we have fetch company relation with it)
             ->with('users', 'activeTimerAll', 'boardColumn', 'activeTimer', 'timeLogged', 'timeLogged.breaks', 'userActiveTimer', 'userActiveTimer.activeBreak', 'labels', 'taskUsers')
             ->withCount('activeTimerAll', 'completedSubtasks', 'subtasks')
-            ->groupBy('tasks.id', 'tasks.description', 'tasks.completed_on', 'tasks.task_short_code', 'tasks.start_date', 'tasks.added_by', 'projects.project_name', 'projects.project_admin', 'tasks.heading', 'client.name', 'creator_user.name', 'creator_user.image', 'tasks.board_column_id', 'tasks.due_date', 'taskboard_columns.column_name', 'taskboard_columns.label_color', 'tasks.project_id', 'tasks.is_private', 'tasks.company_id');
+            ->groupBy('tasks.id', 'tasks.description', 'tasks.completed_on', 'tasks.task_short_code', 'tasks.start_date', 'tasks.added_by', 'projects.project_name', 'projects.project_admin', 'tasks.heading', 'client.name', 'creator_user.name', 'creator_user.image', 'creator_user.email', 'tasks.board_column_id', 'tasks.due_date', 'taskboard_columns.column_name', 'taskboard_columns.label_color', 'tasks.project_id', 'tasks.is_private', 'tasks.company_id');
 
         if ($request->pinned == 'pinned') {
             $model->join('pinned', 'pinned.task_id', 'tasks.id');
@@ -447,6 +471,7 @@ class TasksDataTable extends BaseDataTable
                             function ($q4) {
                                 $q4->where('task_users.user_id', user()->id);
                                 $q4->orWhere('tasks.added_by', user()->id);
+                                $q4->orWhere('task_cc_users.user_id', user()->id);
                             }
                         );
                     }
@@ -464,6 +489,7 @@ class TasksDataTable extends BaseDataTable
                                     function ($q5) {
                                         $q5->where('task_users.user_id', user()->id);
                                         $q5->orWhere('tasks.added_by', user()->id);
+                                        $q5->orWhere('task_cc_users.user_id', user()->id);
                                     }
                                 );
                             }
@@ -517,7 +543,8 @@ class TasksDataTable extends BaseDataTable
                 $model->where(
                     function ($q) use ($request) {
                         $q->where('task_users.user_id', '=', user()->id);
-                          $q->orWhere('mention_users.user_id', user()->id);
+                          $q->orWhere('mention_users.user_id', user()->id)
+                            ->orWhere('task_cc_users.user_id', user()->id);
 
                         if ($this->viewUnassignedTasksPermission == 'all' && !in_array('client', user_roles()) && $request->assignedTo == 'all') {
                             $q->orWhereDoesntHave('users');
@@ -533,7 +560,8 @@ class TasksDataTable extends BaseDataTable
                     $model->where(
                         function ($q) use ($request) {
                             $q->where('projects.project_admin', '<>', user()->id)
-                                ->orWhere('mention_users.user_id', user()->id);
+                                ->orWhere('mention_users.user_id', user()->id)
+                                ->orWhere('task_cc_users.user_id', user()->id);
 
                         }
                     );
@@ -546,7 +574,8 @@ class TasksDataTable extends BaseDataTable
                 $model->where(
                     function ($q) use ($request) {
                         $q->where('tasks.added_by', '=', user()->id)
-                            ->orWhere('mention_users.user_id', user()->id);
+                            ->orWhere('mention_users.user_id', user()->id)
+                            ->orWhere('task_cc_users.user_id', user()->id);
 
                     }
                 );
@@ -558,7 +587,8 @@ class TasksDataTable extends BaseDataTable
                     function ($q) use ($request) {
                         $q->where('task_users.user_id', '=', user()->id);
                         $q->orWhere('tasks.added_by', '=', user()->id)
-                            ->orWhere('mention_users.user_id', user()->id);
+                            ->orWhere('mention_users.user_id', user()->id)
+                            ->orWhere('task_cc_users.user_id', user()->id);
 
                         if (in_array('client', user_roles())) {
                             $q->orWhere('projects.client_id', '=', user()->id);
@@ -679,7 +709,7 @@ class TasksDataTable extends BaseDataTable
             __('app.startDate') => ['data' => 'start_date', 'name' => 'start_date', 'title' => __('app.startDate')],
             __('app.dueDate') => ['data' => 'due_date', 'name' => 'due_date', 'title' => __('app.dueDate')],
             __('app.completedOn') => ['data' => 'completed_on', 'name' => 'completed_on', 'title' => __('app.completedOn')],
-            __('modules.employees.hoursLogged') => ['data' => 'timeLogged', 'name' => 'timeLogged', 'title' => __('modules.employees.hoursLogged')],
+            __('modules.tasks.assignBy') => ['data' => 'created_by', 'name' => 'creator_user.name', 'title' => __('modules.tasks.assignBy')],
             __('modules.tasks.assignTo') => ['data' => 'users', 'name' => 'member.name', 'exportable' => false, 'title' => __('modules.tasks.assignTo')],
             __('app.columnStatus') => ['data' => 'board_column', 'name' => 'board_column', 'exportable' => false, 'searchable' => false, 'title' => __('app.columnStatus')],
             __('app.task') . ' ' . __('app.status') => ['data' => 'status', 'name' => 'board_column_id', 'visible' => false, 'title' => __('app.task')]

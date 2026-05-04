@@ -18,11 +18,11 @@
 
 <!-- TAB CONTENT START -->
 <div class="tab-pane fade show active" role="tabpanel" aria-labelledby="nav-email-tab">
-    @if ($addTaskFilePermission == 'all'
+    @if (!$isCcUser && ($addTaskFilePermission == 'all'
     || ($addTaskFilePermission == 'added' && $task->added_by == user()->id)
     || ($addTaskFilePermission == 'owned' && in_array(user()->id, $taskUsers))
     || ($addTaskFilePermission == 'both' && (in_array(user()->id, $taskUsers) || $task->added_by == user()->id))
-    )
+    ))
         <div class="p-20">
 
             <div class="row">

@@ -52,60 +52,78 @@
                                 </div>
                             </div>
 
-                        </div>
-                    </div>
+                             <div class="col-md-12">
+                                 <div class="form-group my-3">
+                                     <x-forms.checkbox fieldId="show_popup"
+                                         :fieldLabel="__('modules.notices.show_popup')" fieldName="show_popup"
+                                         fieldValue="true" :checked="$notice->show_popup">
+                                     </x-forms.checkbox>
+                                 </div>
+                             </div>
 
-                </div>
+                             <div class="col-md-12 @if (!$notice->show_popup) d-none @endif" id="image_upload_container">
+                                 <x-forms.file fieldId="image" :fieldLabel="__('app.image')" fieldName="image"
+                                     :fieldValue="$notice->image_url" fieldHeight="150" />
+                             </div>
 
-                <x-form-actions>
-                    <x-forms.button-primary id="save-notice" class="mr-3" icon="check">@lang('app.save')
-                    </x-forms.button-primary>
-                    <x-forms.button-cancel :link="route('notices.index')" class="border-0">@lang('app.cancel')
-                    </x-forms.button-cancel>
-                </x-form-actions>
-            </div>
-        </x-form>
+                         </div>
+                     </div>
 
-    </div>
-</div>
+                 </div>
 
-<script>
-    $(document).ready(function() {
+                 <x-form-actions>
+                     <x-forms.button-primary id="save-notice" class="mr-3" icon="check">@lang('app.save')
+                     </x-forms.button-primary>
+                     <x-forms.button-cancel :link="route('notices.index')" class="border-0">@lang('app.cancel')
+                     </x-forms.button-cancel>
+                 </x-form-actions>
+             </div>
+         </x-form>
 
-        quillMention(null, '#description');
+     </div>
+ </div>
 
-        // show/hide project detail
-        $(document).on('change', 'input[type=radio][name=to]', function() {
-            $('.department').toggleClass('d-none');
-        });
+ <script>
+     $(document).ready(function() {
 
-        $('#save-notice').click(function() {
-            const url = "{{ route('notices.update', [$notice->id]) }}";
+         quillMention(null, '#description');
 
-            var note = document.getElementById('description').children[0].innerHTML;
-            document.getElementById('description-text').value = note;
+         // show/hide project detail
+         $(document).on('change', 'input[type=radio][name=to]', function() {
+             $('.department').toggleClass('d-none');
+         });
 
-            $.easyAjax({
-                url: url,
-                container: '#save-notice-data-form',
-                type: "POST",
-                disableButton: true,
-                blockUI: true,
-                buttonSelector: "#save-notice",
-                file: true,
-                data: $('#save-notice-data-form').serialize(),
-                success: function(response) {
-                    if (response.status == 'success') {
-                        if ($(MODAL_XL).hasClass('show')) {
-                            $(MODAL_XL).modal('hide');
-                            window.location.reload();
-                        } else {
-                            window.location.href = response.redirectUrl;
-                        }
-                    }
-                }
-            });
-        });
+         $('#show_popup').change(function() {
+             $('#image_upload_container').toggleClass('d-none');
+         });
+
+         $('#save-notice').click(function() {
+             const url = "{{ route('notices.update', [$notice->id]) }}";
+
+             var note = document.getElementById('description').children[0].innerHTML;
+             document.getElementById('description-text').value = note;
+
+             $.easyAjax({
+                 url: url,
+                 container: '#save-notice-data-form',
+                 type: "POST",
+                 disableButton: true,
+                 blockUI: true,
+                 buttonSelector: "#save-notice",
+                 file: true,
+                 data: $('#save-notice-data-form').serialize(),
+                 success: function(response) {
+                     if (response.status == 'success') {
+                         if ($(MODAL_XL).hasClass('show')) {
+                             $(MODAL_XL).modal('hide');
+                             window.location.reload();
+                         } else {
+                             window.location.href = response.redirectUrl;
+                         }
+                     }
+                 }
+             });
+         });
 
         init(RIGHT_MODAL);
     });

@@ -37,7 +37,7 @@ class TaskCommentObserver
         if (request()->mention_user_id != null && request()->mention_user_id != '') {
 
             $comment->mentionUser()->sync(request()->mention_user_id);
-            $taskUsers = json_decode($task->taskUsers->pluck('user_id'));
+            $taskUsers = $task->users->pluck('id')->merge($task->ccUsers->pluck('id'))->unique()->toArray();
             $mentionIds = json_decode($comment->mentionComment->pluck('user_id'));
 
             $mentionUserId = array_intersect($mentionIds, $taskUsers);
@@ -59,8 +59,8 @@ class TaskCommentObserver
             }
 
         } else {
-
-            event(new TaskCommentEvent($task, $comment, $task->users, 'null'));
+            $allUsers = $task->users->merge($task->ccUsers);
+            event(new TaskCommentEvent($task, $comment, $allUsers, 'null'));
         }
 
         if ($task->project_id != null) {

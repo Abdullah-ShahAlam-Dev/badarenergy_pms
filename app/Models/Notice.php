@@ -52,7 +52,7 @@ class Notice extends BaseModel
     use Notifiable, HasFactory;
     use HasCompany;
 
-    protected $appends = ['notice_date'];
+    protected $appends = ['notice_date', 'image_url'];
 
     public function member(): HasMany
     {
@@ -71,6 +71,15 @@ class Notice extends BaseModel
     public function department(): BelongsTo
     {
         return $this->belongsTo(Team::class, 'department_id', 'id');
+    }
+
+    public function getImageUrlAttribute()
+    {
+        if (is_null($this->image)) {
+            return null;
+        }
+
+        return asset_url_local_s3('notice/' . $this->image);
     }
 
 }

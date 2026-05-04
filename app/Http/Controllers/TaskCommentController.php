@@ -33,12 +33,14 @@ class TaskCommentController extends AccountBaseController
         $this->addPermission = user()->permission('add_task_comments');
         $task = Task::findOrFail($request->taskId);
         $taskUsers = $task->users->pluck('id')->toArray();
+        $ccUsers = $task->ccUsers->pluck('id')->toArray();
 
         abort_403(!(
             $this->addPermission == 'all'
             || ($this->addPermission == 'added' && $task->added_by == user()->id)
             || ($this->addPermission == 'owned' && in_array(user()->id, $taskUsers))
             || ($this->addPermission == 'added' && (in_array(user()->id, $taskUsers) || $task->added_by == user()->id))
+            || in_array(user()->id, $ccUsers)
         ));
         $comment = new TaskComment();
         $comment->comment = $request->comment;

@@ -610,6 +610,7 @@ return array (
         'updateNotice' => 'Update Notice',
         'toEmployee' => 'To Employees',
         'toClients' => 'To Clients',
+        'show_popup' => 'Show as Popup on Login',
     ),
     'knowledgeBase' => array (
         'addknowledgebase' => 'Add New Article',

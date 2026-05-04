@@ -193,6 +193,11 @@ class Task extends BaseModel
         return $this->hasMany(TaskUser::class, 'task_id');
     }
 
+    public function ccUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'task_cc_users')->withoutGlobalScope(ActiveScope::class)->withTimestamps();
+    }
+
     public function activeUsers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'task_users')->using(TaskUser::class);

@@ -13,12 +13,12 @@ $changeStatusPermission = user()->permission('change_status');
                 <div class="card-header bg-white  border-bottom-grey text-capitalize justify-content-between p-20">
                     <div class="row">
                         <div class="col-lg-8 col-10">
-                            @if ($changeStatusPermission == 'all'
+                            @if (!$isCcUser && ($changeStatusPermission == 'all'
                             || ($changeStatusPermission == 'added' && $task->added_by == user()->id)
                             || ($changeStatusPermission == 'owned' && in_array(user()->id, $taskUsers))
                             || ($changeStatusPermission == 'both' && (in_array(user()->id, $taskUsers) || $task->added_by == user()->id))
                             || ($task->project && $task->project->project_admin == user()->id)
-                            )
+                            ))
                                 @if ($task->boardColumn->slug != 'completed')
                                     <x-forms.button-primary icon="check" data-status="completed"
                                         class="change-task-status mr-2 mb-2 mb-lg-0 mb-md-0">
@@ -32,7 +32,7 @@ $changeStatusPermission = user()->permission('change_status');
                                 @endif
                             @endif
 
-                            @if ($task->boardColumn->slug != 'completed' && !is_null($task->is_task_user) && in_array('timelogs', user_modules()))
+                            @if (!$isCcUser && $task->boardColumn->slug != 'completed' && !is_null($task->is_task_user) && in_array('timelogs', user_modules()))
                                 @if (is_null($task->userActiveTimer))
                                     <x-forms.button-secondary id="start-task-timer" icon="play">
                                         @lang('modules.timeLogs.startTimer')
@@ -67,12 +67,12 @@ $changeStatusPermission = user()->permission('change_status');
                                 <div class="dropdown-menu dropdown-menu-right border-grey rounded b-shadow-4 p-0"
                                     aria-labelledby="dropdownMenuLink" tabindex="0">
 
-                                    @if ($sendReminderPermission == 'all' && $task->boardColumn->slug != 'completed')
+                                    @if (!$isCcUser && $sendReminderPermission == 'all' && $task->boardColumn->slug != 'completed')
                                         <a class="dropdown-item" id="reminderButton"
                                             href="javascript:;">@lang('modules.tasks.reminder')</a>
                                     @endif
 
-                                    @if ($editTaskPermission == 'all' || ($editTaskPermission == 'added' && $task->added_by == user()->id) || ($task->project && $task->project->project_admin == user()->id))
+                                    @if (!$isCcUser && ($editTaskPermission == 'all' || ($editTaskPermission == 'added' && $task->added_by == user()->id) || ($task->project && $task->project->project_admin == user()->id)))
                                         <a class="dropdown-item openRightModal"
                                             href="{{ route('tasks.edit', $task->id) }}">@lang('app.edit')
                                             @lang('app.task')</a>
@@ -168,6 +168,27 @@ $changeStatusPermission = user()->permission('change_status');
                                 @else
                                 --
                             @endif
+                        </div>
+                    @endif
+
+                    @if (count($task->ccUsers) > 0)
+                        <div class="col-12 px-0 pb-3 d-block d-lg-flex d-md-flex">
+                            <p class="mb-0 text-lightest f-14 w-30 d-inline-block text-capitalize">
+                                CC Users</p>
+                                @if (count($task->ccUsers) > 1)
+                                    @foreach ($task->ccUsers as $item)
+                                        <div class="taskEmployeeImg rounded-circle mr-1">
+                                            <a href="{{ route('employees.show', $item->id) }}">
+                                                <img data-toggle="tooltip" data-original-title="{{ mb_ucwords($item->name) }}"
+                                                    src="{{ $item->image_url }}">
+                                            </a>
+                                        </div>
+                                    @endforeach
+                                @else
+                                    @foreach ($task->ccUsers as $item)
+                                        <x-employee :user="$item" />
+                                    @endforeach
+                                @endif
                         </div>
                     @endif
 
@@ -276,7 +297,7 @@ $changeStatusPermission = user()->permission('change_status');
                             @endif
 
                             @if (($taskSettings->comments == 'yes' && in_array('client', user_roles())) || in_array('admin', user_roles()) || in_array('employee', user_roles()))
-                                @if ($viewTaskCommentPermission != 'none')
+                                @if ($viewTaskCommentPermission != 'none' || $isCcUser)
                                     <x-tab-item class="ajax-tab" :active="(request('view') === 'comments')"
                                         :link="route('tasks.show', $task->id).'?view=comments'">
                                         @lang('modules.tasks.comment')</x-tab-item>

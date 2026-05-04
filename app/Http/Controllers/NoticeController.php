@@ -69,6 +69,12 @@ class NoticeController extends AccountBaseController
         $notice->description = trim_editor($request->description);
         $notice->to = $request->to;
         $notice->department_id = $request->team_id;
+        $notice->show_popup = $request->show_popup ? 1 : 0;
+
+        if ($request->hasFile('image')) {
+            $notice->image = \App\Helper\Files::uploadLocalOrS3($request->image, 'notice');
+        }
+
         $notice->save();
 
         return Reply::successWithData(__('messages.recordSaved'), ['redirectUrl' => route('notices.index')]);
@@ -175,6 +181,12 @@ class NoticeController extends AccountBaseController
         $notice->description = trim_editor($request->description);
         $notice->to = $request->to;
         $notice->department_id = $request->team_id;
+        $notice->show_popup = $request->show_popup ? 1 : 0;
+
+        if ($request->hasFile('image')) {
+            $notice->image = \App\Helper\Files::uploadLocalOrS3($request->image, 'notice');
+        }
+
         $notice->save();
 
         return Reply::successWithData(__('messages.updateSuccess'), ['redirectUrl' => route('notices.index')]);
@@ -218,6 +230,20 @@ class NoticeController extends AccountBaseController
         abort_403(user()->permission('delete_notice') != 'all');
 
         Notice::whereIn('id', explode(',', $request->row_ids))->forceDelete();
+    }
+
+    public function markRead($id)
+    {
+        $noticeView = \App\Models\NoticeView::where('user_id', user()->id)
+            ->where('notice_id', $id)
+            ->first();
+
+        if ($noticeView) {
+            $noticeView->read = 1;
+            $noticeView->save();
+        }
+
+        return Reply::success(__('messages.recordSaved'));
     }
 
 }

@@ -29,7 +29,10 @@ class TaskFileController extends AccountBaseController
         $task = Task::findOrFail($request->task_id);
         $taskUsers = $task->users->pluck('id')->toArray();
 
-        abort_403(!(
+        $ccUsers = $task->ccUsers->pluck('id')->toArray();
+        $isCcUser = in_array(user()->id, $ccUsers) && !in_array(user()->id, $taskUsers) && $task->added_by != user()->id && !in_array('admin', user_roles());
+
+        abort_403($isCcUser || !(
             $this->addPermission == 'all'
             || ($this->addPermission == 'added' && $task->added_by == user()->id)
             || ($this->addPermission == 'owned' && in_array(user()->id, $taskUsers))

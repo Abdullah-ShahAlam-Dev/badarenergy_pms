@@ -86,9 +86,13 @@ class TaskObserver
 
             }
 
-            if (request()->user_id != null || request()->user_id != '' || request()->has('user_id')) {
+            if (request()->user_id != null || request()->user_id != '' || request()->has('user_id') || request()->cc_user_id != null || request()->cc_user_id != '') {
 
-                $unmentionIds = array_diff(request()->user_id, $mentionIds);
+                $userIds = request()->user_id ?: [];
+                $ccUserIds = request()->cc_user_id ?: [];
+                $allNotifyUserIds = array_unique(array_merge($userIds, $ccUserIds));
+
+                $unmentionIds = array_diff($allNotifyUserIds, $mentionIds);
                 $unmentionDescriptionMember = User::whereIn('id', $unmentionIds)->get();
             }
 
@@ -97,7 +101,7 @@ class TaskObserver
 
                         event(new TaskEvent($task, $mentionDescriptionMembers, 'TaskMention'));
 
-                    if (request()->user_id != null || request()->user_id != '' || request()->has('user_id')) {
+                    if (request()->user_id != null || request()->user_id != '' || request()->has('user_id') || request()->cc_user_id != null || request()->cc_user_id != '') {
 
                         if ($unmentionIds != null && $unmentionIds != '') {
 
@@ -122,7 +126,7 @@ class TaskObserver
 
                 }
 
-                if (request()->user_id != null || request()->user_id != '' || (isset(request()->user_id))) {
+                if (request()->user_id != null || request()->user_id != '' || (isset(request()->user_id)) || request()->cc_user_id != null || request()->cc_user_id != '') {
 
                     if ($unmentionIds != null && $unmentionIds != '') {
 
@@ -153,6 +157,11 @@ class TaskObserver
 
                 $task->users()->sync(request()->user_id);
 
+            }
+
+            // Sync cc users
+            if (!empty(request()->cc_user_id) && request()->template_id == '') {
+                $task->ccUsers()->sync(request()->cc_user_id);
             }
 
         }
@@ -215,7 +224,12 @@ class TaskObserver
                         }
                     }
 
-                    $taskUser = $task->users->whereNotIn('id', $admins->pluck('id'))->whereNotIn('id', [$task->added_by]);
+                    $taskUser = $task->users->merge($task->ccUsers)->whereNotIn('id', $admins->pluck('id'))->whereNotIn('id', [$task->added_by]);
+
+                    if (user()) {
+                        $taskUser = $taskUser->where('id', '!=', user()->id);
+                    }
+
                     event(new TaskEvent($task, $taskUser, 'TaskCompleted'));
 
                     $timeLogs = ProjectTimeLog::with('user')->whereNull('end_time')
@@ -262,10 +276,16 @@ class TaskObserver
 
             }
 
-            if (request('user_id')) {
+            if (request('user_id') || request('cc_user_id')) {
                 if (($movingTaskId != '' && $task->id == $movingTaskId) || $movingTaskId == '') {
                     // Send notification to user
-                    event(new TaskEvent($task, $task->users, 'TaskUpdated'));
+                    $allUsers = $task->users->merge($task->ccUsers);
+
+                    if (user()) {
+                        $allUsers = $allUsers->where('id', '!=', user()->id);
+                    }
+
+                    event(new TaskEvent($task, $allUsers, 'TaskUpdated'));
                 }
             }
         }

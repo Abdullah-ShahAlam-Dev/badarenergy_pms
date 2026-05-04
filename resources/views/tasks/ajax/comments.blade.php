@@ -34,11 +34,15 @@
 <!-- TAB CONTENT START -->
 
 <div class="tab-pane fade show active" role="tabpanel" aria-labelledby="nav-email-tab">
-    @if ($addTaskCommentPermission == 'all'
-    || ($addTaskCommentPermission == 'added' && $task->added_by == user()->id)
-    || ($addTaskCommentPermission == 'owned' && in_array(user()->id, $taskUsers))
-    || ($addTaskCommentPermission == 'both' && (in_array(user()->id, $taskUsers) || $task->added_by == user()->id))
-    )
+    @php
+        $canAddComment = ($addTaskCommentPermission == 'all'
+        || ($addTaskCommentPermission == 'added' && $task->added_by == user()->id)
+        || ($addTaskCommentPermission == 'owned' && in_array(user()->id, $taskUsers))
+        || ($addTaskCommentPermission == 'both' && (in_array(user()->id, $taskUsers) || $task->added_by == user()->id))
+        || (isset($isCcUser) && $isCcUser));
+    @endphp
+
+    @if ($canAddComment)
         <div class="row p-20">
             <div class="col-md-12">
                 <a class="f-15 f-w-500" href="javascript:;" id="add-comment"><i
@@ -71,6 +75,9 @@
             </div>
         </x-form>
     @endif
+    @php
+        $ccUserIds = $task->ccUsers->pluck('id')->toArray();
+    @endphp
     <div class="d-flex flex-wrap justify-content-between p-20" id="comment-list">
         @forelse ($task->comments as $comment)
             <div class="card w-100 rounded-1 border-2 mb-3 p-2 comment">
@@ -80,8 +87,12 @@
                     </div>
                     <div class="card-body border-0 pl-0 py-1 ml-3">
                         <div class="row">
-                            <div class="col-md-6 d-inline-flex">
-                                <h4 class="card-title f-15 f-w-500 text-dark mr-3">{{ mb_ucwords($comment->user->name) }}</h4>
+                            <div class="col-md-6 d-inline-flex align-items-center">
+                                <h4 class="card-title f-15 f-w-500 text-dark mr-3 mb-0">{{ mb_ucwords($comment->user->name) }}
+                                    @if(in_array($comment->user_id, $ccUserIds))
+                                        <span class="badge badge-secondary ml-1 f-11">CC</span>
+                                    @endif
+                                </h4>
                                 <span class="cursor-pointer card-date f-11 text-lightest mb-0 comment-time" data-toggle="tooltip"
                                 data-original-title="{{ $comment->created_at->timezone(company()->timezone)->translatedFormat(company()->date_format . ' ' . company()->time_format) }}">
                                 {{$comment->created_at->timezone(company()->timezone)->diffForHumans()}}
@@ -167,6 +178,12 @@
         $body.on('click' + namespace, '#add-comment', function() {
             $(this).closest('.row').addClass('d-none');
             $('#save-comment-data-form').removeClass('d-none');
+            
+            if ($('#task-comment').hasClass('ql-container') === false) {
+                if ("{{ $canAddComment ? 1 : 0 }}" == "1") {
+                    quillMention(@json($taskuserData), '#task-comment');
+                }
+            }
         });
 
         $body.on('click' + namespace, '#cancel-comment', function() {
@@ -174,9 +191,7 @@
             $('#add-comment').closest('.row').removeClass('d-none');
         });
 
-        if ("{{ $addTaskCommentPermission }}" == "all" || "{{ $addTaskCommentPermission }}" == "added") {
-            quillMention(@json($taskuserData), '#task-comment');
-        }
+
 
         $body.on('click' + namespace, '#submit-comment', function() {
             var comment = document.getElementById('task-comment').children[0].innerHTML;

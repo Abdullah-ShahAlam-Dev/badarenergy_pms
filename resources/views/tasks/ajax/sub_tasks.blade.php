@@ -10,11 +10,11 @@
 <!-- TAB CONTENT START -->
 <div class="tab-pane fade show active" role="tabpanel" aria-labelledby="nav-email-tab">
 
-    @if ($addSubTaskPermission == 'all'
+    @if (!$isCcUser && ($addSubTaskPermission == 'all'
     || ($addSubTaskPermission == 'added' && $task->added_by == user()->id)
     || ($addSubTaskPermission == 'owned' && in_array(user()->id, $taskUsers))
     || ($addSubTaskPermission == 'both' && (in_array(user()->id, $taskUsers) || $task->added_by == user()->id))
-    )
+    ))
         <div class="p-20">
 
             <div class="row">

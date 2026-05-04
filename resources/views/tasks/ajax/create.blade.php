@@ -596,7 +596,75 @@
             ...datepickerConfig
         });
 
-        $body.on('change' + namespace, '#selectAssignee', checkLeaves);
+        // Store original data-content for each option so we can restore/modify it
+        function cacheOriginalContent(selector) {
+            $(selector + ' option').each(function () {
+                if (!$(this).data('original-content')) {
+                    var existing = $(this).attr('data-content');
+                    $(this).data('original-content', existing || null);
+                }
+            });
+        }
+
+        function updateCcUsersDropdown() {
+            var assignees = $('#selectAssignee').val() || [];
+            $('#cc_users option').each(function () {
+                var orig = $(this).data('original-content');
+                if (assignees.includes($(this).val())) {
+                    $(this).prop('disabled', true);
+                    $(this).prop('selected', false);
+                    var badgeHtml = orig
+                        ? orig + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Assigned</span>'
+                        : $(this).text() + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Assigned</span>';
+                    $(this).attr('data-content', badgeHtml);
+                } else {
+                    $(this).prop('disabled', false);
+                    if (orig) {
+                        $(this).attr('data-content', orig);
+                    } else {
+                        $(this).removeAttr('data-content');
+                    }
+                }
+            });
+            $('#cc_users').selectpicker('refresh');
+        }
+
+        function updateAssigneeDropdown() {
+            var ccUsers = $('#cc_users').val() || [];
+            $('#selectAssignee option').each(function () {
+                var orig = $(this).data('original-content');
+                if (ccUsers.includes($(this).val())) {
+                    $(this).prop('disabled', true);
+                    $(this).prop('selected', false);
+                    var badgeHtml = orig
+                        ? orig + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>'
+                        : $(this).text() + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>';
+                    $(this).attr('data-content', badgeHtml);
+                } else {
+                    $(this).prop('disabled', false);
+                    if (orig) {
+                        $(this).attr('data-content', orig);
+                    } else {
+                        $(this).removeAttr('data-content');
+                    }
+                }
+            });
+            $('#selectAssignee').selectpicker('refresh');
+        }
+
+        cacheOriginalContent('#cc_users');
+        cacheOriginalContent('#selectAssignee');
+        updateCcUsersDropdown();
+        updateAssigneeDropdown();
+
+        $body.on('change' + namespace, '#selectAssignee', function() {
+            checkLeaves();
+            updateCcUsersDropdown();
+        });
+
+        $body.on('change' + namespace, '#cc_users', function() {
+            updateAssigneeDropdown();
+        });
 
         $body.on('change' + namespace, '#project_id', function () {
             let id = $(this).val() || 0;

@@ -175,20 +175,19 @@ $changeStatusPermission = user()->permission('change_status');
                         <div class="col-12 px-0 pb-3 d-block d-lg-flex d-md-flex">
                             <p class="mb-0 text-lightest f-14 w-30 d-inline-block text-capitalize">
                                 CC Users</p>
-                                @if (count($task->ccUsers) > 1)
-                                    @foreach ($task->ccUsers as $item)
-                                        <div class="taskEmployeeImg rounded-circle mr-1">
-                                            <a href="{{ route('employees.show', $item->id) }}">
-                                                <img data-toggle="tooltip" data-original-title="{{ mb_ucwords($item->name) }}"
-                                                    src="{{ $item->image_url }}">
+                            <div class="w-70">
+                                @foreach ($task->ccUsers as $item)
+                                    <div class="d-inline-flex align-items-center mb-1 mr-2">
+                                        <div class="taskEmployeeImg rounded-circle mr-1" style="display:inline-block;">
+                                            <a href="{{ route('employees.show', $item->id) }}" data-toggle="tooltip" data-original-title="{{ mb_ucwords($item->name) }}">
+                                                <img src="{{ $item->image_url }}" style="border: 2px solid #17a2b8;">
                                             </a>
                                         </div>
-                                    @endforeach
-                                @else
-                                    @foreach ($task->ccUsers as $item)
-                                        <x-employee :user="$item" />
-                                    @endforeach
-                                @endif
+                                        <span class="f-12 text-dark-grey mr-1">{{ mb_ucwords($item->name) }}</span>
+                                        <span class="badge f-10 font-weight-bold" style="background-color:#17a2b8; color:#fff; border-radius:4px; padding:2px 6px;">CC</span>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     @endif
 

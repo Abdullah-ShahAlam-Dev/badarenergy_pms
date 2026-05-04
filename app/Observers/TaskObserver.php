@@ -161,7 +161,8 @@ class TaskObserver
 
             // Sync cc users
             if (!empty(request()->cc_user_id) && request()->template_id == '') {
-                $task->ccUsers()->sync(request()->cc_user_id);
+                $ccUserIds = array_diff(request()->cc_user_id, request()->user_id ?: []);
+                $task->ccUsers()->sync($ccUserIds);
             }
 
         }

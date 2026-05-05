@@ -65,17 +65,22 @@ $addTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->p
             const url = "{{ route('taskboards.index') }}?startDate=" + encodeURIComponent(startDate) +
                 '&endDate=' + encodeURIComponent(endDate) + '&projectID=' + projectID + '&project_admin=' + projectAdmin;
 
+            console.log("Taskboard: Loading data from", url);
             $.easyAjax({
                 url: url,
                 container: '#taskboard-columns',
                 type: "GET",
                 success: function(response) {
+                    console.log("Taskboard: Data received", response.status);
                     if (response.status == 'success') {
                         $('#taskboard-columns').html(response.view);
                         if (typeof $taskboardBody.tooltip === 'function') {
                             $taskboardBody.tooltip({ selector: '[data-toggle="tooltip"]' });
                         }
                     }
+                },
+                error: function(err) {
+                    console.error("Taskboard: AJAX error", err);
                 }
             });
         }

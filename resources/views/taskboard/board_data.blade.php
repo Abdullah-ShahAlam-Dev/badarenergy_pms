@@ -147,10 +147,12 @@ $changeStatusPermission = user()->permission('change_status');
         
         var arraylike = document.getElementsByClassName('b-p-tasks');
         var containers = Array.prototype.slice.call(arraylike);
+        const isDesktop = (window.innerWidth > 1024);
+        
         window.drake = dragula({
                 containers: containers,
                 moves: function(el, source, handle, sibling) {
-                    if (el.classList.contains('move-disable') || !KTUtil.isDesktopDevice()) {
+                    if (el.classList.contains('move-disable') || !isDesktop) {
                         return false;
                     }
                     return true;

@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('task_cc_users', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedInteger('task_id');
-            $table->unsignedInteger('user_id');
-            $table->timestamps();
+        if (!Schema::hasTable('task_cc_users')) {
+            Schema::create('task_cc_users', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedInteger('task_id');
+                $table->unsignedInteger('user_id');
+                $table->timestamps();
 
-            $table->foreign('task_id')->references('id')->on('tasks')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-        });
+                $table->foreign('task_id')->references('id')->on('tasks')->onDelete('cascade');
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            });
+        }
     }
 
     /**

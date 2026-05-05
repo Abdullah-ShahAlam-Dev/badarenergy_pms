@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('notices', function (Blueprint $table) {
-            $table->boolean('show_popup')->default(false)->after('department_id');
-        });
+        if (!Schema::hasColumn('notices', 'show_popup')) {
+            Schema::table('notices', function (Blueprint $table) {
+                $table->boolean('show_popup')->default(false)->after('department_id');
+            });
+        }
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use App\Models\Role;
 use App\Models\Task;
 use App\Models\DashboardWidget;
@@ -1021,6 +1022,7 @@ class ProjectController extends AccountBaseController
 
             return response()->json($data);
         } catch (\Exception $e) {
+            Log::error($e);
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }

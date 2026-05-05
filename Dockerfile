@@ -44,7 +44,9 @@ RUN mkdir -p /etc/mysql/conf.d \
     && echo -e '#!/bin/sh\n/usr/bin/mysql.real --ssl=0 "$@"' > /usr/bin/mysql \
     && chmod +x /usr/bin/mysql \
     && git config --global --add safe.directory /var/www/html \
-    && git config --global url."https://github.com/".insteadOf git@github.com:
+    && git config --global url."https://github.com/".insteadOf git@github.com: \
+    && git config --global url."https://github.com/MacsiDigital/".insteadOf https://github.com/mr-chetan/ \
+    && git config --global url."https://github.com/MacsiDigital/".insteadOf git@github.com:mr-chetan/
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -69,8 +71,11 @@ RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Copy composer files first for better caching
+COPY --chown=www-data:www-data composer.json composer.lock* ./
+
 # Copy application files
-COPY . .
+COPY --chown=www-data:www-data . .
 
 # Copy built assets from Stage 1
 COPY --from=assets /app/public/mix-manifest.json ./public/

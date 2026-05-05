@@ -200,3 +200,76 @@ mv Modules/Recruit/Resources/lang/eng Modules/Recruit/Resources/lang/en
 # Force system caching
 /opt/alt/php82/usr/bin/php artisan optimize
 ```
+
+---
+
+## 🛠️ 9. VPS Cheat Sheet (The "What & When")
+
+Use these commands on your VPS Terminal (logged in as root) inside `/var/www/pms`.
+
+### 🔄 Scenario 1: "I just pushed a small fix" (PHP, Blade, or Translations)
+**When to run**: After you push logic changes or text changes to GitHub.
+```bash
+cd /var/www/pms
+git pull origin main
+docker exec pms_app php artisan optimize:clear
+```
+*No rebuilding required!*
+
+### 🎨 Scenario 2: "I changed CSS or JavaScript" (UI Tweaks)
+**When to run**: After you change colors, layouts, or JS logic and pushed to main.
+```bash
+cd /var/www/pms
+git pull origin main
+# We rebuild only the app container to ensure the new public/ folder is synced
+docker-compose up -d --build pms_app
+docker exec pms_app php artisan optimize:clear
+```
+
+### 🆘 Scenario 3: "The site shows 500 Internal Server Error"
+**When to run**: When the site crashes or shows a white screen.
+```bash
+# 1. Check the logs first to see the REAL error
+docker exec pms_app tail -n 50 storage/logs/laravel-$(date +%Y-%m-%d).log
+
+# 2. If it's a cache issue, force a clear
+docker exec pms_app php artisan optimize:clear
+
+# 3. If it's still down, restart everything
+docker-compose restart
+```
+
+### 💾 Scenario 4: "I added a database migration"
+**When to run**: After you added a new column or table to the database.
+```bash
+cd /var/www/pms
+git pull origin main
+docker exec pms_app php artisan migrate --force
+docker exec pms_app php artisan optimize:clear
+```
+
+### 🧹 Scenario 5: "The VPS is slow or Disk is Full"
+**When to run**: Once a month or when you get "No space left on device" errors.
+```bash
+# Clean up old/unused Docker images (Free up 5GB - 20GB)
+docker system prune -af --volumes
+
+# Clear Laravel logs
+docker exec pms_app sh -c "echo '' > storage/logs/laravel-$(date +%Y-%m-%d).log"
+```
+
+### 🚀 Scenario 6: "Complete App Reset"
+**When to run**: Only if everything is messed up and you want to start clean.
+```bash
+cd /var/www/pms
+git fetch origin main
+git reset --hard origin/main
+docker-compose down
+docker-compose up -d --build
+docker exec pms_app php artisan migrate --force
+docker exec pms_app php artisan optimize:clear
+```
+
+---
+**Love from Antigravity! 🚀**
+*(Keep this SOP updated as your server grows!)*

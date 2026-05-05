@@ -6776,13 +6776,13 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/mr-chetan/laravel-zoom.git",
-                "reference": "25c819dc468a43f4bcafc737543bfc7158d226a1"
+                "url": "https://github.com/MacsiDigital/laravel-zoom.git",
+                "reference": "cda36ec0cdbbfce9808a0634956a3a837c2f8b4d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mr-chetan/laravel-zoom/zipball/25c819dc468a43f4bcafc737543bfc7158d226a1",
-                "reference": "25c819dc468a43f4bcafc737543bfc7158d226a1",
+                "url": "https://api.github.com/repos/MacsiDigital/laravel-zoom/zipball/cda36ec0cdbbfce9808a0634956a3a837c2f8b4d",
+                "reference": "cda36ec0cdbbfce9808a0634956a3a837c2f8b4d",
                 "shasum": ""
             },
             "require": {
@@ -6849,7 +6849,7 @@
                 "zoom"
             ],
             "support": {
-                "source": "https://github.com/mr-chetan/laravel-zoom/tree/master"
+                "source": "https://github.com/MacsiDigital/laravel-zoom/tree/master"
             },
             "funding": [
                 {

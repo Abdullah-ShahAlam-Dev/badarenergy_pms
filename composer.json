@@ -51,7 +51,7 @@
         "maatwebsite/excel": "^3.1",
         "macellan/laravel-zip": "^1.0",
         "macsidigital/laravel-api-client": "dev-master",
-        "macsidigital/laravel-zoom": "*",
+        "macsidigital/laravel-zoom": "dev-master",
         "mitchbred/entrust": "^2.1",
         "mollie/laravel-mollie": "^2.0",
         "nwidart/laravel-modules": "^9.0",

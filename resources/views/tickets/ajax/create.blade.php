@@ -525,6 +525,61 @@
             $.ajaxModal(MODAL_LG, "{{ route('ticket-groups.create') }}");
         });
 
+        // ── CC ↔ Agent bidirectional badge helpers ──────────────────────────────
+        function cacheOriginalContent(selector) {
+            $(selector + ' option').each(function () {
+                if (!$(this).data('original-content')) {
+                    var existing = $(this).attr('data-content');
+                    $(this).data('original-content', existing || null);
+                }
+            });
+        }
+
+        function syncCcUsers() {
+            let agentId = $('#ticket_agent_id').val();
+            let ccUsers = $('#cc_users').val() || [];
+
+            // Update CC Users dropdown labels
+            $('#cc_users option').each(function() {
+                var orig = $(this).data('original-content');
+                var userId = $(this).val();
+                
+                if (agentId && userId == agentId) {
+                    var badge = orig
+                        ? orig + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Agent</span>'
+                        : $(this).text() + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Agent</span>';
+                    $(this).attr('data-content', badge);
+                } else {
+                    if (orig) $(this).attr('data-content', orig);
+                    else $(this).removeAttr('data-content');
+                }
+            });
+
+            // Update Agent dropdown labels
+            $('#ticket_agent_id option').each(function() {
+                var orig = $(this).data('original-content');
+                var userId = $(this).val();
+
+                if (userId && ccUsers.includes(userId)) {
+                    var badge = orig
+                        ? orig + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>'
+                        : $(this).text() + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>';
+                    $(this).attr('data-content', badge);
+                } else {
+                    if (orig) $(this).attr('data-content', orig);
+                    else $(this).removeAttr('data-content');
+                }
+            });
+
+            $('#cc_users, #ticket_agent_id').selectpicker('refresh');
+        }
+
+        $body.on('change' + namespace, '#ticket_agent_id, #cc_users', function() {
+            syncCcUsers();
+        });
+
+        cacheOriginalContent('#cc_users');
+        cacheOriginalContent('#ticket_agent_id');
         getAgents($('#ticket_group').val());
         if (typeof init === 'function') init(RIGHT_MODAL);
 

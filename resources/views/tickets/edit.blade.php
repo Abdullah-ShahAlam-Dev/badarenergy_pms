@@ -821,13 +821,11 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
             $('#cc_users option').each(function () {
                 var orig = $(this).data('original-content');
                 if (agentId && $(this).val() == agentId) {
-                    $(this).prop('disabled', true).prop('selected', false);
                     var badge = orig
                         ? orig + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Assigned</span>'
                         : $(this).text() + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Assigned</span>';
                     $(this).attr('data-content', badge);
                 } else {
-                    $(this).prop('disabled', false);
                     if (orig) $(this).attr('data-content', orig);
                     else $(this).removeAttr('data-content');
                 }
@@ -840,13 +838,11 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
             $('#agent_id option').each(function () {
                 var orig = $(this).data('original-content');
                 if (ccUsers.includes($(this).val())) {
-                    $(this).prop('disabled', true).prop('selected', false);
                     var badge = orig
                         ? orig + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>'
                         : $(this).text() + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>';
                     $(this).attr('data-content', badge);
                 } else {
-                    $(this).prop('disabled', false);
                     if (orig) $(this).attr('data-content', orig);
                     else $(this).removeAttr('data-content');
                 }

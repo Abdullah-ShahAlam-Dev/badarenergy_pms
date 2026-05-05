@@ -124,6 +124,8 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account/settings'], function 
 
     Route::get('replyTemplates/fetch-template', [TicketReplyTemplatesController::class, 'fetchTemplate'])->name('replyTemplates.fetchTemplate');
     Route::resource('replyTemplates', TicketReplyTemplatesController::class);
+    
+    Route::resource('email-templates', \App\Http\Controllers\EmailTemplateController::class)->only(['store', 'update']);
     /* End Ticket settings routes */
     Route::get('project-settings/create-category', [ProjectSettingController::class, 'createCategory'])->name('project-settings.createCategory');
     Route::post('project-settings/save-project-category', [ProjectSettingController::class, 'saveProjectCategory'])->name('project-settings.saveProjectCategory');

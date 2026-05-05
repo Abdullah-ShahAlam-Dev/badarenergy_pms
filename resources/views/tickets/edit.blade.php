@@ -125,9 +125,10 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                 <!-- TICKET MESSAGE START -->
                 <div class="ticket-msg border-right-grey" data-menu-vertical="1" data-menu-scroll="1"
                     data-menu-dropdown-timeout="500" id="ticketMsg">
+                    @php $ccUserIds = $ticket->ccUsers->pluck('id')->toArray(); @endphp
 
                     @foreach ($ticket->reply as $reply)
-                        <x-cards.ticket :message="$reply" :user="$reply->user" />
+                        <x-cards.ticket :message="$reply" :user="$reply->user" :ccUserIds="$ccUserIds" />
                     @endforeach
 
                 </div>
@@ -204,7 +205,14 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                             </ul>
                         </div>
                     @else
-                        <x-forms.button-primary icon="check" data-status="open" class="submit-ticket mr-3">
+                        @php
+                            $submitStatus = 'open';
+                            // If user is a CC user and not the requester, preserve the current status instead of opening
+                            if (isset($ccUserIds) && in_array(user()->id, $ccUserIds) && user()->id != $ticket->user_id) {
+                                $submitStatus = $ticket->status;
+                            }
+                        @endphp
+                        <x-forms.button-primary icon="check" data-status="{{ $submitStatus }}" class="submit-ticket mr-3">
                             @lang('app.submit')
                         </x-forms.button-primary>
                     @endif
@@ -300,6 +308,18 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                                                     class="btn btn-outline-secondary border-grey">@lang('app.add')</button>
                                             </x-slot>
                                         @endif
+                                    </x-forms.input-group>
+                                </div>
+                                <div class="more-filter-items mb-4">
+                                    <x-forms.label class="my-3" fieldId="cc_users" :fieldLabel="'CC Users'">
+                                    </x-forms.label>
+                                    <x-forms.input-group>
+                                        <select class="form-control select-picker" name="cc_users[]" id="cc_users"
+                                                data-live-search="true" data-size="8" multiple data-container="body">
+                                            @foreach ($employees as $employee)
+                                                <x-user-option :user="$employee" :selected="in_array($employee->id, $ticket->ccUsers->pluck('id')->toArray())" />
+                                            @endforeach
+                                        </select>
                                     </x-forms.input-group>
                                 </div>
                                 <div class="more-filter-items">
@@ -786,6 +806,55 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
         }
         scrollToBottom('ticketMsg');
 
+        // ── CC ↔ Agent bidirectional badge helpers ──────────────────────────────
+        function cacheOriginalContent(selector) {
+            $(selector + ' option').each(function () {
+                if (!$(this).data('original-content')) {
+                    var existing = $(this).attr('data-content');
+                    $(this).data('original-content', existing || null);
+                }
+            });
+        }
+
+        function updateCcFromAgent() {
+            var agentId = $('#agent_id').val();
+            $('#cc_users option').each(function () {
+                var orig = $(this).data('original-content');
+                if (agentId && $(this).val() == agentId) {
+                    $(this).prop('disabled', true).prop('selected', false);
+                    var badge = orig
+                        ? orig + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Assigned</span>'
+                        : $(this).text() + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Assigned</span>';
+                    $(this).attr('data-content', badge);
+                } else {
+                    $(this).prop('disabled', false);
+                    if (orig) $(this).attr('data-content', orig);
+                    else $(this).removeAttr('data-content');
+                }
+            });
+            $('#cc_users').selectpicker('refresh');
+        }
+
+        function updateAgentFromCc() {
+            var ccUsers = $('#cc_users').val() || [];
+            $('#agent_id option').each(function () {
+                var orig = $(this).data('original-content');
+                if (ccUsers.includes($(this).val())) {
+                    $(this).prop('disabled', true).prop('selected', false);
+                    var badge = orig
+                        ? orig + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>'
+                        : $(this).text() + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>';
+                    $(this).attr('data-content', badge);
+                } else {
+                    $(this).prop('disabled', false);
+                    if (orig) $(this).attr('data-content', orig);
+                    else $(this).removeAttr('data-content');
+                }
+            });
+            $('#agent_id').selectpicker('refresh');
+        }
+        // ────────────────────────────────────────────────────────────────────────
+
         function getAgents(groupId) {
             var url = "{{ route('tickets.agent_group', ':id').'?ticketNumber='.$ticket->ticket_number}}".replace(':id', groupId);
             if (!groupId) return;
@@ -795,6 +864,11 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                 success: function(response) {
                     var options = response.data;
                     $('#agent_id').html('<option value="">--</option>' + options).selectpicker('refresh');
+
+                    // Re-cache and sync badges now that agent list has changed
+                    cacheOriginalContent('#agent_id');
+                    updateCcFromAgent();
+                    updateAgentFromCc();
                 }
             });
         }
@@ -803,7 +877,28 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
             getAgents($(this).val());
         });
 
-        getAgents($('#group_id').val());
+        $body.on('change' + namespace, '#agent_id', function() {
+            updateCcFromAgent();
+        });
+
+        $body.on('change' + namespace, '#cc_users', function() {
+            updateAgentFromCc();
+        });
+
+        // Rich selectpicker for CC Users
+        $("#cc_users").selectpicker({
+            actionsBox: true,
+            selectAllText: "{{ __('modules.permission.selectAll') }}",
+            deselectAllText: "{{ __('modules.permission.deselectAll') }}",
+            multipleSeparator: " ",
+            selectedTextFormat: "count > 8",
+            countSelectedText: function(selected) { return selected + " {{ __('app.membersSelected') }} "; }
+        });
+
+        // Initial cache + sync (runs after CC selectpicker is initialised above)
+        cacheOriginalContent('#cc_users');
+        getAgents($('#group_id').val()); // will cache agent options and sync after AJAX
+
 
         window.addEventListener('turbo:before-cache', function cleanup() {
             $body.off(namespace);

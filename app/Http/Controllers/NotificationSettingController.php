@@ -50,6 +50,10 @@ class NotificationSettingController extends AccountBaseController
         case 'pusher-setting':
             $this->view = 'notification-settings.ajax.pusher-setting';
             break;
+        case 'email-templates':
+            $this->emailTemplates = \App\Models\EmailTemplate::all();
+            $this->view = 'notification-settings.ajax.email-templates';
+            break;
         default:
             $this->smtpSetting = SmtpSetting::first();
             $this->view = 'notification-settings.ajax.email-setting';

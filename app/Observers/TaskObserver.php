@@ -86,14 +86,16 @@ class TaskObserver
 
             }
 
-            if (request()->user_id != null || request()->user_id != '' || request()->has('user_id') || request()->cc_user_id != null || request()->cc_user_id != '') {
-
+            if (request()->user_id != null || request()->user_id != '' || request()->has('user_id')) {
                 $userIds = request()->user_id ?: [];
-                $ccUserIds = request()->cc_user_id ?: [];
-                $allNotifyUserIds = array_unique(array_merge($userIds, $ccUserIds));
-
-                $unmentionIds = array_diff($allNotifyUserIds, $mentionIds);
+                $unmentionIds = array_diff($userIds, $mentionIds);
                 $unmentionDescriptionMember = User::whereIn('id', $unmentionIds)->get();
+            }
+
+            if (request()->cc_user_id != null || request()->cc_user_id != '') {
+                $ccUserIds = request()->cc_user_id ?: [];
+                $unmentionCcIds = array_diff($ccUserIds, $mentionIds);
+                $unmentionCcDescriptionMember = User::whereIn('id', $unmentionCcIds)->get();
             }
 
             if (request()->has('project_id') && request()->project_id != 'all' && request()->project_id != '') {
@@ -101,12 +103,15 @@ class TaskObserver
 
                         event(new TaskEvent($task, $mentionDescriptionMembers, 'TaskMention'));
 
-                    if (request()->user_id != null || request()->user_id != '' || request()->has('user_id') || request()->cc_user_id != null || request()->cc_user_id != '') {
-
+                    if (request()->user_id != null || request()->user_id != '' || request()->has('user_id')) {
                         if ($unmentionIds != null && $unmentionIds != '') {
-
                             event(new TaskEvent($task, $unmentionDescriptionMember, 'NewTask'));
+                        }
+                    }
 
+                    if (request()->cc_user_id != null || request()->cc_user_id != '') {
+                        if ($unmentionCcIds != null && $unmentionCcIds != '') {
+                            event(new TaskEvent($task, $unmentionCcDescriptionMember, 'NewCcTask'));
                         }
                     }
 
@@ -126,12 +131,15 @@ class TaskObserver
 
                 }
 
-                if (request()->user_id != null || request()->user_id != '' || (isset(request()->user_id)) || request()->cc_user_id != null || request()->cc_user_id != '') {
-
+                if (request()->user_id != null || request()->user_id != '' || (isset(request()->user_id))) {
                     if ($unmentionIds != null && $unmentionIds != '') {
-
                         event(new TaskEvent($task, $unmentionDescriptionMember, 'NewTask'));
+                    }
+                }
 
+                if (request()->cc_user_id != null || request()->cc_user_id != '') {
+                    if ($unmentionCcIds != null && $unmentionCcIds != '') {
+                        event(new TaskEvent($task, $unmentionCcDescriptionMember, 'NewCcTask'));
                     }
                 }
             }

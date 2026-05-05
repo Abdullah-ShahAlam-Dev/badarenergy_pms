@@ -17,6 +17,10 @@
                                 href="{{ route('notifications.index') }}" role="tab" aria-controls="nav-ticketAgents"
                                 aria-selected="true">@lang('app.email')
                             </a>
+                            <a class="nav-item nav-link f-15 email-templates"
+                                href="{{ route('notifications.index') }}?tab=email-templates" role="tab" aria-controls="nav-emailTemplates"
+                                aria-selected="false" ajax="false">Email Templates
+                            </a>
                             <a class="nav-item nav-link f-15 slack-setting"
                                 href="{{ route('notifications.index') }}?tab=slack-setting" role="tab"
                                 aria-controls="nav-ticketTypes" aria-selected="true" ajax="false">@lang('app.slack') <i

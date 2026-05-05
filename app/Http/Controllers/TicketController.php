@@ -173,6 +173,10 @@ class TicketController extends AccountBaseController
             $ticket->ticketTags()->attach($tag);
         }
 
+        if ($request->cc_users) {
+            $ticket->ccUsers()->sync($request->cc_users);
+        }
+
         // Log search
         $this->logSearchEntry($ticket->id, $ticket->subject, 'tickets.show', 'ticket');
 
@@ -201,6 +205,7 @@ class TicketController extends AccountBaseController
             || ($this->viewTicketPermission == 'added' && user()->id == $this->ticket->added_by)
             || ($this->viewTicketPermission == 'owned' && (user()->id == $this->ticket->user_id || $this->ticket->agent_id == user()->id))
             || ($this->viewTicketPermission == 'both' && (user()->id == $this->ticket->user_id || $this->ticket->agent_id == user()->id || $this->ticket->added_by == user()->id))
+            || $this->ticket->ccUsers->contains(user()->id)
         ));
 
         $this->groups = TicketGroup::with('enabledAgents', 'enabledAgents.user')->get();
@@ -208,6 +213,8 @@ class TicketController extends AccountBaseController
         $this->channels = TicketChannel::all();
         $this->templates = TicketReplyTemplate::all();
         $this->ticketChart = $this->ticketChartData($this->ticket->user_id);
+
+        $this->employees = User::allEmployees();
 
         if ($this->ticket->getCustomFieldGroupsWithFields()) {
             $this->fields = $this->ticket->getCustomFieldGroupsWithFields()->fields;
@@ -327,6 +334,12 @@ class TicketController extends AccountBaseController
             $ticket->ticketTags()->attach($tag);
         }
 
+        if ($request->cc_users) {
+            $ticket->ccUsers()->sync($request->cc_users);
+        } else {
+            $ticket->ccUsers()->detach();
+        }
+
         return Reply::success(__('messages.updateSuccess'));
     }
 
@@ -334,12 +347,17 @@ class TicketController extends AccountBaseController
     {
         $viewPermission = user()->permission('view_tickets');
 
-        $tickets = Ticket::with('agent');
+        $tickets = Ticket::with('agent')
+            ->leftJoin('ticket_cc_users as tcu', function($join) {
+                $join->on('tcu.ticket_id', '=', 'tickets.id')
+                     ->where('tcu.user_id', '=', user()->id);
+            })
+            ->select('tickets.*');
 
         if (!is_null($request->startDate) && $request->startDate != '') {
             try {
                 $startDate = Carbon::createFromFormat($this->company->date_format, $request->startDate)->toDateString();
-                $tickets->where(DB::raw('DATE(`updated_at`)'), '>=', $startDate);
+                $tickets->where(DB::raw('DATE(tickets.updated_at)'), '>=', $startDate);
             } catch (\Exception $e) {
                 // Ignore invalid date format (e.g. full range string from Turbo cache)
             }
@@ -348,46 +366,49 @@ class TicketController extends AccountBaseController
         if (!is_null($request->endDate) && $request->endDate != '') {
             try {
                 $endDate = Carbon::createFromFormat($this->company->date_format, $request->endDate)->toDateString();
-                $tickets->where(DB::raw('DATE(`updated_at`)'), '<=', $endDate);
+                $tickets->where(DB::raw('DATE(tickets.updated_at)'), '<=', $endDate);
             } catch (\Exception $e) {
                 // Ignore invalid date format
             }
         }
 
         if (!is_null($request->agentId) && $request->agentId != 'all') {
-            $tickets->where('agent_id', '=', $request->agentId);
+            $tickets->where('tickets.agent_id', '=', $request->agentId);
         }
 
         if (!is_null($request->priority) && $request->priority != 'all') {
-            $tickets->where('priority', '=', $request->priority);
+            $tickets->where('tickets.priority', '=', $request->priority);
         }
 
         if (!is_null($request->channelId) && $request->channelId != 'all') {
-            $tickets->where('channel_id', '=', $request->channelId);
+            $tickets->where('tickets.channel_id', '=', $request->channelId);
         }
 
         if (!is_null($request->typeId) && $request->typeId != 'all') {
-            $tickets->where('type_id', '=', $request->typeId);
+            $tickets->where('tickets.type_id', '=', $request->typeId);
         }
 
         if (!is_null($request->ticketStatus) && $request->ticketStatus != 'all' && $request->ticketStatus != '' && $request->ticketStatus != 0) {
-            $tickets->where('status', '=', $request->ticketStatus);
+            $tickets->where('tickets.status', '=', $request->ticketStatus);
         }
 
         if ($viewPermission == 'added') {
-            $tickets->where('added_by', '=', user()->id);
-        }
-
-        if ($viewPermission == 'owned') {
-            $tickets->where('user_id', '=', user()->id)
-                ->orWhere('tickets.agent_id', '=', user()->id);
-        }
-
-        if ($viewPermission == 'both') {
+            $tickets->where(function ($query) {
+                $query->where('tickets.added_by', '=', user()->id)
+                    ->orWhereNotNull('tcu.ticket_id');
+            });
+        } elseif ($viewPermission == 'owned') {
+            $tickets->where(function ($query) {
+                $query->where('tickets.user_id', '=', user()->id)
+                    ->orWhere('tickets.agent_id', '=', user()->id)
+                    ->orWhereNotNull('tcu.ticket_id');
+            });
+        } elseif ($viewPermission == 'both') {
             $tickets->where(function ($query) {
                 $query->where('tickets.user_id', '=', user()->id)
                     ->orWhere('tickets.added_by', '=', user()->id)
-                    ->orWhere('tickets.agent_id', '=', user()->id);
+                    ->orWhere('tickets.agent_id', '=', user()->id)
+                    ->orWhereNotNull('tcu.ticket_id');
             });
         }
 
@@ -411,12 +432,18 @@ class TicketController extends AccountBaseController
 
         $totalTickets = $tickets->count();
 
+        $ccTickets = Ticket::join('ticket_cc_users', function($join) {
+            $join->on('ticket_cc_users.ticket_id', '=', 'tickets.id')
+                 ->where('ticket_cc_users.user_id', '=', user()->id);
+        })->count();
+
         $ticketData = [
             'totalTickets' => $totalTickets,
             'closedTickets' => $closedTickets,
             'openTickets' => $openTickets,
             'pendingTickets' => $pendingTickets,
             'resolvedTickets' => $resolvedTickets,
+            'ccTickets' => $ccTickets,
             'unreadNotificationCount' => (isset($this->unreadNotificationCount) ? $this->unreadNotificationCount : (isset(user()->unreadNotifications) ? count(user()->unreadNotifications) : 0))
         ];
 

@@ -56,6 +56,7 @@ class   TicketDataTable extends BaseDataTable
                 || ($this->viewTicketPermission == 'added' && user()->id == $row->added_by)
                 || ($this->viewTicketPermission == 'owned' && (user()->id == $row->user_id || $row->agent_id == user()->id))
                 || ($this->viewTicketPermission == 'both' && (user()->id == $row->user_id || $row->agent_id == user()->id || $row->added_by == user()->id))
+                || $row->ccUsers->contains(user()->id)
             ) {
                 $action .= '<a href="' . route('tickets.show', [$row->ticket_number]) . '" class="dropdown-item"><i class="fa fa-eye mr-2"></i>' . __('app.view') . '</a>';
             }
@@ -200,7 +201,7 @@ class   TicketDataTable extends BaseDataTable
     {
         $request = $this->request();
 
-        $model = $model->with('requester', 'agent')
+        $model = $model->with('requester', 'agent', 'ccUsers')
             ->select('tickets.*')
             ->join('users', 'users.id', '=', 'tickets.user_id');
 
@@ -266,24 +267,35 @@ class   TicketDataTable extends BaseDataTable
             $model->where('ticket_tags.tag_id', '=', $request->tagId);
         }
 
-        if ($this->viewTicketPermission == 'owned') {
+        // Always LEFT JOIN cc_users so we can use it in WHERE conditions below
+        $model->leftJoin('ticket_cc_users as tcu', function($join) {
+            $join->on('tcu.ticket_id', '=', 'tickets.id')
+                 ->where('tcu.user_id', '=', user()->id);
+        });
+
+        // Filter: show ONLY tickets where current user is CC'd
+        if (!is_null($request->ccFilter) && $request->ccFilter == 'yes') {
+            $model->whereNotNull('tcu.ticket_id');
+        } elseif ($this->viewTicketPermission == 'owned') {
             $model->where(function ($query) {
                 $query->where('tickets.user_id', '=', user()->id)
-                    ->orWhere('tickets.agent_id', '=', user()->id);
+                    ->orWhere('tickets.agent_id', '=', user()->id)
+                    ->orWhereNotNull('tcu.ticket_id');
             });
-        }
-
-        if ($this->viewTicketPermission == 'both') {
+        } elseif ($this->viewTicketPermission == 'both') {
             $model->where(function ($query) {
                 $query->where('tickets.user_id', '=', user()->id)
                     ->orWhere('tickets.added_by', '=', user()->id)
-                    ->orWhere('tickets.agent_id', '=', user()->id);
+                    ->orWhere('tickets.agent_id', '=', user()->id)
+                    ->orWhereNotNull('tcu.ticket_id');
+            });
+        } elseif ($this->viewTicketPermission == 'added') {
+            $model->where(function ($query) {
+                $query->where('tickets.added_by', '=', user()->id)
+                    ->orWhereNotNull('tcu.ticket_id');
             });
         }
 
-        if ($this->viewTicketPermission == 'added') {
-            $model->where('tickets.added_by', '=', user()->id);
-        }
 
         if ($request->searchText != '') {
             $model->where(function ($query) {

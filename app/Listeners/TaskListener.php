@@ -5,6 +5,7 @@ namespace App\Listeners;
 use App\Events\TaskEvent;
 use App\Models\User;
 use App\Notifications\NewTask;
+use App\Notifications\NewCcTask;
 use App\Notifications\TaskUpdated;
 use App\Notifications\NewClientTask;
 use App\Notifications\TaskCompleted;
@@ -32,6 +33,9 @@ class TaskListener
             }
             elseif ($event->notificationName == 'NewTask') {
                 Notification::send($event->notifyUser, new NewTask($event->task));
+            }
+            elseif ($event->notificationName == 'NewCcTask') {
+                Notification::send($event->notifyUser, new NewCcTask($event->task));
             }
             elseif ($event->notificationName == 'TaskUpdated') {
                 Notification::send($event->notifyUser, new TaskUpdated($event->task));

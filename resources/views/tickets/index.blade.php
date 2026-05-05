@@ -223,6 +223,15 @@ $addTicketPermission = user()->permission('add_tickets');
                 </a>
             </div>
 
+            @if (!in_array('client', user_roles()))
+            <div class="col mt-4 mt-lg-0">
+                <a href="javascript:;" id="cc-tickets-filter">
+                    <x-cards.widget title="CC Tickets" value="0" icon="at"
+                        widgetId="ccTickets" />
+                </a>
+            </div>
+            @endif
+
         </div>
 
         <!-- Add Task Export Buttons Start -->
@@ -334,6 +343,7 @@ $addTicketPermission = user()->permission('add_tickets');
                 data['tagId'] = tagId;
                 data['ticketStatus'] = status;
                 data['searchText'] = searchText;
+                data['ccFilter'] = window._ticketCcFilter || '';
 
                 if (ticketFilterStatus != '') {
                     data['ticketFilterStatus'] = ticketFilterStatus;
@@ -372,6 +382,16 @@ $addTicketPermission = user()->permission('add_tickets');
                 $('#ticket-status').val(status);
                 $('#ticket-status').selectpicker('refresh');
                 ticketFilterStatus = '';
+                window._ticketCcFilter = '';
+                showTable();
+            });
+
+            $body.on('click' + namespace, '#cc-tickets-filter', function() {
+                window._ticketCcFilter = window._ticketCcFilter === 'yes' ? '' : 'yes';
+                var $widget = $(this).find('.card');
+                $widget.toggleClass('border border-primary', window._ticketCcFilter === 'yes');
+                ticketFilterStatus = '';
+                $('#ticket-status').val('all').selectpicker('refresh');
                 showTable();
             });
 
@@ -551,6 +571,9 @@ $addTicketPermission = user()->permission('add_tickets');
                         $('#openTickets').html(response.openTickets);
                         $('#pendingTickets').html(response.pendingTickets);
                         $('#resolvedTickets').html(response.resolvedTickets);
+                        if (response.ccTickets !== undefined) {
+                            $('#ccTickets').html(response.ccTickets);
+                        }
                         if (typeof window.syncGlobalStats === 'function') {
                             window.syncGlobalStats(response);
                         }

@@ -8,7 +8,12 @@
         <div class="card-body border-0 pl-0">
             <div class="d-flex">
                 <a href="{{ !is_null($user->employeeDetail) ? route('employees.show', $user->id) : route('clients.show', $user->id) }}">
-                    <h4 class="card-title f-13 f-w-500 text-dark mr-3">{{ $user->name }}</h4>
+                    <h4 class="card-title f-13 f-w-500 text-dark mr-3">
+                        {{ $user->name }}
+                        @if(isset($ccUserIds) && in_array($user->id, $ccUserIds))
+                            <span class="badge badge-secondary ml-1 f-11">CC</span>
+                        @endif
+                    </h4>
                 </a>
                 <p class="card-date f-11 text-lightest mb-0">
                     {{ $message->created_at->timezone(company()->timezone)->translatedFormat(company()->date_format . ' ' . company()->time_format) }}

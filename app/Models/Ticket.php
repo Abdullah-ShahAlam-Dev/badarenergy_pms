@@ -161,4 +161,9 @@ class Ticket extends BaseModel
         return $this->hasMany(MentionUser::class, 'ticket_id');
     }
 
+    public function ccUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'ticket_cc_users', 'ticket_id', 'user_id');
+    }
+
 }

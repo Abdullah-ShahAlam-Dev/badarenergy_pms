@@ -9,16 +9,18 @@ class Ticket extends Component
 
     public $message;
     public $user;
+    public $ccUserIds;
 
     /**
      * Create a new component instance.
      *
      * @return void
      */
-    public function __construct($message, $user)
+    public function __construct($message, $user, $ccUserIds = [])
     {
         $this->message = $message;
         $this->user = $user;
+        $this->ccUserIds = $ccUserIds;
     }
 
     /**

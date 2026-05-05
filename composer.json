@@ -90,34 +90,42 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/Froiden/payfast"
+            "url": "https://github.com/Froiden/payfast",
+            "canonical": false
         },
         {
             "type": "vcs",
-            "url": "https://github.com/Froiden/show-me-the-money"
+            "url": "https://github.com/Froiden/show-me-the-money",
+            "canonical": false
         },
         {
             "type": "vcs",
-            "url": "https://github.com/Froiden/laravelrave"
+            "url": "https://github.com/Froiden/laravelrave",
+            "canonical": false
         },
         {
             "type": "vcs",
-            "url": "https://github.com/Froiden/laravel-dompdf"
+            "url": "https://github.com/Froiden/laravel-dompdf",
+            "canonical": false
         },
         {
             "type": "vcs",
-            "url": "https://github.com/Froiden/dompdf"
+            "url": "https://github.com/Froiden/dompdf",
+            "canonical": false
         },
         {
             "type": "vcs",
-            "url": "https://github.com/Froiden/PayPal-PHP-SDK"
+            "url": "https://github.com/Froiden/PayPal-PHP-SDK",
+            "canonical": false
         },
         {
             "type": "vcs",
-            "url": "https://github.com/mr-chetan/laravel-zoom"
+            "url": "https://github.com/mr-chetan/laravel-zoom",
+            "canonical": false
         },{
             "type": "vcs",
-            "url": "https://github.com/philharmonie/laravel-api-client"
+            "url": "https://github.com/philharmonie/laravel-api-client",
+            "canonical": false
         }
     ],
     "config": {

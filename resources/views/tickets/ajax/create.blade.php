@@ -287,13 +287,65 @@
         var ticketDropzone;
         var tagify;
 
-        // Cleanup before re-binding
         $body.off(namespace);
 
         $body.on('click' + namespace, '#add-file', function () {
             $('.upload-section').removeClass('d-none');
             $(this).addClass('d-none');
             window.scrollTo(0, document.body.scrollHeight);
+        });
+
+        // ── CC ↔ Agent bidirectional badge helpers ──────────────────────────────
+        function cacheOriginalContent(selector) {
+            $(selector + ' option').each(function () {
+                if (!$(this).data('original-content')) {
+                    var existing = $(this).attr('data-content');
+                    $(this).data('original-content', existing || null);
+                }
+            });
+        }
+
+        function syncCcUsers() {
+            let agentId = $('#ticket_agent_id').val();
+            let ccUsers = $('#cc_users').val() || [];
+
+            // Update CC Users dropdown labels
+            $('#cc_users option').each(function() {
+                var orig = $(this).data('original-content');
+                var userId = $(this).val();
+                
+                if (agentId && userId == agentId) {
+                    var badge = orig
+                        ? orig + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Agent</span>'
+                        : $(this).text() + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Agent</span>';
+                    $(this).attr('data-content', badge);
+                } else {
+                    if (orig) $(this).attr('data-content', orig);
+                    else $(this).removeAttr('data-content');
+                }
+            });
+
+            // Update Agent dropdown labels
+            $('#ticket_agent_id option').each(function() {
+                var orig = $(this).data('original-content');
+                var userId = $(this).val();
+
+                if (userId && ccUsers.includes(userId)) {
+                    var badge = orig
+                        ? orig + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>'
+                        : $(this).text() + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>';
+                    $(this).attr('data-content', badge);
+                } else {
+                    if (orig) $(this).attr('data-content', orig);
+                    else $(this).removeAttr('data-content');
+                }
+            });
+
+            $('#cc_users, #ticket_agent_id').selectpicker('refresh');
+        }
+
+        $body.on('change' + namespace, '#ticket_agent_id, #cc_users', function() {
+            syncCcUsers();
         });
 
         function getAgents(groupId) {
@@ -323,91 +375,10 @@
 
                     // Re-cache and sync badges now that agent list has changed
                     cacheOriginalContent('#ticket_agent_id');
-                    updateCcFromAgent();
-                    updateAgentFromCc();
+                    syncCcUsers();
                 }
             });
         }
-
-        // Rich selectpicker for CC Users
-        $("#cc_users").selectpicker({
-            actionsBox: true,
-            selectAllText: "{{ __('modules.permission.selectAll') }}",
-            deselectAllText: "{{ __('modules.permission.deselectAll') }}",
-            multipleSeparator: " ",
-            selectedTextFormat: "count > 8",
-            countSelectedText: function(selected) { return selected + " {{ __('app.membersSelected') }} "; }
-        });
-
-        // Initial cache + sync
-        cacheOriginalContent('#ticket_agent_id');
-        cacheOriginalContent('#cc_users');
-        updateCcFromAgent();
-        updateAgentFromCc();
-
-        // ── CC ↔ Agent bidirectional badge helpers ──────────────────────────────
-        function cacheOriginalContent(selector) {
-            $(selector + ' option').each(function () {
-                if (!$(this).data('original-content')) {
-                    var existing = $(this).attr('data-content');
-                    $(this).data('original-content', existing || null);
-                }
-            });
-        }
-
-        function updateCcFromAgent() {
-            var agentId = $('#ticket_agent_id').val();  // single-select
-            $('#cc_users option').each(function () {
-                var orig = $(this).data('original-content');
-                if (agentId && $(this).val() == agentId) {
-                    $(this).prop('disabled', true).prop('selected', false);
-                    var badge = orig
-                        ? orig + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Assigned</span>'
-                        : $(this).text() + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Assigned</span>';
-                    $(this).attr('data-content', badge);
-                } else {
-                    $(this).prop('disabled', false);
-                    if (orig) $(this).attr('data-content', orig);
-                    else $(this).removeAttr('data-content');
-                }
-            });
-            $('#cc_users').selectpicker('refresh');
-        }
-
-        function updateAgentFromCc() {
-            var ccUsers = $('#cc_users').val() || [];
-            $('#ticket_agent_id option').each(function () {
-                var orig = $(this).data('original-content');
-                if (ccUsers.includes($(this).val())) {
-                    $(this).prop('disabled', true).prop('selected', false);
-                    var badge = orig
-                        ? orig + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>'
-                        : $(this).text() + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>';
-                    $(this).attr('data-content', badge);
-                } else {
-                    $(this).prop('disabled', false);
-                    if (orig) $(this).attr('data-content', orig);
-                    else $(this).removeAttr('data-content');
-                }
-            });
-            $('#ticket_agent_id').selectpicker('refresh');
-        }
-        // ────────────────────────────────────────────────────────────────────────
-
-        $body.on('change' + namespace, '#ticket_group', function() {
-            getAgents($(this).val());
-        });
-
-        // Re-run badge sync after agent list is refreshed by getAgents()
-        // (hooked inside getAgents success below — see updated getAgents)
-
-        $body.on('change' + namespace, '#ticket_agent_id', function() {
-            updateCcFromAgent();
-        });
-
-        $body.on('change' + namespace, '#cc_users', function() {
-            updateAgentFromCc();
-        });
 
         if (Dropzone.instances.length > 0) {
             Dropzone.instances.forEach(function(dz) {
@@ -525,63 +496,27 @@
             $.ajaxModal(MODAL_LG, "{{ route('ticket-groups.create') }}");
         });
 
-        // ── CC ↔ Agent bidirectional badge helpers ──────────────────────────────
-        function cacheOriginalContent(selector) {
-            $(selector + ' option').each(function () {
-                if (!$(this).data('original-content')) {
-                    var existing = $(this).attr('data-content');
-                    $(this).data('original-content', existing || null);
-                }
-            });
+        $body.on('change' + namespace, '#ticket_group', function() {
+            getAgents($(this).val());
+        });
+
+        // Initialize Everything
+        if (typeof init === 'function') {
+            init(RIGHT_MODAL || '#save-ticket-data-form');
         }
 
-        function syncCcUsers() {
-            let agentId = $('#ticket_agent_id').val();
-            let ccUsers = $('#cc_users').val() || [];
-
-            // Update CC Users dropdown labels
-            $('#cc_users option').each(function() {
-                var orig = $(this).data('original-content');
-                var userId = $(this).val();
-                
-                if (agentId && userId == agentId) {
-                    var badge = orig
-                        ? orig + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Agent</span>'
-                        : $(this).text() + ' <span style="background:#17a2b8;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">Agent</span>';
-                    $(this).attr('data-content', badge);
-                } else {
-                    if (orig) $(this).attr('data-content', orig);
-                    else $(this).removeAttr('data-content');
-                }
-            });
-
-            // Update Agent dropdown labels
-            $('#ticket_agent_id option').each(function() {
-                var orig = $(this).data('original-content');
-                var userId = $(this).val();
-
-                if (userId && ccUsers.includes(userId)) {
-                    var badge = orig
-                        ? orig + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>'
-                        : $(this).text() + ' <span style="background:#6c757d;color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;">CC</span>';
-                    $(this).attr('data-content', badge);
-                } else {
-                    if (orig) $(this).attr('data-content', orig);
-                    else $(this).removeAttr('data-content');
-                }
-            });
-
-            $('#cc_users, #ticket_agent_id').selectpicker('refresh');
-        }
-
-        $body.on('change' + namespace, '#ticket_agent_id, #cc_users', function() {
-            syncCcUsers();
+        $("#cc_users").selectpicker({
+            actionsBox: true,
+            selectAllText: "{{ __('modules.permission.selectAll') }}",
+            deselectAllText: "{{ __('modules.permission.deselectAll') }}",
+            multipleSeparator: " ",
+            selectedTextFormat: "count > 8",
+            countSelectedText: function(selected) { return selected + " {{ __('app.membersSelected') }} "; }
         });
 
         cacheOriginalContent('#cc_users');
         cacheOriginalContent('#ticket_agent_id');
         getAgents($('#ticket_group').val());
-        if (typeof init === 'function') init(RIGHT_MODAL);
 
         window.addEventListener('turbo:before-cache', function cleanup() {
             $body.off(namespace);

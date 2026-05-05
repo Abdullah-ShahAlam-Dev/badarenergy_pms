@@ -979,15 +979,18 @@ class ProjectController extends AccountBaseController
             }
 
             if ($projectTask && $projectTask != 'null' && $projectTask != '') {
-                $tasks = $tasks->whereIn('id', explode(',', $projectTask));
+                $projectTask = is_array($projectTask) ? $projectTask : explode(',', $projectTask);
+                $tasks = $tasks->whereIn('id', $projectTask);
             }
 
             if ($taskStatus && $taskStatus != 'null' && $taskStatus != '') {
-                $tasks = $tasks->whereIn('board_column_id', explode(',', $taskStatus));
+                $taskStatus = is_array($taskStatus) ? $taskStatus : explode(',', $taskStatus);
+                $tasks = $tasks->whereIn('board_column_id', $taskStatus);
             }
 
             if ($milestones && $milestones != 'null' && $milestones != '') {
-                $tasks = $tasks->whereIn('milestone_id', explode(',', $milestones));
+                $milestones = is_array($milestones) ? $milestones : explode(',', $milestones);
+                $tasks = $tasks->whereIn('milestone_id', $milestones);
             }
 
             $data = array();

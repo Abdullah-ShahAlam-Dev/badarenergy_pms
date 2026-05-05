@@ -150,218 +150,249 @@
 
 
 <script>
-    $(document).ready(function() {
+    function initLeaveCreate() {
+        if (typeof window.jQuery !== 'undefined' && typeof $.easyAjax === 'function') {
+            (function() {
+                const $leaveBody = $('body');
+                const namespace = '.leaveCreate';
 
-        Dropzone.autoDiscover = false;
-        //Dropzone class
-        myDropzone = new Dropzone("div#leave-file-upload-dropzone", {
-            dictDefaultMessage: "{{ __('app.dragDrop') }}",
-            url: "{{ route('leave-files.store') }}",
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            paramName: "file",
-            maxFilesize: DROPZONE_MAX_FILESIZE,
-            maxFiles: DROPZONE_MAX_FILES,
-            autoProcessQueue: false,
-            uploadMultiple: true,
-            addRemoveLinks: true,
-            parallelUploads: DROPZONE_MAX_FILES,
-            acceptedFiles: DROPZONE_FILE_ALLOW,
-            init: function() {
-                myDropzone = this;
-            }
-        });
-        myDropzone.on('sending', function(file, xhr, formData) {
-            var ids = $('#leaveID').val();
-            formData.append('leave_id', ids);
-        });
-        myDropzone.on('uploadprogress', function() {
-            $.easyBlockUI();
-        });
-        myDropzone.on('queuecomplete', function() {
-            var redirect_url = $('#redirect_url').val();
-            if (redirect_url != '') {
-                window.location.href = decodeURIComponent(redirect_url);
-            }
-            window.location.href = "{{ route('leaves.index') }}"
-        });
-        myDropzone.on('removedfile', function () {
-            var grp = $('div#file-upload-dropzone').closest(".form-group");
-            var label = $('div#file-upload-box').siblings("label");
-            $(grp).removeClass("has-error");
-            $(label).removeClass("is-invalid");
-        });
-        myDropzone.on('error', function (file, message) {
-            myDropzone.removeFile(file);
-            var grp = $('div#file-upload-dropzone').closest(".form-group");
-            var label = $('div#file-upload-box').siblings("label");
-            $(grp).find(".help-block").remove();
-            var helpBlockContainer = $(grp);
-
-            if (helpBlockContainer.length == 0) {
-                helpBlockContainer = $(grp);
-            }
-
-            helpBlockContainer.append('<div class="help-block invalid-feedback">' + message + '</div>');
-            $(grp).addClass("has-error");
-            $(label).addClass("is-invalid");
-
-        });
-
-
-        getDate();
-        const dp1 = datepicker('#single_date', {
-            onSelect: function () {
-                getDate();
-            },
-            position: 'bl',
-            ...datepickerConfig
-        });
-
-        const dp2 = $('#multi_date').daterangepicker({
-            linkedCalendars: false,
-            multidate: true,
-            todayHighlight: true,
-            format: 'yyyy-mm-d'
-
-        });
-
-        $('#multi_date').change(function() {
-            var dates = $(this).val();
-
-            var startDate = moment(new Date(dates.split(' - ')[0]));
-            var endDate = moment(new Date(dates.split(' - ')[1]));
-            var totalDays = endDate.diff(startDate, 'days')+1;
-
-            $('.date-range-days').html(totalDays +' Days Selected');
-        })
-
-        $('input[type=radio][name=duration]').change(function() {
-            if (this.value == 'multiple') {
-
-                const dp2 = $('#multi_date').daterangepicker('clearDates').daterangepicker({
-                    linkedCalendars: false,
-                    multidate: true,
-                    todayHighlight: true,
-                    format: 'yyyy-mm-d'
-
-                });
-            }
-        });
-
-        setMinDate($('#user_id').val());
-
-        $('#user_id').on('change', function(e) {
-            setMinDate(e.target.value);
-        });
-
-        function setMinDate(employeeID) {
-            var employees = @json($employees);
-            var employee = employees.filter(function(item) {
-                return item.id == employeeID;
-            });
-
-            if(employees.length > 0 && employee[0] !== undefined)
-            {
-                var minDate = new Date(employee[0].employee_detail.joining_date);
-                dp1.setMin(minDate);
-                $('#multi_date').daterangepicker('setStartDate', minDate);
-            }
-        }
-
-        $('#save-leave-form').click(function() {
-            var dateRange = $('#multi_date').data('daterangepicker');
-            startDate = dateRange.startDate.format('{{ company()->moment_date_format }}');
-            endDate = dateRange.endDate.format('{{ company()->moment_date_format }}');
-
-            var multiDate = [];
-            multiDate = [startDate, endDate];
-            $('#multi_date').val(multiDate);
-
-            const url = "{{ route('leaves.store') }}";
-
-            $.easyAjax({
-                url: url,
-                container: '#save-lead-data-form',
-                type: "POST",
-                disableButton: true,
-                blockUI: true,
-                buttonSelector: "#save-leave-form",
-                data: $('#save-lead-data-form').serialize()+'&multiStartDate='+startDate + '&multiEndDate='+endDate,
-                success: function(response) {
-                    if (response.status == 'success') {
-                        $('#leaveID').val(response.leaveID);
-                        myDropzone.processQueue();
-                        window.location.href = response.redirectUrl;
+                Dropzone.autoDiscover = false;
+                //Dropzone class
+                if ($('#leave-file-upload-dropzone').length > 0 && typeof Dropzone !== 'undefined') {
+                    if (typeof myDropzone !== 'undefined') {
+                        myDropzone.destroy();
                     }
+                    myDropzone = new Dropzone("div#leave-file-upload-dropzone", {
+                        dictDefaultMessage: "{{ __('app.dragDrop') }}",
+                        url: "{{ route('leave-files.store') }}",
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        paramName: "file",
+                        maxFilesize: DROPZONE_MAX_FILESIZE,
+                        maxFiles: DROPZONE_MAX_FILES,
+                        autoProcessQueue: false,
+                        uploadMultiple: true,
+                        addRemoveLinks: true,
+                        parallelUploads: DROPZONE_MAX_FILES,
+                        acceptedFiles: DROPZONE_FILE_ALLOW,
+                        init: function() {
+                            myDropzone = this;
+                        }
+                    });
+
+                    myDropzone.on('sending', function(file, xhr, formData) {
+                        var ids = $('#leaveID').val();
+                        formData.append('leave_id', ids);
+                    });
+                    myDropzone.on('uploadprogress', function() {
+                        $.easyBlockUI();
+                    });
+                    myDropzone.on('queuecomplete', function() {
+                        var redirect_url = $('#redirect_url').val();
+                        if (redirect_url != '') {
+                            window.location.href = decodeURIComponent(redirect_url);
+                        }
+                        window.location.href = "{{ route('leaves.index') }}"
+                    });
+                    myDropzone.on('removedfile', function () {
+                        var grp = $('div#file-upload-dropzone').closest(".form-group");
+                        var label = $('div#file-upload-box').siblings("label");
+                        $(grp).removeClass("has-error");
+                        $(label).removeClass("is-invalid");
+                    });
+                    myDropzone.on('error', function (file, message) {
+                        myDropzone.removeFile(file);
+                        var grp = $('div#file-upload-dropzone').closest(".form-group");
+                        var label = $('div#file-upload-box').siblings("label");
+                        $(grp).find(".help-block").remove();
+                        var helpBlockContainer = $(grp);
+
+                        if (helpBlockContainer.length == 0) {
+                            helpBlockContainer = $(grp);
+                        }
+
+                        helpBlockContainer.append('<div class="help-block invalid-feedback">' + message + '</div>');
+                        $(grp).addClass("has-error");
+                        $(label).addClass("is-invalid");
+
+                    });
                 }
-            });
-        });
 
-        $('body').on('click', '.add-lead-type2', function() {
-            var url = "{{ route('leaveType.create') }}";
-            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
-            $.ajaxModal(MODAL_XL, url);
-        });
+                $leaveBody.off(namespace);
 
-        $("input[name=duration]").click(function() {
-            ($('input[name=duration]:checked').val() == "multiple") ? getDate('multiple') : getDate();
+                getDate();
+                const dp1 = datepicker('#single_date', {
+                    onSelect: function () {
+                        getDate();
+                    },
+                    position: 'bl',
+                    ...datepickerConfig
+                });
 
-            $(this).val() == 'multiple' ? $('.multi_date_div').removeClass('d-none') : $(
-                '.multi_date_div').addClass('d-none');
-            $(this).val() == 'multiple' ? $('.single_date_div').addClass('d-none') : $(
-                '.single_date_div').removeClass('d-none');
-        });
-
-        $('#user_id').change(function() {
-            var id = $(this).val();
-            if (id == '') {
-                id = 0;
-            }
-            var url = "{{ route('employee-leaves.employee_leave_types', ':id') }}";
-            url = url.replace(':id', id);
-            $.easyAjax({
-                url: url,
-                type: "GET",
-                container: '#save-lead-data-form',
-                blockUI: true,
-                success: function(data) {
-                    $('#leave_type_id').html(data.data);
-                    $('#leave_type_id').selectpicker('refresh');
+                if (typeof $().daterangepicker === 'function') {
+                    $('#multi_date').daterangepicker({
+                        linkedCalendars: false,
+                        multidate: true,
+                        todayHighlight: true,
+                        format: 'yyyy-mm-d'
+                    });
                 }
-            })
-        });
 
-        function getDate(value) {
-            let url = "{{ route('leaves.date') }}";
-            date = $('#single_date').val();
+                $leaveBody.on('change' + namespace, '#multi_date', function() {
+                    var dates = $(this).val();
+                    if (dates && dates.indexOf(' - ') !== -1) {
+                        var startDate = moment(new Date(dates.split(' - ')[0]));
+                        var endDate = moment(new Date(dates.split(' - ')[1]));
+                        var totalDays = endDate.diff(startDate, 'days')+1;
+                        $('.date-range-days').html(totalDays +' Days Selected');
+                    }
+                });
 
-            if (value == 'multiple') {
-                date = '';
-            }
+                $leaveBody.on('change' + namespace, 'input[type=radio][name=duration]', function() {
+                    if (this.value == 'multiple') {
+                        if (typeof $().daterangepicker === 'function') {
+                            $('#multi_date').daterangepicker('clearDates').daterangepicker({
+                                linkedCalendars: false,
+                                multidate: true,
+                                todayHighlight: true,
+                                format: 'yyyy-mm-d'
+                            });
+                        }
+                    }
+                    
+                    ($('input[name=duration]:checked').val() == "multiple") ? getDate('multiple') : getDate();
 
-            $.easyAjax({
-                type: 'GET',
-                url: url,
-                container: '#save-lead-data-form',
-                data: {
-                    'date': date
-                },
-                success: function(response) {
-                    if(response.status == 'success'){
-                        if(response.users > 0 && response.users < 2){
-                            $('#users').text(response.users+' @lang('modules.leaves.employeeOnLeave')');
-                        }else if(response.users > 0){
-                            $('#users').text(response.users+' @lang('modules.leaves.employeesOnLeave')');
-                        }else{
-                            $('#users').text('');
+                    $(this).val() == 'multiple' ? $('.multi_date_div').removeClass('d-none') : $(
+                        '.multi_date_div').addClass('d-none');
+                    $(this).val() == 'multiple' ? $('.single_date_div').addClass('d-none') : $(
+                        '.single_date_div').removeClass('d-none');
+                });
+
+                if ($('#user_id').val() != '') {
+                    setMinDate($('#user_id').val());
+                }
+
+                $leaveBody.on('change' + namespace, '#user_id', function(e) {
+                    const employeeID = $(this).val();
+                    setMinDate(employeeID);
+                    
+                    let id = employeeID || 0;
+                    var url = "{{ route('employee-leaves.employee_leave_types', ':id') }}";
+                    url = url.replace(':id', id);
+                    
+                    $.easyAjax({
+                        url: url,
+                        type: "GET",
+                        container: '#save-lead-data-form',
+                        blockUI: true,
+                        success: function(data) {
+                            if (data.data) {
+                                $('#leave_type_id').html(data.data);
+                                $('#leave_type_id').selectpicker('refresh');
+                            }
+                        }
+                    });
+                });
+
+                function setMinDate(employeeID) {
+                    var employees = @json($employees);
+                    var employee = employees.filter(function(item) {
+                        return item.id == employeeID;
+                    });
+
+                    if(employees.length > 0 && employee[0] !== undefined && employee[0].employee_detail)
+                    {
+                        var minDate = new Date(employee[0].employee_detail.joining_date);
+                        if (typeof dp1.setMin === 'function') {
+                            dp1.setMin(minDate);
+                        }
+                        if (typeof $().daterangepicker === 'function') {
+                            $('#multi_date').daterangepicker('setStartDate', minDate);
                         }
                     }
                 }
-            });
-        };
 
-        init(RIGHT_MODAL);
-    });
+                $leaveBody.on('click' + namespace, '#save-leave-form', function() {
+                    var startDate, endDate;
+                    if ($('input[name=duration]:checked').val() == 'multiple') {
+                        var dateRange = $('#multi_date').data('daterangepicker');
+                        startDate = dateRange.startDate.format('{{ company()->moment_date_format }}');
+                        endDate = dateRange.endDate.format('{{ company()->moment_date_format }}');
+                    } else {
+                        startDate = $('#single_date').val();
+                        endDate = $('#single_date').val();
+                    }
+
+                    const url = "{{ route('leaves.store') }}";
+
+                    $.easyAjax({
+                        url: url,
+                        container: '#save-lead-data-form',
+                        type: "POST",
+                        disableButton: true,
+                        blockUI: true,
+                        buttonSelector: "#save-leave-form",
+                        data: $('#save-lead-data-form').serialize()+'&multiStartDate='+startDate + '&multiEndDate='+endDate,
+                        success: function(response) {
+                            if (response.status == 'success') {
+                                if (typeof myDropzone !== 'undefined' && myDropzone.getQueuedFiles().length > 0) {
+                                    $('#leaveID').val(response.leaveID);
+                                    myDropzone.processQueue();
+                                } else {
+                                    window.location.href = response.redirectUrl;
+                                }
+                            }
+                        }
+                    });
+                });
+
+                $leaveBody.on('click' + namespace, '.add-lead-type2', function() {
+                    var url = "{{ route('leaveType.create') }}";
+                    $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+                    $.ajaxModal(MODAL_XL, url);
+                });
+
+                function getDate(value) {
+                    let url = "{{ route('leaves.date') }}";
+                    let date = $('#single_date').val();
+
+                    if (value == 'multiple') {
+                        date = '';
+                    }
+
+                    $.easyAjax({
+                        type: 'GET',
+                        url: url,
+                        container: '#save-lead-data-form',
+                        data: {
+                            'date': date
+                        },
+                        success: function(response) {
+                            if(response.status == 'success'){
+                                if(response.users > 0 && response.users < 2){
+                                    $('#users').text(response.users+' @lang('modules.leaves.employeeOnLeave')');
+                                }else if(response.users > 0){
+                                    $('#users').text(response.users+' @lang('modules.leaves.employeesOnLeave')');
+                                }else{
+                                    $('#users').text('');
+                                }
+                            }
+                        }
+                    });
+                }
+
+                init(RIGHT_MODAL);
+
+                window.addEventListener('turbo:before-cache', function cleanup() {
+                    $leaveBody.off(namespace);
+                    window.removeEventListener('turbo:before-cache', cleanup);
+                }, { once: true });
+            })();
+        } else {
+            setTimeout(initLeaveCreate, 50);
+        }
+    }
+
+    initLeaveCreate();
 </script>

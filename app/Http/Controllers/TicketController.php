@@ -109,7 +109,7 @@ class TicketController extends AccountBaseController
         $this->types = TicketType::all();
         $this->channels = TicketChannel::all();
         $this->templates = TicketReplyTemplate::all();
-        $this->employees = User::allEmployees(null, true, ($this->addPermission == 'all' ? 'all' : null));
+        $this->employees = User::allEmployees(null, true, 'all');
         $this->clients = User::allClients();
         $this->countries = countries();
         $this->lastTicket = Ticket::orderBy('id', 'desc')->first();
@@ -214,7 +214,7 @@ class TicketController extends AccountBaseController
         $this->templates = TicketReplyTemplate::all();
         $this->ticketChart = $this->ticketChartData($this->ticket->user_id);
 
-        $this->employees = User::allEmployees();
+        $this->employees = User::allEmployees(null, true, 'all');
 
         if ($this->ticket->getCustomFieldGroupsWithFields()) {
             $this->fields = $this->ticket->getCustomFieldGroupsWithFields()->fields;

@@ -30,7 +30,7 @@ $projectArchived = $project->trashed();
     <div class="d-flex d-lg-block filter-box project-header bg-white">
         <div class="mobile-close-overlay w-100 h-100" id="close-client-overlay"></div>
 
-        <div class="project-menu" id="mob-client-detail" data-turbo="false">
+        <div class="project-menu" id="mob-client-detail">
             <a class="d-none close-it" href="javascript:;" id="close-client-detail">
                 <i class="fa fa-times"></i>
             </a>

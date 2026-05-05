@@ -113,123 +113,117 @@ $editTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->
 <!-- ROW END -->
 
 <script>
-    (function() {
-        const $ganttBody = $('body');
-        const namespace = '.projectGantt';
-        const allowDrag = "{{ ($editTaskPermission == 'all' ? 'true' : 'false') }}";
+    function initGantt() {
+        if (typeof window.jQuery !== 'undefined' && typeof $.easyAjax === 'function') {
+            (function() {
+                const $ganttBody = $('body');
+                const namespace = '.projectGantt';
+                const editTaskPermission = "{{ ($editTaskPermission == 'all' ? 'true' : 'false') }}";
 
-        // Cleanup before re-binding
-        $ganttBody.off(namespace);
+                // Cleanup before re-binding
+                $ganttBody.off(namespace);
 
-        function loadData() {
-            const projectID = "{{ $project->id }}";
-            const assignedTo = $('#assignedTo').val();
-            const projectTask = $('#projectTask').val();
-            const taskStatus = $('#task_status').val();
-            const milestones = $('#milestones').val();
-            const viewMode = $('#gantt-view').val();
-            const token = "{{ csrf_token() }}";
+                function loadData() {
+                    const projectID = "{{ $project->id }}";
+                    const assignedTo = $('#assignedTo').val();
+                    const projectTask = $('#projectTask').val();
+                    const taskStatus = $('#task_status').val();
+                    const milestones = $('#milestones').val();
+                    const viewMode = $('#gantt-view').val();
+                    const token = "{{ csrf_token() }}";
 
-            const url = "{{ route('projects.gantt_data') }}";
+                    const url = "{{ route('projects.gantt_data') }}";
 
-            $.easyAjax({
-                url: url,
-                blockUI: true,
-                container: '.content-wrapper',
-                type: "POST",
-                data: {
-                    assignedTo: assignedTo,
-                    projectID: projectID,
-                    projectTask: projectTask,
-                    taskStatus: taskStatus,
-                    milestones: milestones,
-                    _token: token
-                },
-                success: function(response) {
-                    if (!response || !response.length) {
-                        $("#gantt").html(
-                            "<div class='d-flex justify-content-center p-20'>{{ __('messages.noRecordFound') }}</div>"
-                        );
-                        return;
-                    }
+                    $.easyAjax({
+                        url: url,
+                        blockUI: true,
+                        container: '.content-wrapper',
+                        type: "POST",
+                        data: {
+                            assignedTo: assignedTo,
+                            projectID: projectID,
+                            projectTask: projectTask,
+                            taskStatus: taskStatus,
+                            milestones: milestones,
+                            _token: token
+                        },
+                        success: function(response) {
+                            if (!response || !response.length) {
+                                $("#gantt").html(
+                                    "<div class='d-flex justify-content-center p-20'>{{ __('messages.noRecordFound') }}</div>"
+                                );
+                                return;
+                            }
 
-                    $("#gantt").html("");
+                            $("#gantt").html("");
 
-                    if (typeof Gantt !== 'undefined') {
-                        var gantt = new Gantt("#gantt", response, {
-                            popup_trigger: "mouseover",
-                            view_mode: viewMode,
-                            on_click: function(task) {
-                                taskDetail(task.taskid);
-                            },
-                            on_date_change: function(task, start, end) {
-                                var taskId = task.taskid;
-                                var token = '{{ csrf_token() }}';
-                                var url = "{{ route('tasks.gantt_task_update', ':id') }}";
-                                url = url.replace(':id', taskId);
-                                var startDate = moment.utc(start.toDateString()).format('DD/MM/Y');
-                                var endDate = moment.utc(end.toDateString()).subtract(1, "days").format('DD/MM/Y');
+                            if (typeof Gantt !== 'undefined') {
+                                var gantt = new Gantt("#gantt", response, {
+                                    popup_trigger: "mouseover",
+                                    view_mode: viewMode,
+                                    on_click: function(task) {
+                                        taskDetail(task.taskid);
+                                    },
+                                    on_date_change: function(task, start, end) {
+                                        var taskId = task.taskid;
+                                        var token = '{{ csrf_token() }}';
+                                        var url = "{{ route('tasks.gantt_task_update', ':id') }}";
+                                        url = url.replace(':id', taskId);
+                                        var startDate = moment.utc(start.toDateString()).format('DD/MM/Y');
+                                        var endDate = moment.utc(end.toDateString()).subtract(1, "days").format('DD/MM/Y');
 
-                                $.easyAjax({
-                                    url: url,
-                                    type: "POST",
-                                    container: '#gantt',
-                                    data: {
-                                        '_token': token,
-                                        'start_date': startDate,
-                                        'end_date': endDate
-                                    }
+                                        $.easyAjax({
+                                            url: url,
+                                            type: "POST",
+                                            container: '#gantt',
+                                            data: {
+                                                '_token': token,
+                                                'start_date': startDate,
+                                                'end_date': endDate
+                                            }
+                                        });
+                                    },
+                                    on_progress_change: function(task, progress) {},
+                                    on_view_change: function(mode) {}
                                 });
-                            },
-                            on_progress_change: function(task, progress) {},
-                            on_view_change: function(mode) {}
-                        });
-                    }
+                            }
+                        }
+                    });
                 }
-            });
-        }
 
-        var taskDetail = function(id) {
-            if (typeof openTaskDetail === 'function') {
-                openTaskDetail();
-            }
+                var taskDetail = function(id) {
+                    var url = "{{ route('tasks.show', ':id') }}";
+                    url = url.replace(':id', id);
 
-            var url = "{{ route('tasks.show', ':id') }}";
-            url = url.replace(':id', id);
-
-            $.easyAjax({
-                url: url,
-                blockUI: true,
-                container: RIGHT_MODAL,
-                historyPush: true,
-                success: function(response) {
-                    if (response.status == "success") {
-                        $(RIGHT_MODAL_CONTENT).html(response.html);
-                        $(RIGHT_MODAL_TITLE).html(response.title);
-                    }
-                },
-                error: function(request, status, error) {
-                    var $content = $(RIGHT_MODAL_CONTENT);
-                    if (request.status == 403) {
-                        $content.html('<div class="align-content-between d-flex justify-content-center mt-105 f-21">403 | Permission Denied</div>');
-                    } else if (request.status == 404) {
-                        $content.html('<div class="align-content-between d-flex justify-content-center mt-105 f-21">404 | Not Found</div>');
-                    } else if (request.status == 500) {
-                        $content.html('<div class="align-content-between d-flex justify-content-center mt-105 f-21">500 | Something Went Wrong</div>');
-                    }
+                    $.easyAjax({
+                        url: url,
+                        blockUI: true,
+                        container: RIGHT_MODAL,
+                        historyPush: true,
+                        success: function(response) {
+                            if (response.status == "success") {
+                                $(RIGHT_MODAL_CONTENT).html(response.html);
+                                $(RIGHT_MODAL_TITLE).html(response.title);
+                            }
+                        }
+                    });
                 }
-            });
+
+                $ganttBody.on('change' + namespace + ' keyup' + namespace, '#assignedTo, #gantt-view, #projectTask, #task_status, #milestones', function() {
+                    loadData();
+                });
+
+                loadData();
+
+                window.addEventListener('turbo:before-cache', function cleanup() {
+                    $ganttBody.off(namespace);
+                    window.removeEventListener('turbo:before-cache', cleanup);
+                }, { once: true });
+            })();
+        } else {
+            setTimeout(initGantt, 50);
         }
+    }
 
-        $ganttBody.on('change' + namespace + ' keyup' + namespace, '#assignedTo, #gantt-view, #projectTask, #task_status, #milestones', function() {
-            loadData();
-        });
-
-        loadData();
-
-        window.addEventListener('turbo:before-cache', function cleanup() {
-            $ganttBody.off(namespace);
-            window.removeEventListener('turbo:before-cache', cleanup);
-        }, { once: true });
-    })();
+    initGantt();
 </script>

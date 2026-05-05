@@ -281,7 +281,7 @@
 <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
 <script src="{{ asset('vendor/jquery/tagify.min.js') }}"></script>
 <script>
-    (function() {
+    $(document).ready(function() {
         var $body = $('body');
         var namespace = '.ticketsCreate';
         var ticketDropzone;
@@ -349,6 +349,7 @@
         });
 
         function getAgents(groupId) {
+            if (!groupId) return;
             var url = "{{ route('tickets.agent_group', ':id')}}".replace(':id', groupId);
             $.easyAjax({
                 url: url,
@@ -500,11 +501,6 @@
             getAgents($(this).val());
         });
 
-        // Initialize Everything
-        if (typeof init === 'function') {
-            init(RIGHT_MODAL || '#save-ticket-data-form');
-        }
-
         $("#cc_users").selectpicker({
             actionsBox: true,
             selectAllText: "{{ __('modules.permission.selectAll') }}",
@@ -518,6 +514,9 @@
         cacheOriginalContent('#ticket_agent_id');
         getAgents($('#ticket_group').val());
 
+        // Initialize Everything at the end
+        init(RIGHT_MODAL);
+
         window.addEventListener('turbo:before-cache', function cleanup() {
             $body.off(namespace);
             if (ticketDropzone) ticketDropzone.destroy();
@@ -526,5 +525,5 @@
             else if (typeof destory_editor === 'function') destory_editor('#description');
             window.removeEventListener('turbo:before-cache', cleanup);
         }, { once: true });
-    })();
+    });
 </script>

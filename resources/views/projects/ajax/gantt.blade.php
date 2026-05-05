@@ -113,23 +113,23 @@ $editTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->
 
 <script>
     (function() {
-        var $body = $('body');
-        var namespace = '.projectGantt';
-        var allowDrag = "{{ ($editTaskPermission == 'all' ? 'true' : 'false') }}";
+        const $ganttBody = $('body');
+        const namespace = '.projectGantt';
+        const allowDrag = "{{ ($editTaskPermission == 'all' ? 'true' : 'false') }}";
 
         // Cleanup before re-binding
-        $body.off(namespace);
+        $ganttBody.off(namespace);
 
         function loadData() {
-            var projectID = "{{ $project->id }}";
-            var assignedTo = $('#assignedTo').val();
-            var projectTask = $('#projectTask').val();
-            var taskStatus = $('#task_status').val();
-            var milestones = $('#milestones').val();
-            var viewMode = $('#gantt-view').val();
-            var token = "{{ csrf_token() }}";
+            const projectID = "{{ $project->id }}";
+            const assignedTo = $('#assignedTo').val();
+            const projectTask = $('#projectTask').val();
+            const taskStatus = $('#task_status').val();
+            const milestones = $('#milestones').val();
+            const viewMode = $('#gantt-view').val();
+            const token = "{{ csrf_token() }}";
 
-            var url = "{{ route('projects.gantt_data') }}";
+            const url = "{{ route('projects.gantt_data') }}";
 
             $.easyAjax({
                 url: url,
@@ -145,7 +145,7 @@ $editTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->
                     _token: token
                 },
                 success: function(response) {
-                    if (!response.length) {
+                    if (!response || !response.length) {
                         $("#gantt").html(
                             "<div class='d-flex justify-content-center p-20'>{{ __('messages.noRecordFound') }}</div>"
                         );
@@ -154,40 +154,45 @@ $editTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->
 
                     $("#gantt").html("");
 
-                    var gantt = new Gantt("#gantt", response, {
-                        popup_trigger: "mouseover",
-                        view_mode: viewMode,
-                        on_click: function(task) {
-                            taskDetail(task.taskid);
-                        },
-                        on_date_change: function(task, start, end) {
-                            var taskId = task.taskid;
-                            var token = '{{ csrf_token() }}';
-                            var url = "{{ route('tasks.gantt_task_update', ':id') }}";
-                            url = url.replace(':id', taskId);
-                            var startDate = moment.utc(start.toDateString()).format('DD/MM/Y');
-                            var endDate = moment.utc(end.toDateString()).subtract(1, "days").format('DD/MM/Y');
+                    if (typeof Gantt !== 'undefined') {
+                        var gantt = new Gantt("#gantt", response, {
+                            popup_trigger: "mouseover",
+                            view_mode: viewMode,
+                            on_click: function(task) {
+                                taskDetail(task.taskid);
+                            },
+                            on_date_change: function(task, start, end) {
+                                var taskId = task.taskid;
+                                var token = '{{ csrf_token() }}';
+                                var url = "{{ route('tasks.gantt_task_update', ':id') }}";
+                                url = url.replace(':id', taskId);
+                                var startDate = moment.utc(start.toDateString()).format('DD/MM/Y');
+                                var endDate = moment.utc(end.toDateString()).subtract(1, "days").format('DD/MM/Y');
 
-                            $.easyAjax({
-                                url: url,
-                                type: "POST",
-                                container: '#gantt',
-                                data: {
-                                    '_token': token,
-                                    'start_date': startDate,
-                                    'end_date': endDate
-                                }
-                            });
-                        },
-                        on_progress_change: function(task, progress) {},
-                        on_view_change: function(mode) {}
-                    });
+                                $.easyAjax({
+                                    url: url,
+                                    type: "POST",
+                                    container: '#gantt',
+                                    data: {
+                                        '_token': token,
+                                        'start_date': startDate,
+                                        'end_date': endDate
+                                    }
+                                });
+                            },
+                            on_progress_change: function(task, progress) {},
+                            on_view_change: function(mode) {}
+                        });
+                    }
                 }
             });
         }
 
         var taskDetail = function(id) {
-            openTaskDetail();
+            if (typeof openTaskDetail === 'function') {
+                openTaskDetail();
+            }
+
             var url = "{{ route('tasks.show', ':id') }}";
             url = url.replace(':id', id);
 
@@ -215,14 +220,14 @@ $editTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->
             });
         }
 
-        $body.on('change' + namespace + ' keyup' + namespace, '#assignedTo, #gantt-view, #projectTask, #task_status, #milestones', function() {
+        $ganttBody.on('change' + namespace + ' keyup' + namespace, '#assignedTo, #gantt-view, #projectTask, #task_status, #milestones', function() {
             loadData();
         });
 
         loadData();
 
         window.addEventListener('turbo:before-cache', function cleanup() {
-            $body.off(namespace);
+            $ganttBody.off(namespace);
             window.removeEventListener('turbo:before-cache', cleanup);
         }, { once: true });
     })();

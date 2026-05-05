@@ -1006,7 +1006,7 @@ class ProjectController extends AccountBaseController
                 'start' => $taskStartDate,
                 'end' => $taskEndDate,
                 'progress' => 0,
-                'bg_color' => $task->boardColumn->label_color,
+                'bg_color' => ($task->boardColumn ? $task->boardColumn->label_color : '#000000'),
                 'taskid' => $task->id,
                 'draggable' => true
             ];

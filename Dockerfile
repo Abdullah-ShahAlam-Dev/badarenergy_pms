@@ -34,14 +34,16 @@ RUN apk add --no-cache \
     unzip \
     nginx \
     supervisor \
-    mysql-client
+    mysql-client \
+    openssh-client
 
 # Hijack the mysql command to force-disable SSL during migrations
 RUN mkdir -p /etc/mysql/conf.d \
     && echo -e "[client]\nssl=0" > /etc/my.cnf.d/client.cnf \
     && mv /usr/bin/mysql /usr/bin/mysql.real \
     && echo -e '#!/bin/sh\n/usr/bin/mysql.real --ssl=0 "$@"' > /usr/bin/mysql \
-    && chmod +x /usr/bin/mysql
+    && chmod +x /usr/bin/mysql \
+    && git config --global --add safe.directory /var/www/html
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -82,8 +84,11 @@ RUN mkdir -p storage/framework/sessions storage/framework/views storage/framewor
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
+# Ensure composer.lock is present and git is happy
+RUN git config --global --add safe.directory /var/www/html
+
 # Optimize Laravel for production
-RUN composer install --no-dev --optimize-autoloader --no-scripts
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 RUN php artisan config:clear && php artisan cache:clear
 
 # Final permissions check

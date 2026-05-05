@@ -1,0 +1,17 @@
+node_modules
+vendor
+.git
+.env
+.idea
+.vscode
+*.zip
+*.tar.gz
+storage/*.key
+public/storage
+public/user-uploads/*
+!public/user-uploads/.htaccess
+# Ensure these are NOT ignored
+!composer.json
+!composer.lock
+!package.json
+!package-lock.json

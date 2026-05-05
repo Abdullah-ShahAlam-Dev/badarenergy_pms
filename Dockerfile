@@ -92,9 +92,10 @@ RUN mkdir -p storage/framework/sessions storage/framework/views storage/framewor
 
 # Ensure composer.lock is present and git is happy
 RUN git config --global --add safe.directory /var/www/html
+RUN ls -la /var/www/html
 
 # Optimize Laravel for production
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction --no-audit
 RUN php artisan config:clear && php artisan cache:clear
 
 # Final permissions check

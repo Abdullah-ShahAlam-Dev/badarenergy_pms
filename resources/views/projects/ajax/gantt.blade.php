@@ -4,6 +4,7 @@ $editTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->
 @endphp
 
 <link rel="stylesheet" href="{{ asset('vendor/frappe/frappe-gantt.css') }}">
+<script src="{{ asset('vendor/frappe/frappe-gantt.js') }}"></script>
 
 <!-- ROW START -->
 <div class="row py-3 py-lg-5 py-lg-5">

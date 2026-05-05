@@ -962,63 +962,67 @@ class ProjectController extends AccountBaseController
 
     public function ganttData()
     {
-        $id = request('projectID');
-        $assignedTo = request('assignedTo');
-        $projectTask = request('projectTask');
-        $taskStatus = request('taskStatus');
-        $milestones = request('milestones');
-        $withoutDueDate = false;
+        try {
+            $id = request('projectID');
+            $assignedTo = request('assignedTo');
+            $projectTask = request('projectTask');
+            $taskStatus = request('taskStatus');
+            $milestones = request('milestones');
+            $withoutDueDate = false;
 
-        if ($assignedTo != 'all') {
-            $tasks = Task::projectTasks($id, $assignedTo, null, $withoutDueDate);
-        }
-        else {
-            $tasks = Task::projectTasks($id, null, null, $withoutDueDate);
-        }
-
-        if ($projectTask && $projectTask != 'null' && $projectTask != '') {
-            $tasks = $tasks->whereIn('id', explode(',', $projectTask));
-        }
-
-        if ($taskStatus && $taskStatus != 'null' && $taskStatus != '') {
-            $tasks = $tasks->whereIn('board_column_id', explode(',', $taskStatus));
-        }
-
-        if ($milestones && $milestones != 'null' && $milestones != '') {
-            $tasks = $tasks->whereIn('milestone_id', explode(',', $milestones));
-        }
-
-        $data = array();
-
-        $count = 0;
-
-        foreach ($tasks as $task) {
-            $taskStartDate = ((!is_null($task->start_date)) ? $task->start_date->format('Y-m-d') : ((!is_null($task->due_date)) ? $task->due_date->format('Y-m-d') : null));
-            $taskEndDate = (!is_null($task->due_date)) ? $task->due_date->format('Y-m-d') : ((!is_null($task->start_date)) ? $task->start_date->format('Y-m-d') : null);
-
-            if (is_null($taskStartDate) || is_null($taskEndDate)) {
-                continue;
+            if ($assignedTo != 'all') {
+                $tasks = Task::projectTasks($id, $assignedTo, null, $withoutDueDate);
+            }
+            else {
+                $tasks = Task::projectTasks($id, null, null, $withoutDueDate);
             }
 
-            $data[$count] = [
-                'id' => 'task-' . $task->id,
-                'name' => ucfirst($task->heading),
-                'start' => $taskStartDate,
-                'end' => $taskEndDate,
-                'progress' => 0,
-                'bg_color' => ($task->boardColumn ? $task->boardColumn->label_color : '#000000'),
-                'taskid' => $task->id,
-                'draggable' => true
-            ];
-
-            if (!is_null($task->dependent_task_id)) {
-                $data[$count]['dependencies'] = 'task-' . $task->dependent_task_id;
+            if ($projectTask && $projectTask != 'null' && $projectTask != '') {
+                $tasks = $tasks->whereIn('id', explode(',', $projectTask));
             }
 
-            $count++;
-        }
+            if ($taskStatus && $taskStatus != 'null' && $taskStatus != '') {
+                $tasks = $tasks->whereIn('board_column_id', explode(',', $taskStatus));
+            }
 
-        return response()->json($data);
+            if ($milestones && $milestones != 'null' && $milestones != '') {
+                $tasks = $tasks->whereIn('milestone_id', explode(',', $milestones));
+            }
+
+            $data = array();
+
+            $count = 0;
+
+            foreach ($tasks as $task) {
+                $taskStartDate = ((!is_null($task->start_date)) ? $task->start_date->format('Y-m-d') : ((!is_null($task->due_date)) ? $task->due_date->format('Y-m-d') : null));
+                $taskEndDate = (!is_null($task->due_date)) ? $task->due_date->format('Y-m-d') : ((!is_null($task->start_date)) ? $task->start_date->format('Y-m-d') : null);
+
+                if (is_null($taskStartDate) || is_null($taskEndDate)) {
+                    continue;
+                }
+
+                $data[$count] = [
+                    'id' => 'task-' . $task->id,
+                    'name' => ucfirst($task->heading),
+                    'start' => $taskStartDate,
+                    'end' => $taskEndDate,
+                    'progress' => 0,
+                    'bg_color' => ($task->boardColumn ? $task->boardColumn->label_color : '#000000'),
+                    'taskid' => $task->id,
+                    'draggable' => true
+                ];
+
+                if (!is_null($task->dependent_task_id)) {
+                    $data[$count]['dependencies'] = 'task-' . $task->dependent_task_id;
+                }
+
+                $count++;
+            }
+
+            return response()->json($data);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
     }
 
     public function invoices()

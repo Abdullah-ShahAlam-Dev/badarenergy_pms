@@ -129,14 +129,21 @@ $editTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->
             var viewMode = $('#gantt-view').val();
             var token = "{{ csrf_token() }}";
 
-            var url = "{{ route('projects.gantt_data') }}?assignedTo=" +
-                assignedTo + '&projectID=' + projectID  + '&projectTask=' + projectTask + '&_token=' + token + '&taskStatus=' + taskStatus + '&milestones=' + milestones;
+            var url = "{{ route('projects.gantt_data') }}";
 
             $.easyAjax({
                 url: url,
                 blockUI: true,
                 container: '.content-wrapper',
                 type: "POST",
+                data: {
+                    assignedTo: assignedTo,
+                    projectID: projectID,
+                    projectTask: projectTask,
+                    taskStatus: taskStatus,
+                    milestones: milestones,
+                    _token: token
+                },
                 success: function(response) {
                     if (!response.length) {
                         $("#gantt").html(

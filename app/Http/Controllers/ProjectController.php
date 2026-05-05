@@ -976,15 +976,15 @@ class ProjectController extends AccountBaseController
             $tasks = Task::projectTasks($id, null, null, $withoutDueDate);
         }
 
-        if ($projectTask) {
+        if ($projectTask && $projectTask != 'null' && $projectTask != '') {
             $tasks = $tasks->whereIn('id', explode(',', $projectTask));
         }
 
-        if ($taskStatus) {
+        if ($taskStatus && $taskStatus != 'null' && $taskStatus != '') {
             $tasks = $tasks->whereIn('board_column_id', explode(',', $taskStatus));
         }
 
-        if ($milestones != '') {
+        if ($milestones && $milestones != 'null' && $milestones != '') {
             $tasks = $tasks->whereIn('milestone_id', explode(',', $milestones));
         }
 
@@ -993,11 +993,18 @@ class ProjectController extends AccountBaseController
         $count = 0;
 
         foreach ($tasks as $task) {
+            $taskStartDate = ((!is_null($task->start_date)) ? $task->start_date->format('Y-m-d') : ((!is_null($task->due_date)) ? $task->due_date->format('Y-m-d') : null));
+            $taskEndDate = (!is_null($task->due_date)) ? $task->due_date->format('Y-m-d') : ((!is_null($task->start_date)) ? $task->start_date->format('Y-m-d') : null);
+
+            if (is_null($taskStartDate) || is_null($taskEndDate)) {
+                continue;
+            }
+
             $data[$count] = [
                 'id' => 'task-' . $task->id,
                 'name' => ucfirst($task->heading),
-                'start' => ((!is_null($task->start_date)) ? $task->start_date->format('Y-m-d') : ((!is_null($task->due_date)) ? $task->due_date->format('Y-m-d') : null)),
-                'end' => (!is_null($task->due_date)) ? $task->due_date->format('Y-m-d') : $task->start_date->format('Y-m-d'),
+                'start' => $taskStartDate,
+                'end' => $taskEndDate,
                 'progress' => 0,
                 'bg_color' => $task->boardColumn->label_color,
                 'taskid' => $task->id,

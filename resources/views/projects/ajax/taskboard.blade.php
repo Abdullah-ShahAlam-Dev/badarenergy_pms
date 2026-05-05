@@ -52,17 +52,17 @@ $addTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->p
 
 <script>
     (function() {
-        var $body = $('body');
-        var namespace = '.projectTaskboard';
-        var channel = null;
+        const $taskboardBody = $('body');
+        const namespace = '.projectTaskboard';
+        let channel = null;
 
         function loadData() {
-            var projectID = "{{ $project->id }}";
-            var startDate = null;
-            var endDate = null;
-            var projectAdmin = "{{ ($project->project_admin == user()->id) ? 1 : 0 }}";
+            const projectID = "{{ $project->id }}";
+            let startDate = null;
+            let endDate = null;
+            const projectAdmin = "{{ ($project->project_admin == user()->id) ? 1 : 0 }}";
 
-            var url = "{{ route('taskboards.index') }}?startDate=" + encodeURIComponent(startDate) +
+            const url = "{{ route('taskboards.index') }}?startDate=" + encodeURIComponent(startDate) +
                 '&endDate=' + encodeURIComponent(endDate) + '&projectID=' + projectID + '&project_admin=' + projectAdmin;
 
             $.easyAjax({
@@ -72,15 +72,17 @@ $addTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->p
                 success: function(response) {
                     if (response.status == 'success') {
                         $('#taskboard-columns').html(response.view);
-                        $body.tooltip({ selector: '[data-toggle="tooltip"]' });
+                        if (typeof $taskboardBody.tooltip === 'function') {
+                            $taskboardBody.tooltip({ selector: '[data-toggle="tooltip"]' });
+                        }
                     }
                 }
             });
         }
 
-        $body.off(namespace);
+        $taskboardBody.off(namespace);
 
-        $body.on('click' + namespace, '.load-more-tasks', function() {
+        $taskboardBody.on('click' + namespace, '.load-more-tasks', function() {
             var columnId = $(this).data('column-id');
             var totalTasks = $(this).data('total-tasks');
             var currentTotalTasks = $('#drag-container-' + columnId + ' .task-card').length;
@@ -100,25 +102,27 @@ $addTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->p
                     if (response.load_more != 'show') {
                         $('#drag-container-' + columnId).closest('.b-p-body').find('.load-more-tasks').remove();
                     }
-                    $body.tooltip({ selector: '[data-toggle="tooltip"]' });
+                    if (typeof $taskboardBody.tooltip === 'function') {
+                        $taskboardBody.tooltip({ selector: '[data-toggle="tooltip"]' });
+                    }
                 }
             });
         });
 
-        $body.on('click' + namespace, '#add-column', function() {
+        $taskboardBody.on('click' + namespace, '#add-column', function() {
             const url = "{{ route('taskboards.create') }}";
             $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('click' + namespace, '.edit-column', function() {
+        $taskboardBody.on('click' + namespace, '.edit-column', function() {
             var id = $(this).data('column-id');
             var url = "{{ route('taskboards.edit', ':id') }}".replace(':id', id);
             $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
             $.ajaxModal(MODAL_LG, url);
         });
 
-        $body.on('click' + namespace, '.delete-column', function() {
+        $taskboardBody.on('click' + namespace, '.delete-column', function() {
             var id = $(this).data('column-id');
             var url = "{{ route('taskboards.destroy', ':id') }}".replace(':id', id);
 
@@ -147,7 +151,7 @@ $addTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->p
             });
         });
 
-        $body.on('click' + namespace, '.collapse-column', function() {
+        $taskboardBody.on('click' + namespace, '.collapse-column', function() {
             var boardColumnId = $(this).data('column-id');
             var type = $(this).data('type');
 
@@ -163,7 +167,7 @@ $addTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->p
             });
         });
 
-        if ((pusher_setting.status === 1 && pusher_setting.taskboard === 1) || (pusher_setting.status == "1" && pusher_setting.taskboard == "1")) {
+        if (typeof pusher_setting !== 'undefined' && ((pusher_setting.status === 1 && pusher_setting.taskboard === 1) || (pusher_setting.status == "1" && pusher_setting.taskboard == "1"))) {
             channel = pusher.subscribe('task-updated-channel');
             channel.bind('task-updated', function() { loadData(); });
         }
@@ -171,8 +175,8 @@ $addTaskPermission = ($project->project_admin == user()->id) ? 'all' : user()->p
         loadData();
 
         document.addEventListener('turbo:before-cache', function cleanup() {
-            $body.off(namespace);
-            if (channel) {
+            $taskboardBody.off(namespace);
+            if (channel && typeof pusher !== 'undefined') {
                 channel.unbind('task-updated');
                 pusher.unsubscribe('task-updated-channel');
             }

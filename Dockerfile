@@ -43,7 +43,8 @@ RUN mkdir -p /etc/mysql/conf.d \
     && mv /usr/bin/mysql /usr/bin/mysql.real \
     && echo -e '#!/bin/sh\n/usr/bin/mysql.real --ssl=0 "$@"' > /usr/bin/mysql \
     && chmod +x /usr/bin/mysql \
-    && git config --global --add safe.directory /var/www/html
+    && git config --global --add safe.directory /var/www/html \
+    && git config --global url."https://github.com/".insteadOf git@github.com:
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \

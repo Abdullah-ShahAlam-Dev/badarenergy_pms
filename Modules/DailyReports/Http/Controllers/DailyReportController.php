@@ -209,8 +209,8 @@ class DailyReportController extends AccountBaseController
         $this->totalEmployees  = User::onlyEmployee()->count();
 
         $this->missingEmployees = User::onlyEmployee()
-            ->filter(fn($u) => !in_array($u->id, $submittedUserIds))
-            ->values();
+            ->whereNotIn('id', $submittedUserIds)
+            ->get();
 
         $this->submittedReports = DailyReport::with('user')
             ->where('report_date', $date)

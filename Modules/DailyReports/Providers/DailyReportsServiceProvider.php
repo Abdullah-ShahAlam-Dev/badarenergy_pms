@@ -31,7 +31,7 @@ class DailyReportsServiceProvider extends ServiceProvider
         $this->registerViews();
         $this->loadMigrationsFrom(module_path($this->moduleName, 'Database/Migrations'));
 
-        // View::composer('dashboard.ajax.overview', DashboardComposer::class);
+        View::composer('dashboard.ajax.overview', DashboardComposer::class);
     }
 
     /**

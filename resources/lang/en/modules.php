@@ -1674,7 +1674,8 @@ return array (
         'addknowledgebaseCategory' => 'Manage Article Category',
         'emergency_contact' => 'Emergency Contact',
         'recruit' => 'Recruit',
-        'bankaccount' => 'Bank Account'
+        'bankaccount' => 'Bank Account',
+        'daily_reports' => 'Daily Reports'
     ),
     'projectSettings' => array (
         'sendNotificationsTo' => 'Send Reminder To',

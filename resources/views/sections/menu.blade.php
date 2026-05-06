@@ -114,8 +114,8 @@
                 @if (in_array('timelogs', user_modules()) && $sidebarUserPermissions['view_timelogs'] != 5 && $sidebarUserPermissions['view_timelogs'] != 'none')
                     <x-sub-menu-item :link="route('timelogs.index')" :text="__('app.menu.timeLogs')" />
                 @endif
-                @if (in_array('daily_reports', user_modules()) && user()->permission('view_daily_report') != 'none')
-                    <x-sub-menu-item :link="route('daily-reports.index')" text="Daily Reports" :active="request()->routeIs('daily-reports.*') || request()->routeIs('reports.daily-reports*')" />
+                @if (in_array('daily_reports', user_modules()) && user() && user()->permission('view_daily_report') != 'none')
+                    <x-sub-menu-item :link="route('daily-reports.index')" :text="__('modules.dailyReports.menuName')" :active="request()->routeIs('daily-reports.*') || request()->routeIs('reports.daily-reports*')" />
                 @endif
                 {{-- @endif --}}
             </div>
@@ -290,7 +290,11 @@
     @endforeach
 
 <!-- NAV ITEM - NOTICES -->
-    @if (in_array('reports', user_modules()) && ($sidebarUserPermissions['view_task_report'] == 4 || $sidebarUserPermissions['view_time_log_report'] == 4 || (isset($sidebarUserPermissions['view_expense_report']) && $sidebarUserPermissions['view_expense_report'] == 4) || $sidebarUserPermissions['view_finance_report'] != 5 || $sidebarUserPermissions['view_income_expense_report'] == 4 || $sidebarUserPermissions['view_leave_report'] == 4 || $sidebarUserPermissions['view_attendance_report'] == 4 || user()->permission('view_all_daily_reports') == 'all') && ($sidebarUserPermissions['view_task_report'] != 'none' || $sidebarUserPermissions['view_time_log_report'] != 'none' || $sidebarUserPermissions['view_finance_report'] != 'none' || $sidebarUserPermissions['view_income_expense_report'] != 'none' || $sidebarUserPermissions['view_leave_report'] != 'none' || $sidebarUserPermissions['view_attendance_report'] != 'none' || (isset($sidebarUserPermissions['view_expense_report']) && $sidebarUserPermissions['view_expense_report'] != 'none') || user()->permission('view_all_daily_reports') == 'all'))
+    @php
+        $viewDailyAnalysisPerm = (user() && user()->permission('view_all_daily_reports') == 'all');
+    @endphp
+
+    @if (in_array('reports', user_modules()) && ($sidebarUserPermissions['view_task_report'] == 4 || $sidebarUserPermissions['view_time_log_report'] == 4 || (isset($sidebarUserPermissions['view_expense_report']) && $sidebarUserPermissions['view_expense_report'] == 4) || $sidebarUserPermissions['view_finance_report'] != 5 || $sidebarUserPermissions['view_income_expense_report'] == 4 || $sidebarUserPermissions['view_leave_report'] == 4 || $sidebarUserPermissions['view_attendance_report'] == 4 || $viewDailyAnalysisPerm) && ($sidebarUserPermissions['view_task_report'] != 'none' || $sidebarUserPermissions['view_time_log_report'] != 'none' || $sidebarUserPermissions['view_finance_report'] != 'none' || $sidebarUserPermissions['view_income_expense_report'] != 'none' || $sidebarUserPermissions['view_leave_report'] != 'none' || $sidebarUserPermissions['view_attendance_report'] != 'none' || (isset($sidebarUserPermissions['view_expense_report']) && $sidebarUserPermissions['view_expense_report'] != 'none') || $viewDailyAnalysisPerm))
         <x-menu-item icon="graph-up" :text="__('app.menu.reports')" :active="request()->routeIs('task-report.*') || request()->routeIs('time-log-report.*') || request()->routeIs('finance-report.*') || request()->routeIs('income-expense-report.*') || request()->routeIs('leave-report.*') || request()->routeIs('attendance-report.*') || request()->routeIs('expense-report.*') || request()->routeIs('lead-report.*') || request()->routeIs('sales-report.*') || request()->routeIs('reports.daily-reports*') || request()->routeIs('daily-reports.missing')">
             <x-slot name="iconPath">
                 <path
@@ -338,11 +342,11 @@
                     <x-sub-menu-item :link="route('sales-report.index')"
                                      :text="__('app.menu.salesReport')" />
                 @endif
-                @if (user()->permission('view_all_daily_reports') == 'all')
+                @if ($viewDailyAnalysisPerm)
                     <x-sub-menu-item :link="route('reports.daily-reports')"
-                                     text="Daily Report Analysis" :active="request()->routeIs('reports.daily-reports*')" />
+                                     :text="__('modules.dailyReports.analysisMenu')" :active="request()->routeIs('reports.daily-reports*')" />
                     <x-sub-menu-item :link="route('daily-reports.missing')"
-                                     text="Missing Reports Tracker" :active="request()->routeIs('daily-reports.missing')" />
+                                     :text="__('modules.dailyReports.missingMenu')" :active="request()->routeIs('daily-reports.missing')" />
                 @endif
             </div>
         </x-menu-item>

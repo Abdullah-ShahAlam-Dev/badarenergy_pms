@@ -1044,4 +1044,9 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
         })->whereHas('employeeDetail');
     }
 
+    public function dailyReports(): HasMany
+    {
+        return $this->hasMany(\Modules\DailyReports\Entities\DailyReport::class, 'user_id');
+    }
+
 }

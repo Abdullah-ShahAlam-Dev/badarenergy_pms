@@ -1,0 +1,13 @@
+{
+    "name": "DailyReports",
+    "alias": "dailyreports",
+    "description": "Daily Reporting Module for Worksuite",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\DailyReports\\Providers\\DailyReportsServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

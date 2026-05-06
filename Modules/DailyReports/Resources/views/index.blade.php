@@ -1,0 +1,152 @@
+@extends('layouts.app')
+
+@push('styles')
+@endpush
+
+@section('filter-section')
+@endsection
+
+@section('content')
+<div class="content-wrapper">
+
+    {{-- Header / CTA --}}
+    <div class="d-flex justify-content-between action-bar mb-3">
+        <div id="table-actions" class="d-flex align-items-center">
+            @php $isAdmin = in_array('admin', user_roles()); @endphp
+            @if($isAdmin || user()->permission('add_daily_report') != 'none')
+                @if(!$todayReport)
+                    <x-forms.link-primary :link="route('daily-reports.create')"
+                        class="mr-3 openRightModal float-left" icon="plus">
+                        @lang('app.add') Report
+                    </x-forms.link-primary>
+                @else
+                    <span class="badge badge-success f-14 p-2 mr-3">
+                        <i class="fa fa-check-circle mr-1"></i> Today's Report Submitted
+                    </span>
+                    <a href="{{ route('daily-reports.show', $todayReport->id) }}"
+                        class="btn btn-outline-primary btn-sm openRightModal">
+                        <i class="fa fa-eye mr-1"></i> View Today's Report
+                    </a>
+                @endif
+            @endif
+        </div>
+    </div>
+
+    {{-- Stats Row --}}
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card b-shadow-4 border-0 rounded p-3">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary rounded p-3 mr-3">
+                        <i class="fa fa-file-alt text-white fa-lg"></i>
+                    </div>
+                    <div>
+                        <p class="mb-0 text-lightest f-12">Total Reports</p>
+                        <h4 class="mb-0 font-weight-bold">{{ $reports->total() }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card b-shadow-4 border-0 rounded p-3">
+                <div class="d-flex align-items-center">
+                    <div class="{{ $todayReport ? 'bg-success' : 'bg-warning' }} rounded p-3 mr-3">
+                        <i class="fa fa-{{ $todayReport ? 'check' : 'clock' }} text-white fa-lg"></i>
+                    </div>
+                    <div>
+                        <p class="mb-0 text-lightest f-12">Today's Status</p>
+                        <h4 class="mb-0 font-weight-bold">
+                            {{ $todayReport ? 'Submitted' : 'Pending' }}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card b-shadow-4 border-0 rounded p-3">
+                <div class="d-flex align-items-center">
+                    <div class="bg-info rounded p-3 mr-3">
+                        <i class="fa fa-calendar-check text-white fa-lg"></i>
+                    </div>
+                    <div>
+                        <p class="mb-0 text-lightest f-12">This Month</p>
+                        <h4 class="mb-0 font-weight-bold">
+                            {{ $reports->filter(fn($r) => $r->report_date->isCurrentMonth())->count() }} reports
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Reports Table --}}
+    <div class="d-flex flex-column w-tables bg-white rounded">
+        <div class="p-20">
+            <h5 class="f-16 font-weight-bold mb-3">My Report History</h5>
+            <div class="table-responsive">
+                <table class="table table-hover border-bottom">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Total Hours Logged</th>
+                            <th>Work Summary</th>
+                            <th>Blockers</th>
+                            <th class="text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($reports as $report)
+                            <tr>
+                                <td class="font-weight-bold">
+                                    {{ $report->report_date->format(company()->date_format) }}
+                                </td>
+                                <td class="text-lightest">{{ $report->report_date->format('l') }}</td>
+                                <td>
+                                    <span class="badge badge-light-blue">
+                                        {{ $report->total_hours }}
+                                    </span>
+                                </td>
+                                <td style="max-width:350px" class="text-dark-grey">
+                                    {{ Str::limit(strip_tags($report->summary), 100) }}
+                                </td>
+                                <td>
+                                    @if($report->blockers && strip_tags($report->blockers) != '')
+                                        <span class="text-danger f-12">
+                                            <i class="fa fa-exclamation-triangle mr-1"></i>
+                                            {{ Str::limit(strip_tags($report->blockers), 50) }}
+                                        </span>
+                                    @else
+                                        <span class="text-success f-12">@lang('app.none')</span>
+                                    @endif
+                                </td>
+                                <td class="text-right">
+                                    <a href="{{ route('daily-reports.show', $report->id) }}"
+                                        class="btn btn-sm btn-outline-primary openRightModal">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="text-lightest">
+                                        <i class="fa fa-file-alt fa-3x mb-3 d-block"></i>
+                                        No reports submitted yet. Submit your first report!
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- Pagination --}}
+            <div class="d-flex justify-content-end mt-3">
+                {{ $reports->links() }}
+            </div>
+        </div>
+    </div>
+
+</div>
+@endsection

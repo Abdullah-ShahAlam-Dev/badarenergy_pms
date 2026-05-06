@@ -81,7 +81,91 @@
         </div>
     @endif
 
+    @if (isset($dailyReportWidget))
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
+            <a href="{{ route('reports.daily-reports') }}" style="text-decoration:none">
+                <div class="card b-shadow-4 border-0 rounded p-3">
+                    <p class="mb-1 text-lightest f-12">Daily Reports Today</p>
+                    <div class="d-flex align-items-end justify-content-between">
+                        <h3 class="mb-0 font-weight-bold">
+                            {{ $dailyReportWidget['submittedCount'] }}
+                            <small class="text-lightest f-14">/ {{ $dailyReportWidget['totalEmployees'] }}</small>
+                        </h3>
+                        <span class="f-12 font-weight-bold
+                            {{ $dailyReportWidget['complianceRate'] >= 80 ? 'text-success' : ($dailyReportWidget['complianceRate'] >= 50 ? 'text-warning' : 'text-danger') }}">
+                            {{ $dailyReportWidget['complianceRate'] }}%
+                        </span>
+                    </div>
+                    <div class="progress mt-2" style="height:4px">
+                        <div class="progress-bar {{ $dailyReportWidget['complianceRate'] >= 80 ? 'bg-success' : ($dailyReportWidget['complianceRate'] >= 50 ? 'bg-warning' : 'bg-danger') }}"
+                            style="width:{{ $dailyReportWidget['complianceRate'] }}%"></div>
+                    </div>
+                    @if($dailyReportWidget['missingCount'] > 0)
+                        <p class="mb-0 text-danger f-11 mt-1">
+                            <i class="fa fa-times-circle mr-1"></i>{{ $dailyReportWidget['missingCount'] }} missing
+                        </p>
+                    @else
+                        <p class="mb-0 text-success f-11 mt-1">
+                            <i class="fa fa-check-circle mr-1"></i> All submitted!
+                        </p>
+                    @endif
+                </div>
+            </a>
+        </div>
+    @endif
 </div>
+
+@if (isset($dailyReportWidget))
+    <div class="row mt-3">
+        <div class="col-sm-12">
+            <x-cards.data padding="false" otherClasses="h-200">
+                <x-slot name="title">
+                    Today's Daily Reports
+                    <a href="{{ route('daily-reports.missing', ['date' => $dailyReportWidget['today']]) }}"
+                        class="btn btn-xs btn-outline-danger ml-2 f-11">
+                        <i class="fa fa-times-circle mr-1"></i>{{ $dailyReportWidget['missingCount'] }} Missing
+                    </a>
+                    <a href="{{ route('reports.daily-reports') }}"
+                        class="btn btn-xs btn-outline-primary ml-1 f-11">View All</a>
+                </x-slot>
+                <x-table>
+                    @forelse ($dailyReportWidget['latestReports'] as $report)
+                        <tr>
+                            <td class="pl-20" width="200">
+                                <x-employee :user="$report->user" />
+                            </td>
+                            <td class="text-lightest f-12">
+                                <i class="fa fa-clock mr-1"></i>
+                                {{ $report->created_at->timezone(company()->timezone)->format(company()->time_format) }}
+                            </td>
+                            <td class="text-dark-grey f-13" style="max-width:300px">
+                                {{ Str::limit($report->summary, 90) }}
+                            </td>
+                            <td width="80">
+                                <span class="badge badge-light-blue f-11">{{ $report->total_hours }}</span>
+                                @if($report->blockers)
+                                    <span class="badge badge-warning f-11 ml-1" title="{{ $report->blockers }}"
+                                        data-toggle="tooltip">Blocker</span>
+                                @endif
+                            </td>
+                            <td class="text-right pr-20" width="60">
+                                <a href="{{ route('daily-reports.show', $report->id) }}"
+                                    class="btn btn-xs btn-outline-primary openRightModal">View</a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="text-center p-20 text-lightest">
+                                <i class="fa fa-file-alt fa-2x mb-2 d-block"></i>
+                                No reports submitted yet today.
+                            </td>
+                        </tr>
+                    @endforelse
+                </x-table>
+            </x-cards.data>
+        </div>
+    </div>
+@endif
 
 <div class="row">
     @if (in_array('payments', user_modules()) && in_array('recent_earnings', $activeWidgets))

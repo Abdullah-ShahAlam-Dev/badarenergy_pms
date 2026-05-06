@@ -563,6 +563,27 @@
         // Hide preloader when the new page is ready
         document.addEventListener("turbo:load", function() {
             $(".preloader-container").removeClass("d-flex").hide();
+
+            // SYNC SIDEBAR ACTIVE STATE (Required because sidebar is data-turbo-permanent)
+            const currentUrl = window.location.href.split(/[?#]/)[0];
+            
+            // 1. Remove active states from everywhere
+            $('.sidebar-menu .active').removeClass('active');
+            
+            // 2. Find and highlight the current link
+            $('.sidebar-menu a').each(function() {
+                const linkUrl = this.href.split(/[?#]/)[0];
+                if (linkUrl === currentUrl || linkUrl.replace(/\/$/, "") === currentUrl.replace(/\/$/, "")) {
+                    $(this).addClass('active');
+                    
+                    // 3. Handle Parent Accordion (Work, Reports, etc.)
+                    const $parentAccordion = $(this).closest('.accordionItem');
+                    if ($parentAccordion.length) {
+                        $parentAccordion.removeClass('closeIt'); // Open the menu
+                        $parentAccordion.find('.accordionItemHeading').addClass('active'); // Highlight parent
+                    }
+                }
+            });
         });
 
         window.turboListenersAttached = true;

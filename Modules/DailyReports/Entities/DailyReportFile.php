@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Asset;
 
 class DailyReportFile extends BaseModel
 {
-    use IconTrait;
+    use IconTrait, HasCompany;
 
     protected $table = 'daily_report_files';
 

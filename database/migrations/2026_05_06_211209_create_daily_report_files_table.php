@@ -11,21 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('daily_report_files')) {
-            Schema::create('daily_report_files', function (Blueprint $table) {
-                $table->id();
-                $table->unsignedBigInteger('user_id')->nullable();
-                $table->unsignedBigInteger('daily_report_id')->nullable();
-                $table->string('filename');
-                $table->string('hashname')->nullable();
-                $table->string('size')->nullable();
-                $table->string('last_modified')->nullable();
-                $table->timestamps();
+        Schema::dropIfExists('daily_report_files');
+        
+        Schema::create('daily_report_files', function (Blueprint $table) {
+            $table->id();
+            $table->integer('company_id')->unsigned()->nullable();
+            $table->unsignedInteger('user_id')->nullable();
+            $table->unsignedBigInteger('daily_report_id')->nullable();
+            $table->string('filename');
+            $table->string('hashname')->nullable();
+            $table->string('size')->nullable();
+            $table->string('last_modified')->nullable();
+            $table->timestamps();
 
-                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
-                $table->foreign('daily_report_id')->references('id')->on('daily_reports')->onDelete('cascade')->onUpdate('cascade');
-            });
-        }
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreign('daily_report_id')->references('id')->on('daily_reports')->onDelete('cascade')->onUpdate('cascade');
+        });
     }
 
     /**

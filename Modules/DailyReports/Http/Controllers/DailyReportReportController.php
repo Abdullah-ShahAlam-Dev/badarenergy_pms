@@ -26,7 +26,7 @@ class DailyReportReportController extends AccountBaseController
         $today = now($this->company->timezone)->toDateString();
 
         // Compliance stats for today
-        $allEmployeeIds          = User::allEmployees()->pluck('id');
+        $allEmployeeIds          = User::onlyEmployee()->pluck('id');
         $this->totalEmployees    = $allEmployeeIds->count();
         $this->submittedToday    = DailyReport::where('report_date', $today)->count();
         $this->missingToday      = max(0, $this->totalEmployees - $this->submittedToday);
@@ -34,7 +34,7 @@ class DailyReportReportController extends AccountBaseController
             ? round(($this->submittedToday / $this->totalEmployees) * 100)
             : 0;
 
-        $this->employees   = User::allEmployees();
+        $this->employees   = User::onlyEmployee();
         $this->departments = Team::all();
         $this->today       = $today;
 

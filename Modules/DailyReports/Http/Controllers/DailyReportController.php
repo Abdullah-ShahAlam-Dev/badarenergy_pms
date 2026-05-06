@@ -206,9 +206,9 @@ class DailyReportController extends AccountBaseController
             ->toArray();
 
         $this->submittedCount  = count($submittedUserIds);
-        $this->totalEmployees  = User::allEmployees()->count();
+        $this->totalEmployees  = User::onlyEmployee()->count();
 
-        $this->missingEmployees = User::allEmployees()
+        $this->missingEmployees = User::onlyEmployee()
             ->filter(fn($u) => !in_array($u->id, $submittedUserIds))
             ->values();
 

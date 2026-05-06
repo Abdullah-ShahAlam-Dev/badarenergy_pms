@@ -15,7 +15,7 @@ class DashboardComposer
         }
 
         $today          = now(company()->timezone)->toDateString();
-        $allEmployeeIds = User::allEmployees()->pluck('id');
+        $allEmployeeIds = User::onlyEmployee()->pluck('id');
         $totalEmployees = $allEmployeeIds->count();
         $submittedCount = DailyReport::where('report_date', $today)->count();
 

@@ -34,7 +34,7 @@ class DailyReportReportController extends AccountBaseController
             ? round(($this->submittedToday / $this->totalEmployees) * 100)
             : 0;
 
-        $this->employees   = User::onlyEmployee();
+        $this->employees   = User::onlyEmployee()->get();
         $this->departments = Team::all();
         $this->today       = $today;
 

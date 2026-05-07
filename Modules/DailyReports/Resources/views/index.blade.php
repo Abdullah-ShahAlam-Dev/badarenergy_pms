@@ -12,8 +12,12 @@
     {{-- Header / CTA --}}
     <div class="d-flex justify-content-between action-bar mb-3">
         <div id="table-actions" class="d-flex align-items-center">
-            @php $isAdmin = in_array('admin', user_roles()); @endphp
-            @if($isAdmin || user()->permission('add_daily_report') != 'none')
+            @php 
+                $addDailyReportPermission = user()->permission('add_daily_report');
+                $editDailyReportPermission = user()->permission('edit_daily_report');
+                $deleteDailyReportPermission = user()->permission('delete_daily_report');
+            @endphp
+            @if($addDailyReportPermission == 'all' || $addDailyReportPermission == 'added')
                 @if(!$todayReport)
                     <x-forms.link-primary :link="route('daily-reports.create')"
                         class="mr-3 openRightModal float-left" icon="plus">
@@ -27,11 +31,16 @@
                         class="btn btn-outline-primary btn-sm openRightModal mr-2">
                         <i class="fa fa-eye mr-1"></i> View
                     </a>
-                    @if(in_array('admin', user_roles()) || ($todayReport->created_at && $todayReport->created_at->isToday() && user()->permission('add_daily_report') != 'none'))
+                    @if($editDailyReportPermission == 'all' || ($editDailyReportPermission == 'owned' && $todayReport->created_at && $todayReport->created_at->isToday()))
                         <a href="{{ route('daily-reports.edit', $todayReport->id) }}"
-                            class="btn btn-outline-secondary btn-sm openRightModal">
+                            class="btn btn-outline-secondary btn-sm openRightModal mr-2">
                             <i class="fa fa-edit mr-1"></i> Edit
                         </a>
+                    @endif
+                    @if($deleteDailyReportPermission == 'all' || ($deleteDailyReportPermission == 'owned' && $todayReport->created_at && $todayReport->created_at->isToday()))
+                        <button class="btn btn-outline-danger btn-sm delete-report" data-id="{{ $todayReport->id }}">
+                            <i class="fa fa-trash mr-1"></i> Delete
+                        </button>
                     @endif
                 @endif
             @endif
@@ -131,10 +140,15 @@
                                         class="btn btn-sm btn-outline-primary openRightModal" title="View">
                                         <i class="fa fa-eye"></i>
                                     </a>
-                                    @if(in_array('admin', user_roles()) || ($report->created_at && $report->created_at->isToday() && user()->permission('add_daily_report') != 'none'))
+                                    @if($editDailyReportPermission == 'all' || ($editDailyReportPermission == 'owned' && $report->created_at && $report->created_at->isToday()))
                                         <a href="{{ route('daily-reports.edit', $report->id) }}"
                                             class="btn btn-sm btn-outline-secondary openRightModal ml-1" title="Edit">
                                             <i class="fa fa-edit"></i>
+                                        </a>
+                                    @endif
+                                    @if($deleteDailyReportPermission == 'all' || ($deleteDailyReportPermission == 'owned' && $report->created_at && $report->created_at->isToday()))
+                                        <a href="javascript:;" class="btn btn-sm btn-outline-danger delete-report ml-1" data-id="{{ $report->id }}" title="Delete">
+                                            <i class="fa fa-trash"></i>
                                         </a>
                                     @endif
                                 </td>
@@ -162,3 +176,49 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        $('body').on('click', '.delete-report', function() {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: "@lang('messages.sweetAlertTitle')",
+                text: "@lang('messages.recoverRecord')",
+                icon: 'warning',
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: "@lang('messages.confirmDelete')",
+                cancelButtonText: "@lang('app.cancel')",
+                customClass: {
+                    confirmButton: 'btn btn-primary mr-3',
+                    cancelButton: 'btn btn-secondary'
+                },
+                showClass: {
+                    popup: 'swal2-noanimation',
+                    backdrop: 'swal2-noanimation'
+                },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var url = "{{ route('daily-reports.destroy', ':id') }}";
+                    url = url.replace(':id', id);
+                    
+                    var token = "{{ csrf_token() }}";
+                    
+                    $.easyAjax({
+                        type: 'POST',
+                        url: url,
+                        data: {'_token': token, '_method': 'DELETE'},
+                        success: function (response) {
+                            if (response.status == "success") {
+                                window.location.reload();
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    });
+</script>
+@endpush

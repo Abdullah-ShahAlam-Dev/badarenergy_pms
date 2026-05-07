@@ -235,13 +235,12 @@ class DailyReportController extends AccountBaseController
     {
         $this->report = DailyReport::with('user', 'files')->findOrFail($id);
 
-        $isAdmin = in_array('admin', user_roles());
+        $editPermission = user()->permission('edit_daily_report');
         $isOwner = $this->report->user_id == user()->id;
         
-        abort_403(!$isAdmin && !$isOwner);
-        abort_403(user()->permission('add_daily_report') == 'none');
+        abort_403($editPermission == 'none' || ($editPermission == 'owned' && !$isOwner));
 
-        if (!$isAdmin && (!$this->report->created_at || !$this->report->created_at->isToday())) {
+        if ($editPermission != 'all' && (!$this->report->created_at || !$this->report->created_at->isToday())) {
             abort_403('You can only edit a report on the same day it was submitted.');
         }
 
@@ -261,13 +260,12 @@ class DailyReportController extends AccountBaseController
     {
         $report = DailyReport::findOrFail($id);
 
-        $isAdmin = in_array('admin', user_roles());
+        $editPermission = user()->permission('edit_daily_report');
         $isOwner = $report->user_id == user()->id;
         
-        abort_403(!$isAdmin && !$isOwner);
-        abort_403(user()->permission('add_daily_report') == 'none');
+        abort_403($editPermission == 'none' || ($editPermission == 'owned' && !$isOwner));
 
-        if (!$isAdmin && (!$report->created_at || !$report->created_at->isToday())) {
+        if ($editPermission != 'all' && (!$report->created_at || !$report->created_at->isToday())) {
             return Reply::error('You can only edit a report on the same day it was submitted.');
         }
 
@@ -288,5 +286,23 @@ class DailyReportController extends AccountBaseController
             'redirectUrl' => route('daily-reports.index'),
             'reportID' => $report->id
         ]);
+    }
+
+    public function destroy($id)
+    {
+        $report = DailyReport::findOrFail($id);
+        
+        $deletePermission = user()->permission('delete_daily_report');
+        $isOwner = $report->user_id == user()->id;
+
+        abort_403($deletePermission == 'none' || ($deletePermission == 'owned' && !$isOwner));
+
+        if ($deletePermission != 'all' && (!$report->created_at || !$report->created_at->isToday())) {
+            return Reply::error('You can only delete a report on the same day it was submitted.');
+        }
+
+        $report->delete();
+
+        return Reply::success(__('messages.recordDeleted'));
     }
 }

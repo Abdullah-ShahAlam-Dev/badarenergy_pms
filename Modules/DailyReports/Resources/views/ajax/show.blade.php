@@ -31,12 +31,23 @@
                         <span class="badge badge-warning mt-2">No Hours Logged</span>
                     @endif
 
-                    @if(in_array('admin', user_roles()) || ($report->created_at && $report->created_at->isToday() && user()->permission('add_daily_report') != 'none' && $report->user_id == user()->id))
-                        <div class="mt-3">
+                    @php
+                        $editDailyReportPermission = user()->permission('edit_daily_report');
+                        $deleteDailyReportPermission = user()->permission('delete_daily_report');
+                    @endphp
+                    @if($editDailyReportPermission == 'all' || ($editDailyReportPermission == 'owned' && $report->created_at && $report->created_at->isToday()))
+                        <div class="mt-3 d-inline-block">
                             <a href="{{ route('daily-reports.edit', $report->id) }}"
                                 class="btn btn-outline-secondary btn-sm openRightModal">
-                                <i class="fa fa-edit mr-1"></i> Edit Report
+                                <i class="fa fa-edit mr-1"></i> Edit
                             </a>
+                        </div>
+                    @endif
+                    @if($deleteDailyReportPermission == 'all' || ($deleteDailyReportPermission == 'owned' && $report->created_at && $report->created_at->isToday()))
+                        <div class="mt-3 d-inline-block ml-1">
+                            <button class="btn btn-outline-danger btn-sm delete-report" data-id="{{ $report->id }}">
+                                <i class="fa fa-trash mr-1"></i> Delete
+                            </button>
                         </div>
                     @endif
                 </div>

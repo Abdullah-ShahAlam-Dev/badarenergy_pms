@@ -1,8 +1,24 @@
 @extends('layouts.app')
 
-@push('styles')
-    <meta name="turbo-visit-control" content="reload">
-@endpush
+@section('filter-section')
+    <x-filters.filter-box>
+        <!-- DATE START -->
+        <div class="select-box d-flex pr-2 border-right-grey border-right-grey-sm-0">
+            <p class="mb-0 pr-2 f-14 text-dark-grey d-flex align-items-center">@lang('app.date')</p>
+            <div class="select-status d-flex">
+                <input type="text" class="position-relative text-dark form-control border-0 p-2 text-left f-14 f-w-500 border-additional-grey"
+                    id="date-filter" placeholder="@lang('app.date')" value="{{ \Carbon\Carbon::parse($date)->format(company()->date_format) }}">
+            </div>
+        </div>
+        <!-- DATE END -->
+        
+        <div class="select-box d-flex py-1 px-lg-2 px-md-2 px-0">
+            <x-forms.button-secondary class="btn-xs d-none" id="reset-filters" icon="times-circle">
+                @lang('app.clearFilters')
+            </x-forms.button-secondary>
+        </div>
+    </x-filters.filter-box>
+@endsection
 
 @section('content')
 <div class="content-wrapper">
@@ -19,13 +35,7 @@
             </p>
         </div>
         <div class="d-flex align-items-center">
-            {{-- Date picker --}}
-            <form method="GET" action="{{ route('daily-reports.missing') }}" class="d-flex align-items-center mr-3">
-                <input type="date" name="date" value="{{ $date }}"
-                    class="form-control form-control-sm mr-2" max="{{ now()->toDateString() }}">
-                <button class="btn btn-sm btn-primary">Go</button>
-            </form>
-            <a href="{{ route('reports.daily-reports') }}" class="btn btn-sm btn-outline-secondary">
+            <a href="{{ route('daily-reports.index') }}" class="btn btn-sm btn-outline-secondary">
                 <i class="fa fa-arrow-left mr-1"></i> Back to Report Analysis
             </a>
         </div>
@@ -164,3 +174,42 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+    <script>
+        (function() {
+            var namespace = '.missingReports';
+            var $body = $('body');
+
+            function initDatePicker() {
+                if ($('#date-filter').length > 0) {
+                    datepicker('#date-filter', {
+                        position: 'bl',
+                        maxDate: new Date(),
+                        onSelect: (instance, date) => {
+                            var formattedDate = moment(date).format('YYYY-MM-DD');
+                            window.location.href = "{{ route('daily-reports.missing') }}?date=" + formattedDate;
+                        }
+                    });
+                }
+            }
+
+            initDatePicker();
+
+            $body.off(namespace);
+            
+            $body.on('click' + namespace, '#reset-filters', function() {
+                window.location.href = "{{ route('daily-reports.missing') }}";
+            });
+
+            if ("{{ request('date') }}" != "" && "{{ request('date') }}" != "{{ now()->toDateString() }}") {
+                $('#reset-filters').removeClass('d-none');
+            }
+
+            window.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                window.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
+        })();
+    </script>
+@endpush

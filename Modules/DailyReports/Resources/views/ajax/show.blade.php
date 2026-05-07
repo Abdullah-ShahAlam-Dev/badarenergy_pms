@@ -30,6 +30,15 @@
                     @else
                         <span class="badge badge-warning mt-2">No Hours Logged</span>
                     @endif
+
+                    @if(in_array('admin', user_roles()) || (now()->diffInHours($report->created_at) < 24 && user()->permission('add_daily_report') != 'none' && $report->user_id == user()->id))
+                        <div class="mt-3">
+                            <a href="{{ route('daily-reports.edit', $report->id) }}"
+                                class="btn btn-outline-secondary btn-sm openRightModal">
+                                <i class="fa fa-edit mr-1"></i> Edit Report
+                            </a>
+                        </div>
+                    @endif
                 </div>
             </div>
 

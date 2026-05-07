@@ -224,4 +224,65 @@ class DailyReportController extends AccountBaseController
 
         return view('dailyreports::missing', $this->data);
     }
+
+    public function edit($id)
+    {
+        $this->report = DailyReport::with('user', 'files')->findOrFail($id);
+
+        $isAdmin = in_array('admin', user_roles());
+        $isOwner = $this->report->user_id == user()->id;
+        
+        abort_403(!$isAdmin && !$isOwner);
+        abort_403(user()->permission('add_daily_report') == 'none');
+
+        $diffHours = now()->diffInHours($this->report->created_at);
+        if (!$isAdmin && $diffHours >= 24) {
+            abort_403('You can only edit a report within 24 hours of submission.');
+        }
+
+        $this->reportDate = $this->report->report_date->toDateString();
+        $this->timelogs = $this->report->getTimelogs();
+        $this->totalMinutes = $this->report->total_logged_minutes;
+
+        if (request()->ajax()) {
+            $html = view('dailyreports::ajax.edit', $this->data)->render();
+            return Reply::dataOnly(['status' => 'success', 'html' => $html, 'title' => 'Edit Daily Report']);
+        }
+
+        return view('dailyreports::edit', $this->data);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $report = DailyReport::findOrFail($id);
+
+        $isAdmin = in_array('admin', user_roles());
+        $isOwner = $report->user_id == user()->id;
+        
+        abort_403(!$isAdmin && !$isOwner);
+        abort_403(user()->permission('add_daily_report') == 'none');
+
+        $diffHours = now()->diffInHours($report->created_at);
+        if (!$isAdmin && $diffHours >= 24) {
+            return Reply::error('You can only edit a report within 24 hours of submission.');
+        }
+
+        $request->validate([
+            'summary' => 'required',
+        ]);
+
+        $report->summary = $request->summary;
+        $report->blockers = $request->blockers;
+        $report->next_plan = $request->next_plan;
+        $report->save();
+
+        if ($request->has('file_id') && count($request->file_id) > 0) {
+            DailyReportFile::whereIn('id', $request->file_id)->update(['daily_report_id' => $report->id]);
+        }
+
+        return Reply::successWithData('Report updated successfully!', [
+            'redirectUrl' => route('daily-reports.index'),
+            'reportID' => $report->id
+        ]);
+    }
 }

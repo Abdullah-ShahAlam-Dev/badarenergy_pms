@@ -18,6 +18,7 @@
                     <x-forms.link-primary :link="route('daily-reports.create')"
                         class="mr-3 openRightModal float-left" icon="plus">
                         @lang('app.add') Report
+                    </x-forms.link-primary>
                 @else
                     <span class="badge badge-success f-14 p-2 mr-3">
                         <i class="fa fa-check-circle mr-1"></i> Today's Report Submitted
@@ -26,7 +27,7 @@
                         class="btn btn-outline-primary btn-sm openRightModal mr-2">
                         <i class="fa fa-eye mr-1"></i> View
                     </a>
-                    @if(in_array('admin', user_roles()) || (now()->diffInHours($todayReport->created_at) < 24 && user()->permission('add_daily_report') != 'none'))
+                    @if(in_array('admin', user_roles()) || ($todayReport->created_at && now()->diffInHours($todayReport->created_at) < 24 && user()->permission('add_daily_report') != 'none'))
                         <a href="{{ route('daily-reports.edit', $todayReport->id) }}"
                             class="btn btn-outline-secondary btn-sm openRightModal">
                             <i class="fa fa-edit mr-1"></i> Edit
@@ -130,7 +131,7 @@
                                         class="btn btn-sm btn-outline-primary openRightModal" title="View">
                                         <i class="fa fa-eye"></i>
                                     </a>
-                                    @if(in_array('admin', user_roles()) || (now()->diffInHours($report->created_at) < 24 && user()->permission('add_daily_report') != 'none'))
+                                    @if(in_array('admin', user_roles()) || ($report->created_at && now()->diffInHours($report->created_at) < 24 && user()->permission('add_daily_report') != 'none'))
                                         <a href="{{ route('daily-reports.edit', $report->id) }}"
                                             class="btn btn-sm btn-outline-secondary openRightModal ml-1" title="Edit">
                                             <i class="fa fa-edit"></i>

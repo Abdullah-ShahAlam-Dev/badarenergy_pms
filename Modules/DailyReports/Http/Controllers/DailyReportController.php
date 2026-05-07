@@ -235,9 +235,8 @@ class DailyReportController extends AccountBaseController
         abort_403(!$isAdmin && !$isOwner);
         abort_403(user()->permission('add_daily_report') == 'none');
 
-        $diffHours = now()->diffInHours($this->report->created_at);
-        if (!$isAdmin && $diffHours >= 24) {
-            abort_403('You can only edit a report within 24 hours of submission.');
+        if (!$isAdmin && (!$this->report->created_at || !$this->report->created_at->isToday())) {
+            abort_403('You can only edit a report on the same day it was submitted.');
         }
 
         $this->reportDate = $this->report->report_date->toDateString();
@@ -262,9 +261,8 @@ class DailyReportController extends AccountBaseController
         abort_403(!$isAdmin && !$isOwner);
         abort_403(user()->permission('add_daily_report') == 'none');
 
-        $diffHours = now()->diffInHours($report->created_at);
-        if (!$isAdmin && $diffHours >= 24) {
-            return Reply::error('You can only edit a report within 24 hours of submission.');
+        if (!$isAdmin && (!$report->created_at || !$report->created_at->isToday())) {
+            return Reply::error('You can only edit a report on the same day it was submitted.');
         }
 
         $request->validate([

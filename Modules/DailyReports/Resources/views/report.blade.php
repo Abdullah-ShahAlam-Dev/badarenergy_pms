@@ -139,76 +139,100 @@
     @include('sections.datatable_js')
 
     <script>
-        $('#daily-report-table').on('preXhr.dt', function (e, settings, data) {
-            const rangePicker = $('#datatableRange').data('daterangepicker');
-            let startDate = null;
-            let endDate = null;
+        (function() {
+            var $doc = $(document);
+            var namespace = '.drAdminIndex';
 
-            if (rangePicker && $('#datatableRange').val() !== '') {
-                startDate = rangePicker.startDate.format('{{ company()->moment_date_format }}');
-                endDate = rangePicker.endDate.format('{{ company()->moment_date_format }}');
+            $doc.off(namespace);
+
+            function showTable() {
+                if (window.LaravelDataTables && window.LaravelDataTables["daily-report-table"]) {
+                    window.LaravelDataTables["daily-report-table"].draw(false);
+                }
             }
 
-            data['startDate'] = startDate;
-            data['endDate'] = endDate;
-            data['employee'] = $('#dr-employee').val();
-            data['department'] = $('#dr-department').val();
-        });
+            $('#daily-report-table').on('preXhr.dt' + namespace, function (e, settings, data) {
+                const rangePicker = $('#datatableRange').data('daterangepicker');
+                let startDate = null;
+                let endDate = null;
 
-        $('#dr-employee, #dr-department').change(function () {
-            $('#dr-reset-btn').removeClass('d-none');
-            window.LaravelDataTables["daily-report-table"].draw();
-        });
+                if (rangePicker && $('#datatableRange').val() !== '') {
+                    startDate = rangePicker.startDate.format('{{ company()->moment_date_format }}');
+                    endDate = rangePicker.endDate.format('{{ company()->moment_date_format }}');
+                }
 
-        const dateRangePickerConfig = {
-            autoUpdateInput: false,
-            locale: {
-                cancelLabel: 'Clear',
-                format: '{{ company()->moment_date_format }}',
-            },
-            ranges: {
-                'Today': [moment(), moment()],
-                'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-                'This Month': [moment().startOf('month'), moment().endOf('month')],
-                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                data['startDate'] = startDate;
+                data['endDate'] = endDate;
+                data['employee'] = $('#dr-employee').val();
+                data['department'] = $('#dr-department').val();
+            });
+
+            $doc.on('change' + namespace + ' changed.bs.select' + namespace, '#dr-employee, #dr-department', function () {
+                $('#dr-reset-btn').removeClass('d-none');
+                showTable();
+            });
+
+            $doc.on('click' + namespace, '#dr-reset-btn', function () {
+                $('#filter-form').length ? $('#filter-form')[0].reset() : null;
+                $('#dr-employee, #dr-department').val('all');
+                $('.select-picker').selectpicker('refresh');
+                $('#datatableRange').val('');
+                $(this).addClass('d-none');
+                showTable();
+            });
+
+            function setDate() {
+                if (!document.getElementById('datatableRange')) return;
+                
+                const dateRangePickerConfig = {
+                    autoUpdateInput: false,
+                    locale: {
+                        cancelLabel: 'Clear',
+                        format: '{{ company()->moment_date_format }}',
+                    },
+                    ranges: daterangeConfig
+                };
+
+                $('#datatableRange').daterangepicker(dateRangePickerConfig);
+
+                $('#datatableRange').off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker) {
+                    $(this).val(picker.startDate.format('{{ company()->moment_date_format }}') + ' @lang("app.to") ' + picker.endDate.format('{{ company()->moment_date_format }}'));
+                    $('#dr-reset-btn').removeClass('d-none');
+                    showTable();
+                });
             }
-        };
 
-        $('#datatableRange').daterangepicker(dateRangePickerConfig);
+            var onTurboLoad = function() {
+                setDate();
+            };
 
-        $('#datatableRange').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('{{ company()->moment_date_format }}') + ' - ' + picker.endDate.format('{{ company()->moment_date_format }}'));
-            $('#dr-reset-btn').removeClass('d-none');
-            window.LaravelDataTables["daily-report-table"].draw();
-        });
+            document.addEventListener('turbo:load', onTurboLoad);
+            setDate();
 
-        $('#dr-reset-btn').click(function () {
-            $('#dr-employee, #dr-department').val('all').trigger('change');
-            $('.select-picker').selectpicker('refresh');
-            $('#datatableRange').val('');
-            $(this).addClass('d-none');
-            window.LaravelDataTables["daily-report-table"].draw();
-        });
+            document.addEventListener('turbo:before-cache', function cleanup() {
+                $doc.off(namespace);
+                document.removeEventListener('turbo:load', onTurboLoad);
+            }, { once: true });
 
-        $('body').off('.drAdminModal').on('click.drAdminModal', '.openRightModal', function(e) {
-            e.preventDefault();
-            var url = $(this).attr('href');
-            $(RIGHT_MODAL_CONTENT).html(loader);
-            $(RIGHT_MODAL).modal('show');
-            $.easyAjax({
-                url: url,
-                type: "GET",
-                success: function (response) {
-                    if (response.html) {
-                        $(RIGHT_MODAL_CONTENT).html(response.html);
-                        if (response.title && $(RIGHT_MODAL_TITLE).length) {
-                            $(RIGHT_MODAL_TITLE).html(response.title);
+            $('body').off('.drAdminModal').on('click.drAdminModal', '.openRightModal', function(e) {
+                e.preventDefault();
+                var url = $(this).attr('href');
+                $(RIGHT_MODAL_CONTENT).html(loader);
+                $(RIGHT_MODAL).modal('show');
+                $.easyAjax({
+                    url: url,
+                    type: "GET",
+                    success: function (response) {
+                        if (response.html) {
+                            $(RIGHT_MODAL_CONTENT).html(response.html);
+                            if (response.title && $(RIGHT_MODAL_TITLE).length) {
+                                $(RIGHT_MODAL_TITLE).html(response.title);
+                            }
                         }
                     }
-                }
+                });
             });
-        });
+
+        })();
     </script>
 @endpush

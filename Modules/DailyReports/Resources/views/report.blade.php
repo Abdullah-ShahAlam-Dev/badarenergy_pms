@@ -214,24 +214,7 @@
                 document.removeEventListener('turbo:load', onTurboLoad);
             }, { once: true });
 
-            $('body').off('.drAdminModal').on('click.drAdminModal', '.openRightModal', function(e) {
-                e.preventDefault();
-                var url = $(this).attr('href');
-                $(RIGHT_MODAL_CONTENT).html(loader);
-                $(RIGHT_MODAL).modal('show');
-                $.easyAjax({
-                    url: url,
-                    type: "GET",
-                    success: function (response) {
-                        if (response.html) {
-                            $(RIGHT_MODAL_CONTENT).html(response.html);
-                            if (response.title && $(RIGHT_MODAL_TITLE).length) {
-                                $(RIGHT_MODAL_TITLE).html(response.title);
-                            }
-                        }
-                    }
-                });
-            });
+
 
         })();
     </script>

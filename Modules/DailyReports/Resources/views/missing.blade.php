@@ -180,10 +180,16 @@
         (function() {
             var namespace = '.missingReports';
             var $body = $('body');
+            var dpInstance = null;
 
             function initDatePicker() {
+                if (dpInstance) {
+                    dpInstance.remove();
+                    dpInstance = null;
+                }
+
                 if ($('#date-filter').length > 0) {
-                    datepicker('#date-filter', {
+                    dpInstance = datepicker('#date-filter', {
                         position: 'bl',
                         maxDate: new Date(),
                         onSelect: (instance, date) => {
@@ -194,21 +200,37 @@
                 }
             }
 
-            initDatePicker();
+            function setupMissingReports() {
+                initDatePicker();
 
-            $body.off(namespace);
-            
-            $body.on('click' + namespace, '#reset-filters', function() {
-                window.location.href = "{{ route('daily-reports.missing') }}";
-            });
+                $body.off(namespace);
+                
+                $body.on('click' + namespace, '#reset-filters', function() {
+                    window.location.href = "{{ route('daily-reports.missing') }}";
+                });
 
-            if ("{{ request('date') }}" != "" && "{{ request('date') }}" != "{{ now()->toDateString() }}") {
-                $('#reset-filters').removeClass('d-none');
+                if ("{{ request('date') }}" != "" && "{{ request('date') }}" != "{{ now()->toDateString() }}") {
+                    $('#reset-filters').removeClass('d-none');
+                }
             }
 
-            window.addEventListener('turbo:before-cache', function cleanup() {
+            // Run immediately on evaluation
+            setupMissingReports();
+
+            // Run on subsequent Turbo restorations
+            var onTurboLoad = function() {
+                setupMissingReports();
+            };
+            document.addEventListener('turbo:load', onTurboLoad);
+
+            // Cleanup before Turbo caches the DOM to prevent orphaned instances
+            document.addEventListener('turbo:before-cache', function cleanup() {
+                if (dpInstance) {
+                    dpInstance.remove();
+                    dpInstance = null;
+                }
                 $body.off(namespace);
-                window.removeEventListener('turbo:before-cache', cleanup);
+                document.removeEventListener('turbo:load', onTurboLoad);
             }, { once: true });
         })();
     </script>

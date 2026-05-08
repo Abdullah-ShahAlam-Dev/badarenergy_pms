@@ -61,7 +61,12 @@ class DailyReportDataTable extends BaseDataTable
     public function query(DailyReport $model)
     {
         $request = $this->request();
-        $query = $model->with('user', 'user.employeeDetail', 'user.employeeDetail.designation');
+        $eligibleUserIds = \App\Models\User::onlyEmployee()->get()->filter(function($user) {
+            return $user->permission('add_daily_report') != 'none' && $user->permission('add_daily_report') != false;
+        })->pluck('id');
+
+        $query = $model->with('user', 'user.employeeDetail', 'user.employeeDetail.designation')
+            ->whereIn('user_id', $eligibleUserIds);
 
         if ($request->employee && $request->employee != 'all') {
             $query->where('user_id', $request->employee);

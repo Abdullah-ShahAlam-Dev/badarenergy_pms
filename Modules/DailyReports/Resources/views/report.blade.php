@@ -82,13 +82,13 @@
         {{-- Stats Row --}}
         <div class="row mt-4 mb-4">
             <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
-                <x-cards.data :title="__('Total Employees')" :value="$totalEmployees" icon="users" />
+                <x-cards.widget :title="__('Total Employees')" :value="$totalEmployees" icon="users" />
             </div>
             <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
-                <x-cards.data :title="__('Submitted Today')" :value="$submittedToday" icon="check-double" />
+                <x-cards.widget :title="__('Submitted Today')" :value="$submittedToday" icon="check-double" />
             </div>
             <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
-                <x-cards.data :title="__('Missing Today')" :value="$missingToday" icon="user-clock" color="text-red" />
+                <x-cards.widget :title="__('Missing Today')" :value="$missingToday" icon="user-clock" />
             </div>
             <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
                 <div class="bg-white p-20 rounded b-shadow-4 d-flex justify-content-between align-items-center">
@@ -209,12 +209,52 @@
             document.addEventListener('turbo:load', onTurboLoad);
             setDate();
 
+            $doc.on('click' + namespace, '.delete-report', function() {
+                var id = $(this).data('id');
+                Swal.fire({
+                    title: "@lang('messages.sweetAlertTitle')",
+                    text: "@lang('messages.recoverRecord')",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonText: "@lang('messages.confirmDelete')",
+                    cancelButtonText: "@lang('app.cancel')",
+                    customClass: {
+                        confirmButton: 'btn btn-primary mr-3',
+                        cancelButton: 'btn btn-secondary'
+                    },
+                    showClass: {
+                        popup: 'swal2-noanimation',
+                        backdrop: 'swal2-noanimation'
+                    },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        var url = "{{ route('daily-reports.destroy', ':id') }}";
+                        url = url.replace(':id', id);
+                        var token = "{{ csrf_token() }}";
+                        $.easyAjax({
+                            type: 'POST',
+                            url: url,
+                            data: {'_token': token, '_method': 'DELETE'},
+                            success: function (response) {
+                                if (response.status == "success") {
+                                    if (window.LaravelDataTables && window.LaravelDataTables["daily-report-table"]) {
+                                        window.LaravelDataTables["daily-report-table"].draw(false);
+                                    } else {
+                                        window.location.reload();
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+
             document.addEventListener('turbo:before-cache', function cleanup() {
                 $doc.off(namespace);
                 document.removeEventListener('turbo:load', onTurboLoad);
             }, { once: true });
-
-
 
         })();
     </script>

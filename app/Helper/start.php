@@ -282,7 +282,7 @@ if (!function_exists('user_modules')) {
 
         $module = new \App\Models\ModuleSetting();
 
-        if (in_array('admin', user_roles())) {
+        if (in_array('admin', user_roles()) || in_array('system-admin', user_roles())) {
             $module = $module->where('type', 'admin');
 
         }
@@ -752,7 +752,7 @@ if (!function_exists('sidebar_user_perms')) {
     // @codingStandardsIgnoreLine
     function sidebar_user_perms()
     {
-        if (!session()->has('sidebar_user_perms')) {
+        if (!session()->has('sidebar_user_perms') || in_array('admin', user_roles()) || in_array('system-admin', user_roles())) {
 
             $sidebarPermissionsArray = [
                 'view_clients',
@@ -800,6 +800,8 @@ if (!function_exists('sidebar_user_perms')) {
                 'manage_award',
                 'view_lead_report',
                 'view_sales_report',
+                'view_daily_report',
+                'view_all_daily_reports',
             ];
 
 
@@ -810,11 +812,21 @@ if (!function_exists('sidebar_user_perms')) {
             $sidebarUserPermissionType = UserPermission::where('user_id', user()->id)
                 ->whereIn('permission_id', $sidebarPermissionsId)
                 ->join('permissions', 'permissions.id', '=', 'user_permissions.permission_id')
-                ->orderBy('user_permissions.id')
                 ->select('user_permissions.permission_type_id', 'permissions.name', 'permissions.id')
-                ->groupBy(['user_id', 'permission_id', 'permission_type_id'])
-                ->get()
-                ->keyBy('name');
+                ->get();
+
+            $sidebarRolePermissionType = Permission::join('permission_role', 'permission_role.permission_id', '=', 'permissions.id')
+                ->join('role_user', 'role_user.role_id', '=', 'permission_role.role_id')
+                ->where('role_user.user_id', user()->id)
+                ->whereIn('permissions.id', $sidebarPermissionsId)
+                ->select('permission_role.permission_type_id', 'permissions.name', 'permissions.id')
+                ->get();
+
+            // Merge: User permissions override Role permissions
+            // Sort Role permissions so that 'All' (4) or others override 'None' (5) in keyBy
+            $sidebarUserPermissionType = $sidebarRolePermissionType->sortBy(function($item) {
+                return $item->permission_type_id == 5 ? 0 : $item->permission_type_id;
+            })->keyBy('name')->merge($sidebarUserPermissionType->keyBy('name'));
 
             $sidebarUserPermissions = array_combine($sidebarUserPermissionType->pluck('name')->toArray(), $sidebarUserPermissionType->pluck('permission_type_id')->toArray());
 

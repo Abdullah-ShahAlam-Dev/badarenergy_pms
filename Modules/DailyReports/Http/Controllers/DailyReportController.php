@@ -9,6 +9,7 @@ use App\Models\ProjectTimeLog;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Modules\DailyReports\Entities\DailyReport;
 use Modules\DailyReports\Entities\DailyReportFile;
 
@@ -195,7 +196,7 @@ class DailyReportController extends AccountBaseController
      */
     public function missingReports(Request $request)
     {
-        $isAdmin = in_array('admin', user_roles());
+        $isAdmin = in_array('admin', user_roles()) || in_array('system-admin', user_roles());
         abort_403(!$isAdmin && user()->permission('view_all_daily_reports') != 'all');
 
         $date = $request->get('date', now($this->company->timezone)->toDateString());
@@ -208,6 +209,10 @@ class DailyReportController extends AccountBaseController
         $this->submittedCount  = count($submittedUserIds);
         $allEmployees = User::onlyEmployee()->get();
         
+        foreach ($allEmployees as $emp) {
+            Cache::forget('permission-add_daily_report-' . $emp->id);
+        }
+        
         $eligibleEmployees = $allEmployees->filter(function ($user) {
             return $user->permission('add_daily_report') != 'none';
         });
@@ -218,7 +223,9 @@ class DailyReportController extends AccountBaseController
             return in_array($user->id, $submittedUserIds);
         })->values();
 
+        $eligibleEmployeeIds = $eligibleEmployees->pluck('id');
         $this->submittedReports = DailyReport::with('user')
+            ->whereIn('user_id', $eligibleEmployeeIds)
             ->where('report_date', $date)
             ->orderBy('created_at', 'desc')
             ->get();

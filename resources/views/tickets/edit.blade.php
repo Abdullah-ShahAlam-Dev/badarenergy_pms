@@ -246,11 +246,17 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
         </div>
         <!-- TICKET LEFT END -->
 
-        @if ($editTicketPermission == 'all' || ($editTicketPermission == 'owned' && $ticket->agent_id == user()->id))
+        @php
+            $hasTicketEditPermission = ($editTicketPermission == 'all' || ($editTicketPermission == 'owned' && $ticket->agent_id == user()->id));
+            $isTicketCcUser = (isset($ccUserIds) && in_array(user()->id, $ccUserIds));
+        @endphp
+
+        @if ($hasTicketEditPermission || ($isTicketCcUser && count($ticket->ccUsers) > 0))
             <!-- TICKET RIGHT START -->
             <div class="mobile-close-overlay w-100 h-100" id="close-tickets-overlay"></div>
             <div class="ticket-right bg-white" id="ticket-detail-contact">
                 <a class="d-block d-lg-none close-it" id="close-tickets"><i class="fa fa-times"></i></a>
+                @if ($hasTicketEditPermission)
                 <div id="tabs">
                     <nav class="tabs px-2 border-bottom-grey">
                         <div class="nav" id="nav-tab" role="tablist">
@@ -525,6 +531,20 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                         </x-form>
                     </div>
                 </div>
+                @else
+                    <div class="card pt-4 px-4 border-grey border-left-0 border-right-0 border-top-0 rounded-0">
+                        <div class="card-title">
+                            <h4 class="f-18 f-w-500 text-capitalize mb-3">CC Users</h4>
+                        </div>
+                        <div class="card-body p-0 pb-4">
+                            @foreach ($ticket->ccUsers as $item)
+                                <div class="mb-3">
+                                    <x-employee :user="$item" />
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
             <!-- TICKET RIGHT END -->
         @endif

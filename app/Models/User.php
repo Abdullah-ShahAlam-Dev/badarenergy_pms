@@ -869,17 +869,6 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
                 ->where('user_permissions.user_id', $this->id)
                 ->first();
 
-            if (!$permissionType) {
-                $permissionType = Permission::join('permission_role', 'permission_role.permission_id', '=', 'permissions.id')
-                    ->join('permission_types', 'permission_types.id', '=', 'permission_role.permission_type_id')
-                    ->join('role_user', 'role_user.role_id', '=', 'permission_role.role_id')
-                    ->select('permission_types.name', 'permission_role.permission_type_id')
-                    ->where('permissions.name', $permission)
-                    ->where('role_user.user_id', $this->id)
-                    ->orderByRaw("CASE WHEN permission_role.permission_type_id = 5 THEN 0 ELSE permission_role.permission_type_id END DESC")
-                    ->first();
-            }
-
             return $permissionType ? $permissionType->name : false;
         });
 
@@ -895,17 +884,6 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
                 ->where('permissions.name', $permission)
                 ->where('user_permissions.user_id', $this->id)
                 ->first();
-
-            if (!$permissionType) {
-                $permissionType = Permission::join('permission_role', 'permission_role.permission_id', '=', 'permissions.id')
-                    ->join('permission_types', 'permission_types.id', '=', 'permission_role.permission_type_id')
-                    ->join('role_user', 'role_user.role_id', '=', 'permission_role.role_id')
-                    ->select('permission_types.name', 'permission_types.id')
-                    ->where('permissions.name', $permission)
-                    ->where('role_user.user_id', $this->id)
-                    ->orderByRaw("CASE WHEN permission_role.permission_type_id = 5 THEN 0 ELSE permission_role.permission_type_id END DESC")
-                    ->first();
-            }
 
             return $permissionType ? $permissionType->name : false;
         });

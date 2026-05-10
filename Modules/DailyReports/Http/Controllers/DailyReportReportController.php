@@ -10,6 +10,7 @@ use Modules\DailyReports\Entities\DailyReport;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Modules\DailyReports\Entities\DailyReportSetting;
 
 class DailyReportReportController extends AccountBaseController
 {
@@ -21,23 +22,18 @@ class DailyReportReportController extends AccountBaseController
 
     public function index(DailyReportDataTable $dataTable)
     {
-        $isAdmin = in_array('admin', user_roles()) || in_array('system-admin', user_roles());
+        $isAdmin = in_array('admin', user_roles());
         abort_403(!$isAdmin && user()->permission('view_all_daily_reports') != 'all');
 
         $today = now($this->company->timezone)->toDateString();
 
         // Compliance stats for today
-        $allEmployees = User::onlyEmployee()->get();
+        $reporterIds = DailyReportSetting::getReporterIds();
+        $eligibleEmployees = User::whereIn('id', $reporterIds)
+            ->with('employeeDetail', 'employeeDetail.designation', 'employeeDetail.department')
+            ->get();
         
-        foreach ($allEmployees as $emp) {
-            Cache::forget('permission-add_daily_report-' . $emp->id);
-        }
-
-        $eligibleEmployees = $allEmployees->filter(function ($user) {
-            return $user->permission('add_daily_report') != 'none' && $user->permission('add_daily_report') != false;
-        });
-
-        $allEmployeeIds          = $eligibleEmployees->pluck('id');
+        $allEmployeeIds = $eligibleEmployees->pluck('id');
         $this->totalEmployees    = $allEmployeeIds->count();
         $this->submittedToday    = DailyReport::whereIn('user_id', $allEmployeeIds)->where('report_date', $today)->count();
         $this->missingToday      = max(0, $this->totalEmployees - $this->submittedToday);
@@ -54,25 +50,17 @@ class DailyReportReportController extends AccountBaseController
 
     public function employeeWise()
     {
-        $isAdmin = in_array('admin', user_roles()) || in_array('system-admin', user_roles());
+        $isAdmin = in_array('admin', user_roles());
         abort_403(!$isAdmin && user()->permission('view_all_daily_reports') != 'all');
 
         $this->pageTitle = 'Employee Wise Daily Reports';
         
-        $allEmployees = User::withCount('dailyReports')
-            ->with(['dailyReports' => function($q) {
-                $q->orderBy('report_date', 'desc')->limit(1);
-            }, 'employeeDetail', 'employeeDetail.designation', 'employeeDetail.department'])
-            ->whereHas('employeeDetail')
+        $reporterIds = DailyReportSetting::getReporterIds();
+        $allEmployees = User::whereIn('id', $reporterIds)
+            ->with('employeeDetail', 'employeeDetail.designation', 'employeeDetail.department')
             ->get();
 
-        foreach ($allEmployees as $emp) {
-            Cache::forget('permission-add_daily_report-' . $emp->id);
-        }
-
-        $this->employees = $allEmployees->filter(function ($user) {
-            return $user->permission('add_daily_report') != 'none' && $user->permission('add_daily_report') != false;
-        });
+        $this->employees = $allEmployees;
 
         return view('dailyreports::employee_reports', $this->data);
     }

@@ -17,7 +17,7 @@
                 $editDailyReportPermission = user()->permission('edit_daily_report');
                 $deleteDailyReportPermission = user()->permission('delete_daily_report');
             @endphp
-            @if($addDailyReportPermission == 'all' || $addDailyReportPermission == 'added')
+            @if($canSubmit)
                 @if(!$todayReport)
                     <x-forms.link-primary :link="route('daily-reports.create')"
                         class="mr-3 openRightModal float-left" icon="plus">

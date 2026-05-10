@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Modules\DailyReports\Entities\DailyReport;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
+use Modules\DailyReports\Entities\DailyReportSetting;
 
 class DailyReportDataTable extends BaseDataTable
 {
@@ -61,9 +62,7 @@ class DailyReportDataTable extends BaseDataTable
     public function query(DailyReport $model)
     {
         $request = $this->request();
-        $eligibleUserIds = \App\Models\User::onlyEmployee()->get()->filter(function($user) {
-            return $user->permission('add_daily_report') != 'none' && $user->permission('add_daily_report') != false;
-        })->pluck('id');
+        $eligibleUserIds = DailyReportSetting::getReporterIds();
 
         $query = $model->with('user', 'user.employeeDetail', 'user.employeeDetail.designation')
             ->whereIn('user_id', $eligibleUserIds);

@@ -119,6 +119,11 @@
                                  :text="__('app.menu.taskSettings')"/>
         @endif
 
+        @if (in_array('admin', user_roles()) && in_array('daily_reports', user_modules()))
+            <x-setting-menu-item :active="$activeMenu" menu="daily_report_settings" :href="route('daily-report-settings.index')"
+                                 :text="__('dailyreports::modules.dailyReports.settings')"/>
+        @endif
+
 
         <x-setting-menu-item :active="$activeMenu" menu="security_settings" :href="route('security-settings.index')"
                              :text="__('app.menu.securitySettings')"/>

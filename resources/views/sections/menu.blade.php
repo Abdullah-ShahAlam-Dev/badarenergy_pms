@@ -115,7 +115,7 @@
                     <x-sub-menu-item :link="route('timelogs.index')" :text="__('app.menu.timeLogs')" />
                 @endif
                 @if (in_array('daily_reports', user_modules()) && isset($sidebarUserPermissions['view_daily_report']) && $sidebarUserPermissions['view_daily_report'] != 5 && $sidebarUserPermissions['view_daily_report'] != 'none')
-                    <x-sub-menu-item :link="route('daily-reports.index')" :text="__('dailyreports::modules.dailyReports.menuName')" :active="request()->routeIs('daily-reports.*') || request()->routeIs('reports.daily-reports*')" />
+                    <x-sub-menu-item :link="route('daily-reports.index')" :text="__('dailyreports::modules.dailyReports.menuName')" :active="request()->routeIs('daily-reports.index')" />
                 @endif
                 {{-- @endif --}}
             </div>

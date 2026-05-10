@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\DailyReports\Http\Controllers\DailyReportController;
 use Modules\DailyReports\Http\Controllers\DailyReportReportController;
+use Modules\DailyReports\Http\Controllers\DailyReportSettingController;
 
 Route::group(['middleware' => ['auth', 'web'], 'prefix' => 'account'], function () {
 
@@ -25,5 +26,13 @@ Route::group(['middleware' => ['auth', 'web'], 'prefix' => 'account'], function 
 
     Route::get('daily-reports/file-download/{id}', [DailyReportController::class, 'downloadFile'])
         ->name('daily-reports.download_file');
+
+    // Settings
+    Route::get('daily-report-settings', [DailyReportSettingController::class, 'index'])
+        ->name('daily-report-settings.index');
+    Route::post('daily-report-settings', [DailyReportSettingController::class, 'store'])
+        ->name('daily-report-settings.store');
+    Route::put('daily-report-settings', [DailyReportSettingController::class, 'store'])
+        ->name('daily-report-settings.update');
 
 });

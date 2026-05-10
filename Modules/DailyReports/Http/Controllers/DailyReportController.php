@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Modules\DailyReports\Entities\DailyReport;
 use Modules\DailyReports\Entities\DailyReportFile;
+use Modules\DailyReports\Entities\DailyReportSetting;
 
 class DailyReportController extends AccountBaseController
 {
@@ -28,6 +29,7 @@ class DailyReportController extends AccountBaseController
     {
         abort_403(user()->permission('view_daily_report') == 'none');
 
+        $this->canSubmit = in_array(user()->id, DailyReportSetting::getReporterIds());
         $today = now($this->company->timezone)->toDateString();
 
         $this->todayReport = DailyReport::where('user_id', user()->id)
@@ -46,8 +48,8 @@ class DailyReportController extends AccountBaseController
      */
     public function create()
     {
-        $isAdmin = in_array('admin', user_roles());
-        abort_403(!$isAdmin && user()->permission('add_daily_report') == 'none');
+        $canSubmit = in_array(user()->id, DailyReportSetting::getReporterIds());
+        abort_403(!$canSubmit);
 
         $this->reportDate = now($this->company->timezone)->toDateString();
 
@@ -90,8 +92,8 @@ class DailyReportController extends AccountBaseController
      */
     public function store(Request $request)
     {
-        $isAdmin = in_array('admin', user_roles());
-        abort_403(!$isAdmin && user()->permission('add_daily_report') == 'none');
+        $canSubmit = in_array(user()->id, DailyReportSetting::getReporterIds());
+        abort_403(!$canSubmit);
 
         $request->validate([
             'summary' => 'required',
@@ -196,7 +198,7 @@ class DailyReportController extends AccountBaseController
      */
     public function missingReports(Request $request)
     {
-        $isAdmin = in_array('admin', user_roles()) || in_array('system-admin', user_roles());
+        $isAdmin = in_array('admin', user_roles());
         abort_403(!$isAdmin && user()->permission('view_all_daily_reports') != 'all');
 
         $date = $request->get('date', now($this->company->timezone)->toDateString());
@@ -206,22 +208,18 @@ class DailyReportController extends AccountBaseController
             ->pluck('user_id')
             ->toArray();
 
-        $this->submittedCount  = count($submittedUserIds);
-        $allEmployees = User::onlyEmployee()->get();
-        
-        foreach ($allEmployees as $emp) {
-            Cache::forget('permission-add_daily_report-' . $emp->id);
-        }
-        
-        $eligibleEmployees = $allEmployees->filter(function ($user) {
-            return $user->permission('add_daily_report') != 'none';
-        });
+        $reporterIds = DailyReportSetting::getReporterIds();
+        $eligibleEmployees = User::whereIn('id', $reporterIds)
+            ->with('employeeDetail', 'employeeDetail.designation', 'employeeDetail.department')
+            ->get();
 
         $this->totalEmployees = $eligibleEmployees->count();
 
         $this->missingEmployees = $eligibleEmployees->reject(function ($user) use ($submittedUserIds) {
             return in_array($user->id, $submittedUserIds);
         })->values();
+
+        $this->submittedCount = $this->totalEmployees - $this->missingEmployees->count();
 
         $eligibleEmployeeIds = $eligibleEmployees->pluck('id');
         $this->submittedReports = DailyReport::with('user')

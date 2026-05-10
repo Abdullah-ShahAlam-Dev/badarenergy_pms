@@ -94,7 +94,7 @@
     @endif
 
 <!-- NAV ITEM - WORK COLLAPASE MENU -->
-    @if ((in_array('contracts', user_modules()) || in_array('projects', user_modules()) || in_array('tasks', user_modules()) || in_array('timelogs', user_modules()) || in_array('daily_reports', user_modules())) && ($sidebarUserPermissions['view_contract'] != 5 || $sidebarUserPermissions['view_projects'] != 5 || $sidebarUserPermissions['view_tasks'] != 5 || $sidebarUserPermissions['view_timelogs'] != 5 || (isset($sidebarUserPermissions['view_daily_report']) && $sidebarUserPermissions['view_daily_report'] != 5)) && ($sidebarUserPermissions['view_contract'] != 'none' || $sidebarUserPermissions['view_projects'] != 'none' || $sidebarUserPermissions['view_tasks'] != 'none' || $sidebarUserPermissions['view_timelogs'] != 'none' || (isset($sidebarUserPermissions['view_daily_report']) && $sidebarUserPermissions['view_daily_report'] != 'none')))
+    @if ((in_array('contracts', user_modules()) || in_array('projects', user_modules()) || in_array('tasks', user_modules()) || in_array('timelogs', user_modules()) || (in_array('daily_reports', user_modules()) && (isset($sidebarUserPermissions['view_daily_report']) && $sidebarUserPermissions['view_daily_report'] != 5 && $sidebarUserPermissions['view_daily_report'] != 'none'))) && ($sidebarUserPermissions['view_contract'] != 5 || $sidebarUserPermissions['view_projects'] != 5 || $sidebarUserPermissions['view_tasks'] != 5 || $sidebarUserPermissions['view_timelogs'] != 5 || (isset($sidebarUserPermissions['view_daily_report']) && $sidebarUserPermissions['view_daily_report'] != 5)) && ($sidebarUserPermissions['view_contract'] != 'none' || $sidebarUserPermissions['view_projects'] != 'none' || $sidebarUserPermissions['view_tasks'] != 'none' || $sidebarUserPermissions['view_timelogs'] != 'none' || (isset($sidebarUserPermissions['view_daily_report']) && $sidebarUserPermissions['view_daily_report'] != 'none')))
         <x-menu-item icon="briefcase" :text="__('app.menu.work')" :active="request()->routeIs('contracts.*') || request()->routeIs('projects.*') || request()->routeIs('tasks.*') || request()->routeIs('timelogs.*') || request()->routeIs('daily-reports.*') || request()->routeIs('reports.daily-reports*')">
             <x-slot name="iconPath">
                 <path
@@ -342,7 +342,7 @@
                     <x-sub-menu-item :link="route('sales-report.index')"
                                      :text="__('app.menu.salesReport')" />
                 @endif
-                @if ($viewDailyAnalysisPerm)
+                @if (in_array('daily_reports', user_modules()) && $viewDailyAnalysisPerm)
                     <x-sub-menu-item :link="route('reports.daily-reports')"
                                      :text="__('dailyreports::modules.dailyReports.analysisMenu')" :active="request()->routeIs('reports.daily-reports*')" />
                     <x-sub-menu-item :link="route('daily-reports.missing')"

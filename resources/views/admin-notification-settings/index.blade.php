@@ -32,25 +32,57 @@
             $('[data-toggle="popover"]').popover();
         });
 
-        // Live preview: update the description text when the dropdown changes
+        // Live preview: update the status indicator when the dropdown changes
         $('body').on('change', '.admin-notif-select', function () {
             const val = $(this).val();
             const row = $(this).closest('tr.notification-row');
             const dot = row.find('.fa-circle');
             const badge = row.find('.badge');
-            const desc = row.find('p');
 
             if (val === 'involved') {
                 dot.removeClass('text-success').addClass('text-primary');
-                desc.text('Only admins directly involved in the record will be notified.');
                 if (!badge.length) {
                     row.find('.d-flex').append('<span class="badge badge-info ml-2 f-11">Smart Filter</span>');
                 }
             } else {
                 dot.removeClass('text-primary').addClass('text-success');
-                desc.text('All admins will receive this notification.');
                 row.find('.badge').remove();
             }
+        });
+
+        // Prevent selecting same user in both bypass and block lists
+        $('body').on('change', 'select[name^="allowed_admin_ids"], select[name^="blocked_admin_ids"]', function () {
+            const row = $(this).closest('tr');
+            const bypassSelect = row.find('select[name^="allowed_admin_ids"]');
+            const blockSelect = row.find('select[name^="blocked_admin_ids"]');
+            
+            const bypassVals = bypassSelect.val() || [];
+            const blockVals = blockSelect.val() || [];
+
+            // If we just changed bypass, remove those users from block
+            if ($(this).is(bypassSelect)) {
+                const newBlockVals = blockVals.filter(v => !bypassVals.includes(v));
+                if (newBlockVals.length !== blockVals.length) {
+                    blockSelect.val(newBlockVals).selectpicker('refresh');
+                }
+            } 
+            // If we just changed block, remove those users from bypass
+            else {
+                const newBypassVals = bypassVals.filter(v => !blockVals.includes(v));
+                if (newBypassVals.length !== bypassVals.length) {
+                    bypassSelect.val(newBypassVals).selectpicker('refresh');
+                }
+            }
+
+            // Optional: Visually disable the options in the other list
+            bypassSelect.find('option').prop('disabled', false);
+            blockSelect.find('option').prop('disabled', false);
+
+            bypassVals.forEach(v => blockSelect.find(`option[value="${v}"]`).prop('disabled', true));
+            blockVals.forEach(v => bypassSelect.find(`option[value="${v}"]`).prop('disabled', true));
+
+            bypassSelect.selectpicker('refresh');
+            blockSelect.selectpicker('refresh');
         });
 
         // Save

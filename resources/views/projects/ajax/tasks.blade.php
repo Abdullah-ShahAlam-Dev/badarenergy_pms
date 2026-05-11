@@ -4,6 +4,74 @@ $viewUnassignedTasksPermission = ($project->project_admin == user()->id) ? 'all'
 $projectArchived = $project->trashed();
 @endphp
 
+<style>
+    .task-hover-card {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-block;
+    }
+    .task-hover-card:hover {
+        color: #1d82f5 !important;
+        text-decoration: underline;
+        transform: translateX(3px);
+    }
+    #task-hover-card-popup {
+        position: absolute;
+        z-index: 10000;
+        width: 320px;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        transform: translateY(8px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    #task-hover-card-popup::after {
+        content: '';
+        position: absolute;
+        left: 20px;
+        width: 3px;
+        height: calc(100% - 32px);
+        background: #1d82f5;
+        top: 16px;
+        border-radius: 2px;
+    }
+    #task-hover-card-popup.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    .hover-card-header {
+        font-weight: 700;
+        color: #1a1f23;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding-left: 12px;
+        display: flex;
+        align-items: center;
+    }
+    .hover-card-body {
+        color: #4b5563;
+        font-size: 14px;
+        line-height: 1.6;
+        padding-left: 12px;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 6;
+        -webkit-box-orient: vertical;
+    }
+</style>
+
 <!-- ROW START -->
 <div class="row py-5">
     <div class="col-lg-12 col-md-12 mb-4 mb-xl-0 mb-lg-4">
@@ -339,7 +407,54 @@ $projectArchived = $project->trashed();
             })
         });
 
+        // --- TASK HOVER CARD LOGIC ---
+        if ($('#task-hover-card-popup').length === 0) {
+            $('body').append('<div id="task-hover-card-popup"><div class="hover-card-header">Task Description</div><div class="hover-card-body"></div></div>');
+        }
+
+        var hoverTimer;
+        var $hoverPopup = $('#task-hover-card-popup');
+
+        $(document).on('mouseenter', '.task-hover-card', function(e) {
+            var $this = $(this);
+            var description = $this.data('description');
+
+            clearTimeout(hoverTimer);
+            hoverTimer = setTimeout(function() {
+                $hoverPopup.find('.hover-card-body').text(description);
+                
+                var offset = $this.offset();
+                var popupHeight = $hoverPopup.outerHeight();
+                var windowWidth = $(window).width();
+                
+                var topPos = offset.top - popupHeight - 12;
+                
+                if (topPos < $(window).scrollTop() + 10) {
+                    topPos = offset.top + $this.outerHeight() + 12;
+                }
+
+                var leftPos = offset.left;
+                if (leftPos + 330 > windowWidth) {
+                    leftPos = windowWidth - 340;
+                }
+                if (leftPos < 10) {
+                    leftPos = 10;
+                }
+
+                $hoverPopup.css({
+                    top: topPos + 'px',
+                    left: leftPos + 'px'
+                }).addClass('show');
+            }, 350);
+        });
+
+        $(document).on('mouseleave', '.task-hover-card', function() {
+            clearTimeout(hoverTimer);
+            $hoverPopup.removeClass('show');
+        });
+
         document.addEventListener('turbo:before-cache', function cleanup() {
+            $hoverPopup.remove();
             $body.off(namespace);
             $table.off('preXhr.dt' + namespace);
             delete window.showTable;

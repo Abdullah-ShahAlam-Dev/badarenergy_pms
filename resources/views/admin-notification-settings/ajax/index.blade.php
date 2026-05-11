@@ -1,29 +1,37 @@
 <div class="col-lg-12 p-4">
 
     {{-- Page description --}}
-    <x-alert type="info" icon="bell">
-        Control which administrators receive notifications for each event type.
-        Setting a notification to <strong>Only Involved Admins</strong> means only admins who are directly assigned,
-        mentioned, or managing that specific record will be notified stopping the CEO and other global admins
-        from receiving notifications for tasks and events they are not involved in.
+    <x-alert type="info" icon="info-circle">
+        Use these rules to stop notification fatigue for executives.
+        <ul class="mt-2 mb-0 pl-3">
+            <li><strong>Smart Filter</strong>: If enabled, only admins directly involved (Assignees, CCs, etc.) get notified.</li>
+            <li><strong>Always Notify (Bypass)</strong>: These admins get the alert even if they aren't involved. (Perfect for the CEO).</li>
+            <li><strong>Never Notify (Block)</strong>: These admins are completely silenced for this event, even if they are involved.</li>
+        </ul>
     </x-alert>
 
     <div class="table-responsive mt-4">
             <table class="table custom-table-border text-left">
                 <thead>
                     <tr class="bg-amt-grey">
-                        <th class="f-13 py-3 pl-3" width="40%">Notification Event</th>
-                        <th class="f-13 py-3 text-center" width="20%">
-                            Behavior
+                        <th class="f-13 py-3 pl-3" width="30%">Notification Event</th>
+                        <th class="f-13 py-3 text-center" width="16%">
+                            Smart Filter
                             <i class="fa fa-question-circle text-lightest f-11 ml-1" 
                                data-toggle="popover" data-placement="top" data-trigger="hover"
-                               data-content="Select 'All Admins' to notify everyone in the admin list. Select 'Involved Admins' to notify only those linked to the record (Assignees, Mentioned users, etc.)."></i>
+                               data-content="Select 'All Admins' to notify everyone. Select 'Involved Admins' to notify only those linked to the record (Assignees, etc.)."></i>
                         </th>
-                        <th class="f-13 py-3" width="40%">
-                            Restrict To (Optional)
+                        <th class="f-13 py-3" width="27%">
+                            Always Notify (Bypass)
                             <i class="fa fa-question-circle text-lightest f-11 ml-1" 
                                data-toggle="popover" data-placement="top" data-trigger="hover"
-                               data-content="Optional: Choose specific admins to notify. If you select someone here, ONLY they will receive the notification (further filtered by the Behavior selection)."></i>
+                               data-content="Optional: These admins will ALWAYS receive this notification, even if the Smart Filter would normally block them. Perfect for Main Admins who want to see everything."></i>
+                        </th>
+                        <th class="f-13 py-3" width="27%">
+                            Never Notify (Block)
+                            <i class="fa fa-question-circle text-lightest f-11 ml-1" 
+                               data-toggle="popover" data-placement="top" data-trigger="hover"
+                               data-content="Optional: These admins will NEVER receive this notification, even if they are involved in the task."></i>
                         </th>
                     </tr>
                 </thead>
@@ -46,24 +54,17 @@
                                         <span class="badge badge-info ml-2 f-11">Smart Filter</span>
                                     @endif
                                 </div>
-                                <p class="f-11 text-lightest mb-0 mt-1 pl-3">
-                                    @if($emailSetting->send_to_admins == 'all')
-                                        All admins will receive this notification.
-                                    @else
-                                        Only admins directly involved in the record will be notified.
-                                    @endif
-                                </p>
                             </td>
                             <td class="py-3 text-center">
                                 <select class="form-control select-picker admin-notif-select"
                                         name="send_to_admins[{{ $emailSetting->id }}]"
                                         id="send_to_admins_{{ $emailSetting->id }}"
                                         data-row="{{ $emailSetting->id }}">
-                                    <option value="all" data-content="<i class='fa fa-users mr-2'></i> All Admins" @if($emailSetting->send_to_admins == 'all') selected @endif>
-                                        All Admins
+                                    <option value="all" data-content="<i class='fa fa-users mr-2'></i> All" @if($emailSetting->send_to_admins == 'all') selected @endif>
+                                        All
                                     </option>
-                                    <option value="involved" data-content="<i class='fa fa-filter mr-2'></i> Involved Admins" @if($emailSetting->send_to_admins == 'involved') selected @endif>
-                                        Involved Admins
+                                    <option value="involved" data-content="<i class='fa fa-filter mr-2'></i> Involved" @if($emailSetting->send_to_admins == 'involved') selected @endif>
+                                        Involved
                                     </option>
                                 </select>
                             </td>
@@ -74,7 +75,7 @@
                                         data-actions-box="true"
                                         data-live-search="true"
                                         data-size="5"
-                                        title="Everyone (Default)">
+                                        title="No Bypass">
                                     @php
                                         $selectedAdmins = json_decode($emailSetting->allowed_admin_ids) ?: [];
                                     @endphp
@@ -82,6 +83,26 @@
                                         <option value="{{ $admin->id }}" 
                                                 data-content="<div class='d-flex align-items-center'><img src='{{ $admin->image_url }}' class='mr-2 taskEmployeeImg rounded-circle'> {{ $admin->name }}</div>"
                                                 @if(in_array($admin->id, $selectedAdmins)) selected @endif>
+                                            {{ $admin->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </td>
+                            <td class="py-3">
+                                <select class="form-control select-picker"
+                                        name="blocked_admin_ids[{{ $emailSetting->id }}][]"
+                                        multiple
+                                        data-actions-box="true"
+                                        data-live-search="true"
+                                        data-size="5"
+                                        title="None Blocked">
+                                    @php
+                                        $blockedAdmins = json_decode($emailSetting->blocked_admin_ids) ?: [];
+                                    @endphp
+                                    @foreach($allAdmins as $admin)
+                                        <option value="{{ $admin->id }}" 
+                                                data-content="<div class='d-flex align-items-center'><img src='{{ $admin->image_url }}' class='mr-2 taskEmployeeImg rounded-circle'> {{ $admin->name }}</div>"
+                                                @if(in_array($admin->id, $blockedAdmins)) selected @endif>
                                             {{ $admin->name }}
                                         </option>
                                     @endforeach

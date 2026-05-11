@@ -184,8 +184,7 @@ class ProjectsDataTable extends BaseDataTable
             }
         );
 
-        $datatables->editColumn(
-            'project_name', function ($row) {
+        $datatables->editColumn('project_name', function ($row) {
                 $pin = '';
 
                 if (($row->pinned_project)) {
@@ -317,9 +316,10 @@ class ProjectsDataTable extends BaseDataTable
                 return 'row-' . $row->id;
             }
         );
+
         $datatables->editColumn(
-            'project_short_code', function ($row) {
-                return '<a href="' . route('projects.show', [$row->id]) . '" class="text-darkest-grey">' . $row->project_short_code . '</a>';
+            'total_tasks', function ($row) {
+                return '<span class="badge badge-secondary">' . $row->total_tasks . '</span>';
             }
         );
         $datatables->orderColumn('status', 'status $1');
@@ -336,7 +336,7 @@ class ProjectsDataTable extends BaseDataTable
         // Custom Fields For export
         $customFieldColumns = CustomField::customFieldData($datatables, Project::CUSTOM_FIELD_MODEL);
 
-        $datatables->rawColumns(array_merge(['project_name', 'action', 'completion_percent', 'members', 'status', 'client_id', 'check','project_short_code'], $customFieldColumns));
+        $datatables->rawColumns(array_merge(['project_name', 'action', 'completion_percent', 'members', 'status', 'client_id', 'check', 'total_tasks'], $customFieldColumns));
         return $datatables;
     }
 
@@ -368,6 +368,7 @@ class ProjectsDataTable extends BaseDataTable
                 'projects.id, projects.project_short_code, projects.hash, projects.added_by, projects.project_name, projects.start_date, projects.deadline, projects.client_id,
               projects.completion_percent, projects.project_budget, projects.currency_id,
             projects.status, users.name, client.name as client_name, client.email as client_email, projects.public, mention_users.user_id as mention_user,
+            (select count(*) from tasks where tasks.project_id = projects.id and tasks.deleted_at is null) as total_tasks,
            ( select count("id") from pinned where pinned.project_id = projects.id and pinned.user_id = ' . user()->id . ') as pinned_project'
             );
 
@@ -549,7 +550,7 @@ class ProjectsDataTable extends BaseDataTable
             ],
             '#' => ['data' => 'DT_RowIndex', 'orderable' => false, 'searchable' => false, 'visible' => false, 'title' => '#'],
             __('app.id') => ['data' => 'id', 'name' => 'id', 'title' => __('app.id'),'visible' => showId()],
-            __('modules.taskCode') => ['data' => 'project_short_code', 'name' => 'project_short_code', 'title' => __('modules.taskCode')],
+            'total_tasks' => ['data' => 'total_tasks', 'name' => 'total_tasks', 'title' => 'Total Tasks', 'orderable' => false, 'searchable' => false],
             __('modules.projects.projectName') => ['data' => 'project_name', 'name' => 'project_name', 'exportable' => false, 'title' => __('modules.projects.projectName')],
             __('app.project') => ['data' => 'project', 'name' => 'project_name', 'visible' => false, 'title' => __('app.project')],
             __('modules.projects.members') => ['data' => 'members', 'name' => 'members', 'exportable' => false, 'width' => '15%', 'title' => __('modules.projects.members')],

@@ -23,25 +23,28 @@ trait HasNotificationRecipients
             return $allAdmins;
         }
 
-        // Apply specific admin filter if configured
-        if ($setting->allowed_admin_ids) {
-            $allowedIds = json_decode($setting->allowed_admin_ids);
-            if (!empty($allowedIds)) {
-                $allAdmins = $allAdmins->whereIn('id', $allowedIds);
+        // 1. Never Notify (Block List) - Highest Priority
+        if ($setting->blocked_admin_ids) {
+            $blockedIds = json_decode($setting->blocked_admin_ids) ?: [];
+            if (!empty($blockedIds)) {
+                $allAdmins = $allAdmins->whereNotIn('id', $blockedIds);
             }
         }
 
-        // Apply behavior filter
-        if ($setting->send_to_admins == 'all') {
-            return $allAdmins;
-        }
-
+        // 2. Behavior Filter with Bypass Logic
         if ($setting->send_to_admins == 'involved' && $object) {
             $involvedUserIds = $this->getInvolvedUserIds($object);
+            
+            // Add Always Notify (Bypass) users to the involved list
+            if ($setting->allowed_admin_ids) {
+                $bypassIds = json_decode($setting->allowed_admin_ids) ?: [];
+                $involvedUserIds = array_unique(array_merge($involvedUserIds, $bypassIds));
+            }
+
             return $allAdmins->whereIn('id', $involvedUserIds);
         }
 
-        return collect([]);
+        return $allAdmins;
     }
 
     /**

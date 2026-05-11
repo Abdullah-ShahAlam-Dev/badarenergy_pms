@@ -39,10 +39,12 @@ class AdminNotificationSettingController extends AccountBaseController
         if ($request->send_to_admins) {
             foreach ($request->send_to_admins as $id => $value) {
                 $allowedAdmins = isset($request->allowed_admin_ids[$id]) ? json_encode($request->allowed_admin_ids[$id]) : null;
+                $blockedAdmins = isset($request->blocked_admin_ids[$id]) ? json_encode($request->blocked_admin_ids[$id]) : null;
                 
                 EmailNotificationSetting::where('id', $id)->update([
                     'send_to_admins' => $value,
-                    'allowed_admin_ids' => $allowedAdmins
+                    'allowed_admin_ids' => $allowedAdmins,
+                    'blocked_admin_ids' => $blockedAdmins
                 ]);
             }
         }

@@ -770,6 +770,9 @@ return array (
         'discussion-reply' => 'Discussion Replies',
         'mailConnection' => 'Enable Email Queue',
         'mailConnectionInfo' => '<p>To speed up the emailing process, the system will add the emails in queue and will send them via cron job.</p>  <p> Choose <u>No</u> to send email immediately <strong>(Slower)</strong>.</p><p>Choose <u>Yes</u> to send emails in background <strong>(Faster)</strong>.</p><p><em>*Make sure cron job is configured properly to use email queueing.</em></p>',
+        'sendToAdmins' => 'Admin Notification Behavior',
+        'allAdmins' => 'All Admins',
+        'involvedAdmins' => 'Only Involved Admins',
     ),
     'moduleSettings' => array (
         'employeeModuleTitle' => 'Modules',

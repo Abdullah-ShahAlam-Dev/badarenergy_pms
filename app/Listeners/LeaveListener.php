@@ -17,9 +17,11 @@ use App\Notifications\NewMultipleLeaveRequest;
 use App\Models\User;
 use App\Models\UserPermission;
 use Illuminate\Support\Facades\Notification;
+use App\Traits\HasNotificationRecipients;
 
 class LeaveListener
 {
+    use HasNotificationRecipients;
 
     /**
      * Handle the event.
@@ -33,21 +35,13 @@ class LeaveListener
         $leaveApproveRejectPermission = Permission::where('name', 'approve_or_reject_leaves')->first();
         $permissionUserIds = UserPermission::where('permission_id', $leaveApproveRejectPermission->id)->where('permission_type_id', PermissionType::ALL)->get()->pluck('user_id')->toArray();
 
-        $reportingTo = EmployeeDetails::where('user_id', user()->id)->pluck('reporting_to')->toArray();
+        $reportingTo = EmployeeDetails::where('user_id', $event->leave->user_id)->pluck('reporting_to')->toArray();
 
-        $adminUserIds = User::allAdmins($event->leave->company->id)->pluck('id')->toArray();
+        $adminUsers = $this->getAdminRecipients('new-leave-application', $event->leave->company->id, $event->leave);
+        $adminUserIds = $adminUsers->pluck('id')->toArray();
 
-        $adminUserIds = array_merge($permissionUserIds, $adminUserIds);
-
-
-
-        if ($reportingTo == null) {
-            $adminUsers = User::whereIn('id', $adminUserIds)->get();
-        }
-        else {
-            $notificationTo = array_merge($reportingTo, $adminUserIds);
-            $adminUsers = User::whereIn('id', $notificationTo)->get();
-        }
+        $notificationTo = array_merge($permissionUserIds, $adminUserIds, $reportingTo);
+        $adminUsers = User::whereIn('id', array_unique(array_filter($notificationTo)))->get();
 
         if ($event->status == 'created') {
             if (!is_null($event->multiDates)) {

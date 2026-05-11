@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Notification;
 class TicketReplyListener
 {
 
+    use \App\Traits\HasNotificationRecipients;
+
     /**
      * Handle the event.
      *
@@ -23,7 +25,8 @@ class TicketReplyListener
             Notification::send($event->notifyUser, new NewTicketReply($event->ticketReply));
         }
         else {
-            Notification::send(User::allAdmins($event->ticketReply->ticket->company->id), new NewTicketReply($event->ticketReply));
+            $admins = $this->getAdminRecipients('agent-ticket', $event->ticketReply->ticket->company->id, $event->ticketReply->ticket);
+            Notification::send($admins, new NewTicketReply($event->ticketReply));
         }
     }
 

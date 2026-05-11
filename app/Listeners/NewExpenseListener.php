@@ -9,8 +9,11 @@ use App\Notifications\NewExpenseStatus;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 
+use App\Traits\HasNotificationRecipients;
+
 class NewExpenseListener
 {
+    use HasNotificationRecipients;
 
     /**
      * Handle the event.
@@ -26,7 +29,8 @@ class NewExpenseListener
         }
         elseif ($event->status == 'member') {
             $company = $event->expense->company;
-            Notification::send(User::allAdmins($company->id), new NewExpenseAdmin($event->expense));
+            $admins = $this->getAdminRecipients('new-expenseadded-by-member', $company->id, $event->expense);
+            Notification::send($admins, new NewExpenseAdmin($event->expense));
         }
         elseif ($event->status == 'status') {
             Notification::send($event->expense->user, new NewExpenseStatus($event->expense));

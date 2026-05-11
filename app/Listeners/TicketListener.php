@@ -9,8 +9,11 @@ use App\Models\User;
 use App\Notifications\MentionTicketAgent;
 use Illuminate\Support\Facades\Notification;
 
+use App\Traits\HasNotificationRecipients;
+
 class TicketListener
 {
+    use HasNotificationRecipients;
 
     /**
      * Handle the event.
@@ -23,7 +26,8 @@ class TicketListener
     {
 
         if ($event->notificationName == 'NewTicket') {
-            Notification::send(User::allAdmins(), new NewTicket($event->ticket));
+            $admins = $this->getAdminRecipients('new-support-ticket-request', $event->ticket->company_id, $event->ticket);
+            Notification::send($admins, new NewTicket($event->ticket));
         }
         elseif ($event->notificationName == 'TicketAgent') {
             Notification::send($event->ticket->agent, new TicketAgent($event->ticket));

@@ -7,10 +7,12 @@ use App\Models\Lead;
 use App\Notifications\LeadAgentAssigned;
 use App\Models\UniversalSearch;
 use App\Models\User;
+use App\Traits\HasNotificationRecipients;
 use Illuminate\Support\Facades\Notification;
 
 class LeadObserver
 {
+    use HasNotificationRecipients;
 
     public function saving(Lead $lead)
     {
@@ -59,7 +61,8 @@ class LeadObserver
                 event(new LeadEvent($lead, $lead->leadAgent, 'LeadAgentAssigned'));
             }
             else {
-                Notification::send(User::allAdmins($lead->company->id), new LeadAgentAssigned($lead));
+                $admins = $this->getAdminRecipients('lead-notification', $lead->company_id, $lead);
+                Notification::send($admins, new LeadAgentAssigned($lead));
             }
         }
     }

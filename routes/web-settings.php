@@ -49,6 +49,7 @@ use App\Http\Controllers\GoogleCalendarSettingController;
 use App\Http\Controllers\OfflinePaymentSettingController;
 use App\Http\Controllers\PaymentGatewayCredentialController;
 use App\Http\Controllers\NotificationSettingController;
+use App\Http\Controllers\AdminNotificationSettingController;
 use App\Http\Controllers\QuickbookSettingsController;
 use App\Http\Controllers\TaxSettingController;
 use App\Http\Controllers\UnitTypeController;
@@ -83,6 +84,8 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account/settings'], function 
 
     Route::resource('smtp-settings', SmtpSettingController::class);
     Route::resource('notifications', NotificationSettingController::class);
+    Route::get('admin-notification-settings', [AdminNotificationSettingController::class, 'index'])->name('admin-notification-settings.index');
+    Route::post('admin-notification-settings', [AdminNotificationSettingController::class, 'update'])->name('admin-notification-settings.update');
     Route::resource('slack-settings', SlackSettingController::class);
     Route::resource('push-notification-settings', PushNotificationController::class);
     Route::resource('pusher-settings', PusherSettingsController::class);

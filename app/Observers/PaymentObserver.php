@@ -13,10 +13,11 @@ use App\Events\InvoicePaymentReceivedEvent;
 use App\Http\Controllers\QuickbookController;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
-use Carbon\Carbon;
+use App\Traits\HasNotificationRecipients;
 
 class PaymentObserver
 {
+    use HasNotificationRecipients;
 
     public function saving(Payment $payment)
     {
@@ -42,7 +43,7 @@ class PaymentObserver
                 // Notify client
                 $clientId = ($payment->project_id && $payment->project->client_id != null) ? $payment->project->client_id : $payment->invoice->client_id;
 
-                $admins = User::allAdmins($payment->company->id);
+                $admins = $this->getAdminRecipients('payment-notification', $payment->company->id, $payment);
 
                 $client_details = User::withoutGlobalScope(ActiveScope::class)->where('id', $clientId)->get();
                 $notifyUser = $client_details;

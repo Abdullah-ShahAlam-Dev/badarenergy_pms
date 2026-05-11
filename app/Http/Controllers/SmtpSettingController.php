@@ -74,10 +74,24 @@ class SmtpSettingController extends AccountBaseController
 
     public function saveEmailNotificationSettings($request)
     {
-        EmailNotificationSetting::where('send_email', 'yes')->update(['send_email' => 'no']);
+        EmailNotificationSetting::where('company_id', company()->id)->update(['send_email' => 'no']);
 
         if ($request->send_email) {
-            EmailNotificationSetting::whereIn('id', $request->send_email)->update(['send_email' => 'yes']);
+            foreach ($request->send_email as $settingId) {
+                $setting = EmailNotificationSetting::find($settingId);
+                $setting->send_email = 'yes';
+                if (isset($request->send_to_admins[$settingId])) {
+                    $setting->send_to_admins = $request->send_to_admins[$settingId];
+                }
+                $setting->save();
+            }
+        }
+
+        // Also update send_to_admins for those where send_email might be 'no' but we still changed the dropdown
+        if ($request->send_to_admins) {
+            foreach ($request->send_to_admins as $id => $value) {
+                EmailNotificationSetting::where('id', $id)->update(['send_to_admins' => $value]);
+            }
         }
     }
 

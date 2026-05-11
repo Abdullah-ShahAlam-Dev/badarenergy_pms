@@ -39,6 +39,9 @@
         @if (user()->permission('manage_notification_setting') == 'all')
             <x-setting-menu-item :active="$activeMenu" menu="notification_settings" :href="route('notifications.index')"
                                  :text="__('app.menu.notificationSettings')"/>
+
+            <x-setting-menu-item :active="$activeMenu" menu="admin_notification_settings" :href="route('admin-notification-settings.index')"
+                                 :text="__('app.menu.adminNotificationSettings')"/>
         @endif
 
         @if (user()->permission('manage_currency_setting') == 'all')

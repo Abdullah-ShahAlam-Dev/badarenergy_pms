@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Notification;
 class InvoicePaymentReceivedListener
 {
 
+    use \App\Traits\HasNotificationRecipients;
+
     /**
      * Handle the event.
      *
@@ -19,7 +21,8 @@ class InvoicePaymentReceivedListener
 
     public function handle(InvoicePaymentReceivedEvent $event)
     {
-        Notification::send(User::allAdmins($event->payment->company->id), new InvoicePaymentReceived($event->payment));
+        $admins = $this->getAdminRecipients('payment-notification', $event->payment->company->id, $event->payment);
+        Notification::send($admins, new InvoicePaymentReceived($event->payment));
     }
 
 }

@@ -16,12 +16,13 @@ use App\Traits\ProjectProgress;
 use App\Models\UniversalSearch;
 use App\Models\User;
 use App\Services\Google;
+use App\Traits\HasNotificationRecipients;
 use Illuminate\Support\Facades\Config;
 
 class TaskObserver
 {
 
-    use ProjectProgress;
+    use ProjectProgress, HasNotificationRecipients;
 
     public function saving(Task $task)
     {
@@ -222,7 +223,7 @@ class TaskObserver
 
                 if ($task->boardColumn->slug == 'completed') {
                     // send task complete notification
-                    $admins = User::allAdmins($task->company->id);
+                    $admins = $this->getAdminRecipients('task-completed', $task->company->id, $task);
                     event(new TaskEvent($task, $admins, 'TaskCompleted'));
 
                     if ($task->addedByUser) {

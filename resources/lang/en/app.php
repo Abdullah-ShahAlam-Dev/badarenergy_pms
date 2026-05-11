@@ -223,6 +223,7 @@ return array (
         'addContractTemplate' => 'Add Contract Template',
         'template' => 'Template',
         'notificationSettings' => 'Notification Settings',
+        'adminNotificationSettings' => 'Admin Notification Rules',
         'viewArchive' => 'View Archive',
         'clientModule' => 'Client Module Settings',
         'employeeModule' => 'Employee Module Settings',

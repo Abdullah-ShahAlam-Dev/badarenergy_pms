@@ -654,7 +654,9 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
 
     public static function allAdmins($companyId = null)
     {
-        $users = User::withOut('clientDetails')->withRole('admin');
+        $users = User::withOut('clientDetails')->whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin', 'system-admin']);
+        });
 
         if (!is_null($companyId)) {
             return $users->where('users.company_id', $companyId)->get();

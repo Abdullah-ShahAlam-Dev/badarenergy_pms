@@ -43,6 +43,14 @@ class LeaveListener
         $notificationTo = array_merge($permissionUserIds, $adminUserIds, $reportingTo);
         $adminUsers = User::whereIn('id', array_unique(array_filter($notificationTo)))->get();
 
+        $setting = \App\Models\EmailNotificationSetting::where('company_id', $event->leave->company->id)->where('slug', 'new-leave-application')->first();
+        if ($setting && $setting->blocked_admin_ids) {
+            $blockedIds = json_decode($setting->blocked_admin_ids, true) ?: [];
+            if (!empty($blockedIds)) {
+                $adminUsers = $adminUsers->whereNotIn('id', $blockedIds);
+            }
+        }
+
         if ($event->status == 'created') {
             if (!is_null($event->multiDates)) {
                 Notification::send($event->leave->user, new MultipleLeaveApplication($event->leave, $event->multiDates));

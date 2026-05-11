@@ -100,6 +100,11 @@ class Ticket extends BaseModel
         return $this->belongsTo(User::class, 'agent_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    public function assignedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'agent_assigned_by')->withoutGlobalScope(ActiveScope::class);
+    }
+
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id')->withoutGlobalScope(ActiveScope::class);

@@ -15,6 +15,10 @@
                 <div class="s-b-n-header" id="tabs">
                     <nav class="tabs px-6 border-bottom-grey">
                         <div class="nav" id="nav-tab" role="tablist">
+                            <a class="nav-item nav-link f-15 general"
+                                href="{{ route('ticket-settings.index') }}?tab=general" role="tab"
+                                aria-controls="nav-general" aria-selected="true">@lang('app.menu.generalSettings')
+                            </a>
 
                             <a class="nav-item nav-link f-15 active agent" href="{{ route('ticket-settings.index') }}"
                                 role="tab" aria-controls="nav-ticketAgents"

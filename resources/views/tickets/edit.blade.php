@@ -38,6 +38,7 @@ $manageTypePermission = user()->permission('manage_ticket_type');
 $manageAgentPermission = user()->permission('manage_ticket_agent');
 $manageChannelPermission = user()->permission('manage_ticket_channel');
 $manageGroupPermission = user()->permission('manage_ticket_groups');
+$canClose = (company()->ticket_closing_restriction == 'disabled' || $ticket->agent_assigned_by == user()->id || in_array('admin', user_roles()));
 @endphp
 
 @section('filter-section')
@@ -195,12 +196,14 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                                         <x-status color="dark-green" :value="__('modules.tickets.submitResolved')" />
                                     </a>
                                 </li>
-                                <li>
-                                    <a class="dropdown-item f-14 text-dark submit-ticket" href="javascript:;"
-                                        data-status="closed">
-                                        <x-status color="blue" :value="__('modules.tickets.submitClosed')" />
-                                    </a>
-                                </li>
+                                @if ($canClose)
+                                    <li>
+                                        <a class="dropdown-item f-14 text-dark submit-ticket" href="javascript:;"
+                                            data-status="closed">
+                                            <x-status color="blue" :value="__('modules.tickets.submitClosed')" />
+                                        </a>
+                                    </li>
+                                @endif
 
                             </ul>
                         </div>
@@ -401,9 +404,11 @@ $manageGroupPermission = user()->permission('manage_ticket_groups');
                                         <option @if ($ticket->status == 'resolved') selected @endif value="resolved"
                                             data-content="<i class='fa fa-circle mr-2 text-dark-green'></i>{{ __('app.resolved') }}">
                                             @lang("app.resolved")</option>
-                                        <option @if ($ticket->status == 'closed') selected @endif value="closed"
-                                            data-content="<i class='fa fa-circle mr-2 text-blue'></i>{{ __('app.closed') }}">
-                                            @lang('app.closed')</option>
+                                        @if ($canClose)
+                                            <option @if ($ticket->status == 'closed') selected @endif value="closed"
+                                                data-content="<i class='fa fa-circle mr-2 text-blue'></i>{{ __('app.closed') }}">
+                                                @lang('app.closed')</option>
+                                        @endif
                                     </x-forms.select>
                                 </div>
                                 <div class="more-filter-items">

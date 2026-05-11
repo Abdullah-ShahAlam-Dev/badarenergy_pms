@@ -10,6 +10,7 @@ use App\Models\TicketGroup;
 use App\Models\TicketReplyTemplate;
 use App\Models\TicketType;
 use App\Models\User;
+use Illuminate\Http\Request;
 
 class TicketSettingController extends AccountBaseController
 {
@@ -72,6 +73,10 @@ class TicketSettingController extends AccountBaseController
             $this->pageTitle = 'app.menu.groupManage';
             $this->view = 'ticket-settings.ajax.group-manage';
             break;
+        case 'general':
+            $this->pageTitle = 'app.menu.generalSettings';
+            $this->view = 'ticket-settings.ajax.general';
+            break;
         default:
             $this->pageTitle = 'app.menu.ticketAgents';
             $this->view = 'ticket-settings.ajax.agent';
@@ -87,6 +92,15 @@ class TicketSettingController extends AccountBaseController
 
         return view('ticket-settings.index', $this->data);
 
+    }
+
+    public function update(Request $request, $id)
+    {
+        $company = company();
+        $company->ticket_closing_restriction = $request->ticket_closing_restriction;
+        $company->save();
+
+        return Reply::success(__('messages.updateSuccess'));
     }
 
 }

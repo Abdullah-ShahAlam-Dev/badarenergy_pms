@@ -453,4 +453,5 @@ return array(
     ),
     'unitDeleteError' => 'You cannot delete this unit as it is associated with finance and product items. Dissociate the unit from all items and try again.',
     'noTicketChannelAdded' => 'No Ticket Channel Added',
+    'onlyAssignerCanCloseTicket' => 'Only the user who assigned this ticket to an agent is authorized to close it.',
 );

@@ -93,8 +93,17 @@
         </x-menu-item>
     @endif
 
-<!-- NAV ITEM - WORK COLLAPASE MENU -->
-    @if ((in_array('contracts', user_modules()) || in_array('projects', user_modules()) || in_array('tasks', user_modules()) || in_array('timelogs', user_modules()) || (in_array('daily_reports', user_modules()) && (isset($sidebarUserPermissions['view_daily_report']) && $sidebarUserPermissions['view_daily_report'] != 5 && $sidebarUserPermissions['view_daily_report'] != 'none'))) && ($sidebarUserPermissions['view_contract'] != 5 || $sidebarUserPermissions['view_projects'] != 5 || $sidebarUserPermissions['view_tasks'] != 5 || $sidebarUserPermissions['view_timelogs'] != 5 || (isset($sidebarUserPermissions['view_daily_report']) && $sidebarUserPermissions['view_daily_report'] != 5)) && ($sidebarUserPermissions['view_contract'] != 'none' || $sidebarUserPermissions['view_projects'] != 'none' || $sidebarUserPermissions['view_tasks'] != 'none' || $sidebarUserPermissions['view_timelogs'] != 'none' || (isset($sidebarUserPermissions['view_daily_report']) && $sidebarUserPermissions['view_daily_report'] != 'none')))
+    @php
+        $showWorkMenu = (
+            (in_array('contracts', user_modules()) && $sidebarUserPermissions['view_contract'] != 5 && $sidebarUserPermissions['view_contract'] != 'none') ||
+            (in_array('projects', user_modules()) && $sidebarUserPermissions['view_projects'] != 5 && $sidebarUserPermissions['view_projects'] != 'none') ||
+            (in_array('tasks', user_modules()) && $sidebarUserPermissions['view_tasks'] != 5 && $sidebarUserPermissions['view_tasks'] != 'none') ||
+            (in_array('timelogs', user_modules()) && $sidebarUserPermissions['view_timelogs'] != 5 && $sidebarUserPermissions['view_timelogs'] != 'none') ||
+            (in_array('daily_reports', user_modules()) && user()->permission('view_daily_report') != 'none')
+        );
+    @endphp
+
+    @if ($showWorkMenu)
         <x-menu-item icon="briefcase" :text="__('app.menu.work')" :active="request()->routeIs('contracts.*') || request()->routeIs('projects.*') || request()->routeIs('tasks.*') || request()->routeIs('timelogs.*') || request()->routeIs('daily-reports.*') || request()->routeIs('reports.daily-reports*')">
             <x-slot name="iconPath">
                 <path
@@ -114,7 +123,7 @@
                 @if (in_array('timelogs', user_modules()) && $sidebarUserPermissions['view_timelogs'] != 5 && $sidebarUserPermissions['view_timelogs'] != 'none')
                     <x-sub-menu-item :link="route('timelogs.index')" :text="__('app.menu.timeLogs')" />
                 @endif
-                @if (in_array('daily_reports', user_modules()) && isset($sidebarUserPermissions['view_daily_report']) && $sidebarUserPermissions['view_daily_report'] != 5 && $sidebarUserPermissions['view_daily_report'] != 'none')
+                @if (in_array('daily_reports', user_modules()) && user()->permission('view_daily_report') != 'none')
                     <x-sub-menu-item :link="route('daily-reports.index')" :text="__('dailyreports::modules.dailyReports.menuName')" :active="request()->routeIs('daily-reports.index')" />
                 @endif
                 {{-- @endif --}}
@@ -291,7 +300,7 @@
 
 <!-- NAV ITEM - NOTICES -->
     @php
-        $viewDailyAnalysisPerm = (user() && in_array('daily_reports', user_modules()) && isset($sidebarUserPermissions['view_all_daily_reports']) && $sidebarUserPermissions['view_all_daily_reports'] == 4);
+        $viewDailyAnalysisPerm = (in_array('daily_reports', user_modules()) && user()->permission('view_all_daily_reports') == 'all');
     @endphp
 
     @if (in_array('reports', user_modules()) && ($sidebarUserPermissions['view_task_report'] == 4 || $sidebarUserPermissions['view_time_log_report'] == 4 || (isset($sidebarUserPermissions['view_expense_report']) && $sidebarUserPermissions['view_expense_report'] == 4) || $sidebarUserPermissions['view_finance_report'] != 5 || $sidebarUserPermissions['view_income_expense_report'] == 4 || $sidebarUserPermissions['view_leave_report'] == 4 || $sidebarUserPermissions['view_attendance_report'] == 4 || $viewDailyAnalysisPerm) && ($sidebarUserPermissions['view_task_report'] != 'none' || $sidebarUserPermissions['view_time_log_report'] != 'none' || $sidebarUserPermissions['view_finance_report'] != 'none' || $sidebarUserPermissions['view_income_expense_report'] != 'none' || $sidebarUserPermissions['view_leave_report'] != 'none' || $sidebarUserPermissions['view_attendance_report'] != 'none' || (isset($sidebarUserPermissions['view_expense_report']) && $sidebarUserPermissions['view_expense_report'] != 'none') || $viewDailyAnalysisPerm))

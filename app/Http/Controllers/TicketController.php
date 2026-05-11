@@ -97,7 +97,13 @@ class TicketController extends AccountBaseController
     {
         abort_403(user()->permission('edit_tickets') != 'all');
 
-        Ticket::whereIn('id', explode(',', $request->row_ids))->update(['status' => $request->status]);
+        $tickets = Ticket::whereIn('id', explode(',', $request->row_ids));
+
+        if (company()->ticket_closing_restriction == 'enabled' && $request->status == 'closed' && !in_array('admin', user_roles())) {
+            $tickets->where('agent_assigned_by', user()->id);
+        }
+
+        $tickets->update(['status' => $request->status]);
     }
 
     public function create()
@@ -241,6 +247,11 @@ class TicketController extends AccountBaseController
     {
 
         $ticket = Ticket::findOrFail($id);
+
+        if (company()->ticket_closing_restriction == 'enabled' && $request->status == 'closed' && $ticket->agent_assigned_by != user()->id && !in_array('admin', user_roles())) {
+            return Reply::error(__('messages.onlyAssignerCanCloseTicket'));
+        }
+
         $ticket->status = $request->status;
         $ticket->save();
 
@@ -280,6 +291,11 @@ class TicketController extends AccountBaseController
     public function updateOtherData(Request $request, $id)
     {
         $ticket = Ticket::findOrFail($id);
+
+        if (company()->ticket_closing_restriction == 'enabled' && $request->status == 'closed' && $ticket->agent_assigned_by != user()->id && !in_array('admin', user_roles())) {
+            return Reply::error(__('messages.onlyAssignerCanCloseTicket'));
+        }
+
         $ticket->group_id = $request->group_id;
         $ticket->type_id = $request->type_id;
         $ticket->priority = $request->priority;
@@ -461,6 +477,10 @@ class TicketController extends AccountBaseController
             || ($this->editTicketPermission == 'owned' && (user()->id == $ticket->user_id || $ticket->agent_id == user()->id))
             || ($this->editTicketPermission == 'both' && (user()->id == $ticket->user_id || $ticket->agent_id == user()->id || $ticket->added_by == user()->id))
         ));
+        
+        if (company()->ticket_closing_restriction == 'enabled' && $request->status == 'closed' && $ticket->agent_assigned_by != user()->id && !in_array('admin', user_roles())) {
+            return Reply::error(__('messages.onlyAssignerCanCloseTicket'));
+        }
 
         $ticket->update(['status' => $request->status]);
 

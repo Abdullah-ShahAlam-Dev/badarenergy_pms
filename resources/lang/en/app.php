@@ -160,6 +160,7 @@ return array (
         'invoiceSettings' => 'Invoice Settings',
         'invoiceTemplate' => 'Invoice Template',
         'settings' => 'Settings',
+        'generalSettings' => 'General Settings',
         'leadFiles' => 'Lead Files',
         'leadSource' => 'Lead Source',
         'leadStatus' => 'Lead Status',

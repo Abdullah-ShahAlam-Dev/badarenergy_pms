@@ -113,6 +113,7 @@ class RolePermissionController extends AccountBaseController
             }
         }
 
+        session()->forget('sidebar_user_perms');
         return Reply::dataOnly(['status' => 'success']);
     }
 
@@ -156,6 +157,7 @@ class RolePermissionController extends AccountBaseController
                 ->update(['permission_type_id' => $value->permission_type_id]);
         }
 
+        session()->forget('sidebar_user_perms');
         return Reply::dataOnly(['status' => 'success']);
     }
 
@@ -239,6 +241,8 @@ class RolePermissionController extends AccountBaseController
         $userIds = $role->roleuser->pluck('user_id');
 
         User::whereIn('id', $userIds)->update(['permission_sync' => 0]);
+
+        session()->forget('sidebar_user_perms');
 
         return Reply::success(__('messages.recordSaved'));
 

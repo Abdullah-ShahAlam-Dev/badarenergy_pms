@@ -1170,6 +1170,8 @@ return array (
         'inProcessProjects' => 'In Process Projects',
         'overDueProjects' => 'Overdue Projects',
         'totalUnresolvedTickets' => 'Unresolved Tickets',
+        'closingRestriction' => 'Ticket Closing Restriction',
+        'closingRestrictionHelp' => 'When enabled, only the user who assigned the ticket to an agent (or an Admin) can close the ticket.',
         'ticketTrendGraph' => 'Ticket trend graph',
         'urgent' => 'Urgent',
         'nofilter' => 'No filter',

@@ -19,6 +19,10 @@ class TicketObserver
         if (!isRunningInConsoleOrSeeding()) {
             $userID = (!is_null(user())) ? user()->id : $ticket->user_id;
             $ticket->last_updated_by = $userID;
+
+            if ($ticket->isDirty('agent_id') && !is_null($ticket->agent_id)) {
+                $ticket->agent_assigned_by = $userID;
+            }
         }
     }
 

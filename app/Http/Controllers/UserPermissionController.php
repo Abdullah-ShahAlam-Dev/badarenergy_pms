@@ -32,6 +32,8 @@ class UserPermissionController extends AccountBaseController
             User::where('id', $id)->update(['customised_permissions' => 1]);
         }
 
+        session()->forget('sidebar_user_perms');
+
         return Reply::dataOnly(['status' => 'success']);
     }
 
@@ -66,6 +68,8 @@ class UserPermissionController extends AccountBaseController
         }
 
         User::where('id', $userId)->update(['customised_permissions' => 0]);
+
+        session()->forget('sidebar_user_perms');
 
         return Reply::dataOnly(['status' => 'success']);
 

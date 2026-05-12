@@ -9,8 +9,12 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
 
+use App\Traits\HasNotificationRecipients;
+
 class EstimateAcceptedListener
 {
+    use HasNotificationRecipients;
+
     /**
      * Create the event listener.
      *
@@ -31,7 +35,8 @@ class EstimateAcceptedListener
     public function handle(EstimateAcceptedEvent $event)
     {
         $company = $event->estimate->company;
-        Notification::send(User::allAdmins($company->id), new EstimateAccepted($event->estimate));
+        $admins = $this->getAdminRecipients('estimate-notification', $company->id, $event->estimate);
+        Notification::send($admins, new EstimateAccepted($event->estimate));
     }
 
 }

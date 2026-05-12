@@ -9,8 +9,12 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
 
+use App\Traits\HasNotificationRecipients;
+
 class ClockInListener
 {
+    use HasNotificationRecipients;
+
     /**
      * Create the event listener.
      *
@@ -31,7 +35,8 @@ class ClockInListener
     public function handle(ClockInEvent $event)
     {
         $company = $event->attendance->company;
-        Notification::send(User::allAdmins($company->id)->first(), new ClockIn($event->attendance));
+        $admins = $this->getAdminRecipients('clock-in-notification', $company->id, $event->attendance);
+        Notification::send($admins, new ClockIn($event->attendance));
 
     }
 

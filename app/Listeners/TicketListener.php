@@ -26,7 +26,7 @@ class TicketListener
     {
 
         if ($event->notificationName == 'NewTicket') {
-            $admins = $this->getAdminRecipients('new-support-ticket-request', $event->ticket->company_id, $event->ticket);
+            $admins = $this->getAdminRecipients('new-support-ticket-request', $event->ticket->company_id, $event->ticket, [$event->ticket->agent_id]);
             Notification::send($admins, new NewTicket($event->ticket));
         }
         elseif ($event->notificationName == 'TicketAgent') {

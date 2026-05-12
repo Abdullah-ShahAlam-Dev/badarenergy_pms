@@ -7,8 +7,11 @@ use App\Notifications\NewProductPurchaseRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 
+use App\Traits\HasNotificationRecipients;
+
 class NewProductPurchaseListener
 {
+    use HasNotificationRecipients;
 
     /**
      * NewProductPurchaseListener constructor.
@@ -24,7 +27,7 @@ class NewProductPurchaseListener
 
     public function handle(NewProductPurchaseEvent $event)
     {
-        $admins = User::allAdmins($event->invoice->company->id);
+        $admins = $this->getAdminRecipients('new-product-purchase-request', $event->invoice->company->id, $event->invoice);
         Notification::send($admins, new NewProductPurchaseRequest($event->invoice));
     }
 

@@ -7,8 +7,11 @@ use App\Notifications\NewIssue;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 
+use App\Traits\HasNotificationRecipients;
+
 class NewIssueListener
 {
+    use HasNotificationRecipients;
 
     /**
      * Handle the event.
@@ -19,7 +22,7 @@ class NewIssueListener
 
     public function handle(NewIssueEvent $event)
     {
-        Notification::send(User::allAdmins($event->issue->company->id), new NewIssue($event->issue));
+        $admins = $this->getAdminRecipients('new-support-ticket-request', $event->issue->company->id, $event->issue);
+        Notification::send($admins, new NewIssue($event->issue));
     }
-
 }

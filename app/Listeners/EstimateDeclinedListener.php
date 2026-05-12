@@ -7,8 +7,11 @@ use App\Notifications\EstimateDeclined;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 
+use App\Traits\HasNotificationRecipients;
+
 class EstimateDeclinedListener
 {
+    use HasNotificationRecipients;
 
     /**
      * Handle the event.
@@ -20,7 +23,8 @@ class EstimateDeclinedListener
     public function handle(EstimateDeclinedEvent $event)
     {
         $company = $event->estimate->company;
-        Notification::send(User::allAdmins($company->id), new EstimateDeclined($event->estimate));
+        $admins = $this->getAdminRecipients('estimate-notification', $company->id, $event->estimate);
+        Notification::send($admins, new EstimateDeclined($event->estimate));
     }
 
 }

@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\Access\Authorizable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Role;
+use App\Models\PermissionType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -655,7 +657,7 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
     public static function allAdmins($companyId = null)
     {
         // Get all roles that have 'manage_notification_setting' or 'manage_company_setting' with 'ALL' access
-        $adminRoles = Role::whereHas('rolePermissions', function ($q) {
+        $adminRoles = Role::whereHas('permissions', function ($q) {
             $q->whereHas('permission', function ($pq) {
                 $pq->whereIn('name', ['manage_notification_setting', 'manage_company_setting']);
             })->where('permission_type_id', PermissionType::ALL);

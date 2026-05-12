@@ -250,11 +250,16 @@ $canClose = (company()->ticket_closing_restriction == 'disabled' || $ticket->age
         <!-- TICKET LEFT END -->
 
         @php
-            $hasTicketEditPermission = ($editTicketPermission == 'all' || ($editTicketPermission == 'owned' && $ticket->agent_id == user()->id));
+            $hasTicketEditPermission = ($editTicketPermission == 'all' 
+                || ($editTicketPermission == 'added' && user()->id == $ticket->added_by)
+                || ($editTicketPermission == 'owned' && ($ticket->agent_id == user()->id || $ticket->user_id == user()->id))
+                || ($editTicketPermission == 'both' && ($ticket->agent_id == user()->id || $ticket->added_by == user()->id || $ticket->user_id == user()->id))
+            );
             $isTicketCcUser = (isset($ccUserIds) && in_array(user()->id, $ccUserIds));
+            $isCreatorOrRequester = (user()->id == $ticket->added_by || user()->id == $ticket->user_id);
         @endphp
 
-        @if ($hasTicketEditPermission || ($isTicketCcUser && count($ticket->ccUsers) > 0))
+        @if ($hasTicketEditPermission || $isTicketCcUser || $isCreatorOrRequester)
             <!-- TICKET RIGHT START -->
             <div class="mobile-close-overlay w-100 h-100" id="close-tickets-overlay"></div>
             <div class="ticket-right bg-white" id="ticket-detail-contact">

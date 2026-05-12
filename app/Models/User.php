@@ -654,12 +654,24 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
 
     public static function allAdmins($companyId = null)
     {
-        $users = User::withOut('clientDetails')->whereHas('roles', function ($q) {
-            $q->whereIn('name', ['admin', 'system-admin']);
+        // Get all roles that have 'manage_notification_setting' or 'manage_company_setting' with 'ALL' access
+        $adminRoles = Role::whereHas('rolePermissions', function ($q) {
+            $q->whereHas('permission', function ($pq) {
+                $pq->whereIn('name', ['manage_notification_setting', 'manage_company_setting']);
+            })->where('permission_type_id', PermissionType::ALL);
+        })->pluck('name')->toArray();
+
+        // Standard role name fallbacks to ensure compatibility across environments
+        $standardRoles = ['admin', 'system-admin', 'system admin', 'administrator'];
+        
+        $allAdminRoles = array_unique(array_merge($adminRoles, $standardRoles));
+
+        $users = User::withOut('clientDetails')->whereHas('roles', function ($q) use ($allAdminRoles) {
+            $q->whereIn('name', $allAdminRoles);
         });
 
         if (!is_null($companyId)) {
-            return $users->where('users.company_id', $companyId)->get();
+            $users->where('users.company_id', $companyId);
         }
 
         return $users->get();
@@ -732,7 +744,9 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
         $user = User::find($userId);
 
         if ($user) {
-            return $user->hasRole('admin');
+            return $user->hasRole(['admin', 'system-admin', 'system admin', 'administrator']) ||
+                   $user->permission('manage_company_setting') == 'all' ||
+                   $user->permission('manage_notification_setting') == 'all';
         }
 
         return false;

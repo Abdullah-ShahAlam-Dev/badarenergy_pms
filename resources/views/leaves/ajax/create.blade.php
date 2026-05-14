@@ -55,7 +55,7 @@
                                             $leaveType = new \App\Models\LeaveType();
                                         @endphp
 
-                                        @if ($leave->employeeLeave > 0)
+                                        @if ($leave->employeeLeave >= 0)
                                             @if($leaveType->leaveTypeCodition($leave, $userRole))
                                                     <option value="{{ $leave->id }}">{{ mb_ucwords($leave->type_name) }}</option>
                                             @endif

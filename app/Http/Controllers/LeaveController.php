@@ -72,12 +72,17 @@ class LeaveController extends AccountBaseController
 
         $this->currentDate = Carbon::now()->format('Y-m-d');
 
+        $userId = user()->id;
         $leaveQuotas = LeaveType::select('leave_types.*', 'employee_details.notice_period_start_date', 'employee_details.probation_end_date',
         'employee_details.department_id as employee_department', 'employee_details.designation_id as employee_designation',
-        'employee_details.marital_status as maritalStatus', 'users.gender as usergender', 'employee_details.joining_date', 'employee_leave_quotas.no_of_leaves as employeeLeave')
-            ->join('employee_leave_quotas', 'employee_leave_quotas.leave_type_id', 'leave_types.id')
-            ->join('users', 'users.id', 'employee_leave_quotas.user_id')
-            ->join('employee_details', 'employee_details.user_id', 'users.id');
+        'employee_details.marital_status as maritalStatus', 'users.gender as usergender', 'employee_details.joining_date', 
+        \Illuminate\Support\Facades\DB::raw('COALESCE(employee_leave_quotas.no_of_leaves, leave_types.no_of_leaves) as employeeLeave'))
+            ->leftJoin('employee_leave_quotas', function($join) use ($userId) {
+                $join->on('employee_leave_quotas.leave_type_id', '=', 'leave_types.id')
+                    ->where('employee_leave_quotas.user_id', $userId);
+            })
+            ->join('users', 'users.id', '=', \Illuminate\Support\Facades\DB::raw($userId))
+            ->join('employee_details', 'employee_details.user_id', '=', 'users.id');
 
         if ($this->addPermission == 'added') {
             $this->defaultAssign = user();

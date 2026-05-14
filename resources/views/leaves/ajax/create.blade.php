@@ -384,6 +384,12 @@
 
                 init(RIGHT_MODAL);
 
+    $(document).ready(function() {
+        if ($('#user_id').val() != '') {
+            getEmployeeLeaveTypes();
+        }
+    });
+
                 window.addEventListener('turbo:before-cache', function cleanup() {
                     $leaveBody.off(namespace);
                     window.removeEventListener('turbo:before-cache', cleanup);

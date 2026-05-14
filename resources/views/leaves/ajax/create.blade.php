@@ -8,6 +8,8 @@
 <link rel="stylesheet" href="{{ asset('vendor/css/dropzone.min.css') }}">
 <link rel="stylesheet" href="{{ asset('vendor/css/daterangepicker.css') }}">
 
+<meta name="turbo-cache-control" content="no-cache">
+
 <div class="row">
     <div class="col-sm-12">
         <x-form id="save-lead-data-form">
@@ -270,17 +272,16 @@
                 });
 
                 if ($('#user_id').val() != '') {
-                    setMinDate($('#user_id').val());
+                    const employeeID = $('#user_id').val();
+                    setMinDate(employeeID);
+                    getEmployeeLeaveTypes(employeeID);
                 }
 
-                $leaveBody.on('change' + namespace, '#user_id', function(e) {
-                    const employeeID = $(this).val();
-                    setMinDate(employeeID);
-                    
+                function getEmployeeLeaveTypes(employeeID) {
                     let id = employeeID || 0;
                     var url = "{{ route('employee-leaves.employee_leave_types', ':id') }}";
                     url = url.replace(':id', id);
-                    
+
                     $.easyAjax({
                         url: url,
                         type: "GET",
@@ -293,6 +294,12 @@
                             }
                         }
                     });
+                }
+
+                $leaveBody.on('change' + namespace, '#user_id', function(e) {
+                    const employeeID = $(this).val();
+                    setMinDate(employeeID);
+                    getEmployeeLeaveTypes(employeeID);
                 });
 
                 function setMinDate(employeeID) {

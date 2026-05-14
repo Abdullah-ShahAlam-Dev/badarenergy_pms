@@ -276,23 +276,7 @@
                 $leaveBody.on('change' + namespace, '#user_id', function(e) {
                     const employeeID = $(this).val();
                     setMinDate(employeeID);
-                    
-                    let id = employeeID || 0;
-                    var url = "{{ route('employee-leaves.employee_leave_types', ':id') }}";
-                    url = url.replace(':id', id);
-                    
-                    $.easyAjax({
-                        url: url,
-                        type: "GET",
-                        container: '#save-lead-data-form',
-                        blockUI: true,
-                        success: function(data) {
-                            if (data.data) {
-                                $('#leave_type_id').html(data.data);
-                                $('#leave_type_id').selectpicker('refresh');
-                            }
-                        }
-                    });
+                    getEmployeeLeaveTypes(employeeID);
                 });
 
                 function setMinDate(employeeID) {
@@ -400,5 +384,28 @@
         }
     }
 
+    function getEmployeeLeaveTypes(employeeID) {
+        let id = employeeID || 0;
+        var url = "{{ route('employee-leaves.employee_leave_types', ':id') }}";
+        url = url.replace(':id', id);
+
+        $.easyAjax({
+            url: url,
+            type: "GET",
+            container: '#save-lead-data-form',
+            blockUI: true,
+            success: function(data) {
+                if (data.data) {
+                    $('#leave_type_id').html(data.data);
+                    $('#leave_type_id').selectpicker('refresh');
+                }
+            }
+        });
+    }
+
     initLeaveCreate();
+
+    if ($('#user_id').val() != '') {
+        getEmployeeLeaveTypes($('#user_id').val());
+    }
 </script>

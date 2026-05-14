@@ -28,6 +28,7 @@ class TicketObserver
 
     public function creating(Ticket $model)
     {
+        $model->hash = md5(microtime() . \Illuminate\Support\Str::random(10));
         if (!isRunningInConsoleOrSeeding()) {
             $userID = (!is_null(user())) ? user()->id : $model->user_id;
             $model->added_by = $userID;

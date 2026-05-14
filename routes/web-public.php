@@ -57,6 +57,7 @@ Route::get('/estimate/download/{id}', [PublicUrlController::class, 'estimateDown
 
 
 Route::get('/task/{id}', [HomeController::class, 'taskDetail'])->name('front.task_detail');
+Route::get('/ticket/{hash}', [HomeController::class, 'ticketDetail'])->name('front.ticket_detail');
 Route::post('/gantt-chart-data/{id}', [HomeController::class, 'ganttData'])->name('front.gantt_data');
 Route::get('/gantt-chart/{hash}', [HomeController::class, 'gantt'])->name('front.gantt');
 

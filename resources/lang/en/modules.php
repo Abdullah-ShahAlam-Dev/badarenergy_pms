@@ -1123,6 +1123,7 @@ return array (
         'ticketDetail' => 'Ticket Details',
         'agents' => 'Agents',
         'notAssigned' => 'Not assigned',
+        'copyTicketLink' => 'Copy Ticket Link',
         'priority' => 'Priority',
         'selectPriority' => 'Select Priority',
         'newTicket' => 'New Ticket',

@@ -494,6 +494,26 @@ class HomeController extends Controller
 
     }
 
+    public function ticketDetail($hash)
+    {
+        $this->ticket = Ticket::with('company', 'requester', 'reply', 'reply.user', 'ticketTags', 'ccUsers', 'agent')
+            ->where('hash', $hash)
+            ->firstOrFail();
+
+        $this->pageTitle = __('app.menu.ticket') . ' # ' . $this->ticket->ticket_number;
+        $this->company = $this->ticket->company;
+
+        if (request()->ajax()) {
+            $html = view('front.tickets.ajax.show', $this->data)->render();
+
+            return Reply::dataOnly(['status' => 'success', 'html' => $html, 'title' => $this->pageTitle]);
+        }
+
+        $this->view = 'front.tickets.ajax.show';
+
+        return view('front.tickets.show', $this->data);
+    }
+
     public function taskFiles($id)
     {
         $this->taskFiles = TaskFile::where('task_id', $id)->get();

@@ -51,6 +51,12 @@ $canClose = (company()->ticket_closing_restriction == 'disabled' || $ticket->age
                 class="fa fa-reply mr-0 mr-lg-2 mr-md-2"></i><span
                 class="d-none d-lg-block d-md-block">@lang('app.reply')</span></a>
 
+        <a href="javascript:;"
+            class="d-flex align-items-center height-44 text-dark-grey text-capitalize border-right-grey px-3 btn-copy"
+            data-clipboard-text="{{ route('front.ticket_detail', $ticket->hash) }}"><i
+                class="fa fa-copy mr-0 mr-lg-2 mr-md-2"></i><span
+                class="d-none d-lg-block d-md-block">@lang('modules.tickets.copyTicketLink')</span></a>
+
         {{-- <a href="javascript:;" class="d-flex align-items-center height-44 text-dark-grey text-capitalize border-right-grey px-3"><i
                 class="fa fa-clipboard-list mr-0 mr-lg-2 mr-md-2"></i><span class="d-none d-lg-block d-md-block">add
                 note</span></a> --}}
@@ -566,6 +572,7 @@ $canClose = (company()->ticket_closing_restriction == 'disabled' || $ticket->age
 @push('scripts')
     <script src="{{ asset('vendor/jquery/dropzone.min.js') }}"></script>
     <script src="{{ asset('vendor/jquery/tagify.min.js') }}"></script>
+    <script src="{{ asset('vendor/jquery/clipboard.min.js') }}"></script>
 
 <script>
     (function() {
@@ -573,6 +580,22 @@ $canClose = (company()->ticket_closing_restriction == 'disabled' || $ticket->age
         var namespace = '.ticketsEdit';
         var ticketDropzone;
         var tagify;
+
+        var clipboard = new ClipboardJS('.btn-copy');
+
+        clipboard.on('success', function(e) {
+            Swal.fire({
+                icon: 'success',
+                text: '@lang("app.copied")',
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                customClass: { confirmButton: 'btn btn-primary' },
+                showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+            });
+        });
 
         // Cleanup before re-binding
         $body.off(namespace);

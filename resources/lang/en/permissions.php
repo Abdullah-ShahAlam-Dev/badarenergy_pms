@@ -364,5 +364,12 @@ return array (
     'manage_contract_setting' => 'Manage Contract Setting',
     'manage_custom_link_setting' => 'Manage Custom Link Setting',
     'view_sales_report' => 'View Sales Report',
-
+    'add_gate_pass' => 'Add Gate Pass',
+    'view_gate_pass' => 'View Gate Pass',
+    'edit_gate_pass' => 'Edit Gate Pass',
+    'delete_gate_pass' => 'Delete Gate Pass',
+    'approve_gate_pass' => 'Approve Gate Pass',
+    'verify_gate_pass' => 'Verify Gate Pass',
+    'authorize_gate_pass' => 'Authorize Gate Pass',
+    'view_gate_pass_reports' => 'View Gate Pass Reports',
 );

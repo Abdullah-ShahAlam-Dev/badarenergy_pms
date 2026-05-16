@@ -1648,6 +1648,7 @@ return array (
         'proposals' => 'Proposals',
         'attendance' => 'Attendance',
         'tasks' => 'Tasks',
+        'gate_pass' => 'Gate Pass',
         'estimates' => 'Estimates',
         'invoices' => 'Invoices',
         'payments' => 'Payments',

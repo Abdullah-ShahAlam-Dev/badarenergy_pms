@@ -1,0 +1,31 @@
+<?php
+
+return array(
+    'gatePass' => array(
+        'menuName' => 'Gate Pass',
+        'addRequest' => 'Create Gate Pass',
+        'requestNumber' => 'Request Number',
+        'requestDate' => 'Request Date',
+        'type' => 'Movement Type',
+        'returnType' => 'Return Type',
+        'status' => 'Status',
+        'purpose' => 'Purpose / Reason',
+        'fromLocation' => 'From Location',
+        'toLocation' => 'To Location',
+        'vehicleNumber' => 'Vehicle Number',
+        'driverName' => 'Driver Name',
+        'expectedReturnDate' => 'Expected Return Date',
+        'itemDetails' => 'Item Details',
+        'itemName' => 'Item Name',
+        'quantity' => 'Quantity',
+        'unit' => 'Unit',
+        'serialNumber' => 'Serial Number',
+        'assetTag' => 'Asset Tag',
+        'condition' => 'Condition',
+        'remarks' => 'Remarks',
+        'hodApproval' => 'HOD Approval',
+        'storeVerification' => 'Store Verification',
+        'securityClearance' => 'Security Clearance',
+        'action' => 'Action',
+    ),
+);

@@ -1,0 +1,13 @@
+{
+    "name": "GatePass",
+    "alias": "gatepass",
+    "description": "Gate Pass Management System for tracking item movement and approvals.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\GatePass\\Providers\\GatePassServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

@@ -103,6 +103,14 @@
         );
     @endphp
 
+    @if (in_array('gate_pass', user_modules()) && user()->permission('view_gate_pass') != 'none')
+        <x-menu-item icon="shield-check" :link="route('gate-pass.index')" :text="__('gatepass::modules.gatePass.menuName')" :active="request()->routeIs('gate-pass.*')">
+            <x-slot name="iconPath">
+                <path d="M8 0c-.69 0-1.843.265-2.928.56c-1.11.303-2.259.67-3.232.99c-.198.065-.34.247-.34.45V6c0 5.02 3.476 8.356 6.5 9.5c3.024-1.144 6.5-4.48 6.5-9.5V2c0-.203-.142-.385-.34-.45c-.973-.32-2.122-.687-3.232-.99C9.843.265 8.69 0 8 0zm0 1c.58 0 1.608.242 2.66.53c1.048.286 2.152.645 3.09.954V6c0 4.214-2.88 7.15-5.75 8.24c-2.87-1.09-5.75-4.026-5.75-8.24V2.484c.938-.309 2.042-.668 3.09-.954C6.392 1.242 7.42 1 8 1zm3.854 4.146a.5.5 0 0 0-.708 0L7 9.293L5.354 7.646a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l4.5-4.5a.5.5 0 0 0 0-.708z"/>
+            </x-slot>
+        </x-menu-item>
+    @endif
+
     @if ($showWorkMenu)
         <x-menu-item icon="briefcase" :text="__('app.menu.work')" :active="request()->routeIs('contracts.*') || request()->routeIs('projects.*') || request()->routeIs('tasks.*') || request()->routeIs('timelogs.*') || request()->routeIs('daily-reports.*') || request()->routeIs('reports.daily-reports*')">
             <x-slot name="iconPath">
@@ -300,7 +308,7 @@
 
 <!-- NAV ITEM - NOTICES -->
     @php
-        $viewDailyAnalysisPerm = (in_array('daily_reports', user_modules()) && user()->permission('view_all_daily_reports') == 'all');
+        $viewDailyAnalysisPerm = (in_array('daily_reports', user_modules()) && (user()->permission('view_all_daily_reports') == 'all' || in_array('admin', user_roles())));
     @endphp
 
     @if (in_array('reports', user_modules()) && ($sidebarUserPermissions['view_task_report'] == 4 || $sidebarUserPermissions['view_time_log_report'] == 4 || (isset($sidebarUserPermissions['view_expense_report']) && $sidebarUserPermissions['view_expense_report'] == 4) || $sidebarUserPermissions['view_finance_report'] != 5 || $sidebarUserPermissions['view_income_expense_report'] == 4 || $sidebarUserPermissions['view_leave_report'] == 4 || $sidebarUserPermissions['view_attendance_report'] == 4 || $viewDailyAnalysisPerm) && ($sidebarUserPermissions['view_task_report'] != 'none' || $sidebarUserPermissions['view_time_log_report'] != 'none' || $sidebarUserPermissions['view_finance_report'] != 'none' || $sidebarUserPermissions['view_income_expense_report'] != 'none' || $sidebarUserPermissions['view_leave_report'] != 'none' || $sidebarUserPermissions['view_attendance_report'] != 'none' || (isset($sidebarUserPermissions['view_expense_report']) && $sidebarUserPermissions['view_expense_report'] != 'none') || $viewDailyAnalysisPerm))
@@ -356,6 +364,9 @@
                                      :text="__('dailyreports::modules.dailyReports.analysisMenu')" :active="request()->routeIs('reports.daily-reports*')" />
                     <x-sub-menu-item :link="route('daily-reports.missing')"
                                      :text="__('dailyreports::modules.dailyReports.missingMenu')" :active="request()->routeIs('daily-reports.missing')" />
+                @endif
+                @if (in_array('gate_pass', user_modules()) && user()->permission('view_gate_pass_reports') != 'none')
+                    <x-sub-menu-item :link="route('gate-pass.report')" :text="__('gatepass::modules.gatePass.menuName') . ' ' . __('app.menu.reports')" />
                 @endif
             </div>
         </x-menu-item>

@@ -9,6 +9,16 @@
                     @lang('workorder::modules.workOrder.createWorkOrder')
                 </x-forms.link-primary>
             @endif
+
+            <x-forms.link-secondary :link="route('vendors.index')" class="mr-3" icon="store">
+                @lang('workorder::modules.vendor.vendors')
+            </x-forms.link-secondary>
+
+            @if(user()->permission('manage_approval_mappings') == 'all')
+                <x-forms.link-secondary :link="route('approval-mappings.index')" class="mr-3" icon="users">
+                    @lang('workorder::modules.workOrder.approvalMappings')
+                </x-forms.link-secondary>
+            @endif
         </div>
     </div>
 

@@ -19,12 +19,40 @@
                             fieldName="designation" />
                     </div>
                     <div class="col-lg-4 col-md-6">
-                        <x-forms.text fieldId="mobile" :fieldLabel="__('workorder::modules.vendor.mobile')"
-                            fieldName="mobile" />
+                        <x-forms.label class="my-3" fieldId="mobile"
+                            :fieldLabel="__('workorder::modules.vendor.mobile')"></x-forms.label>
+                        <x-forms.input-group style="margin-top:-4px">
+                            <x-forms.select fieldId="country_phonecode" fieldName="country_phonecode"
+                                search="true">
+                                @foreach ($countries as $item)
+                                    <option data-tokens="{{ $item->name }}"
+                                            data-content="{{$item->flagSpanCountryCode()}}"
+                                            value="{{ $item->phonecode }}" @if($item->phonecode == 92) selected @endif>{{ $item->phonecode }}
+                                    </option>
+                                @endforeach
+                            </x-forms.select>
+
+                            <input type="tel" class="form-control height-35 f-14" placeholder="@lang('placeholders.mobile')"
+                                name="mobile" id="mobile">
+                        </x-forms.input-group>
                     </div>
                     <div class="col-lg-4 col-md-6">
-                        <x-forms.text fieldId="alternate_mobile" :fieldLabel="__('workorder::modules.vendor.alternateMobile')"
-                            fieldName="alternate_mobile" />
+                        <x-forms.label class="my-3" fieldId="alternate_mobile"
+                            :fieldLabel="__('workorder::modules.vendor.alternateMobile')"></x-forms.label>
+                        <x-forms.input-group style="margin-top:-4px">
+                            <x-forms.select fieldId="alternate_country_phonecode" fieldName="alternate_country_phonecode"
+                                search="true">
+                                @foreach ($countries as $item)
+                                    <option data-tokens="{{ $item->name }}"
+                                            data-content="{{$item->flagSpanCountryCode()}}"
+                                            value="{{ $item->phonecode }}" @if($item->phonecode == 92) selected @endif>{{ $item->phonecode }}
+                                    </option>
+                                @endforeach
+                            </x-forms.select>
+
+                            <input type="tel" class="form-control height-35 f-14" placeholder="@lang('placeholders.mobile')"
+                                name="alternate_mobile" id="alternate_mobile">
+                        </x-forms.input-group>
                     </div>
                     <div class="col-lg-6 col-md-6">
                         <x-forms.text fieldId="email" :fieldLabel="__('workorder::modules.vendor.email')"

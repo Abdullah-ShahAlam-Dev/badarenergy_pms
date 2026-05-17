@@ -1649,6 +1649,7 @@ return array (
         'attendance' => 'Attendance',
         'tasks' => 'Tasks',
         'gate_pass' => 'Gate Pass',
+        'work_order' => 'Work Order',
         'estimates' => 'Estimates',
         'invoices' => 'Invoices',
         'payments' => 'Payments',

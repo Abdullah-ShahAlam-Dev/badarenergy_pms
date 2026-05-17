@@ -7,6 +7,8 @@ use App\Http\Controllers\AccountBaseController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Modules\WorkOrder\Entities\Vendor;
+use Modules\WorkOrder\Http\Requests\StoreVendor;
+use Modules\WorkOrder\Http\Requests\UpdateVendor;
 
 class VendorController extends AccountBaseController
 {
@@ -43,6 +45,8 @@ class VendorController extends AccountBaseController
     {
         abort_403(user()->permission('add_vendor') == 'none');
 
+        $this->countries = countries();
+
         if (request()->ajax()) {
             $html = view('workorder::vendors.ajax.create', $this->data)->render();
             return Reply::dataOnly(['status' => 'success', 'html' => $html, 'title' => __('workorder::modules.vendor.addVendor')]);
@@ -51,22 +55,18 @@ class VendorController extends AccountBaseController
         return view('workorder::vendors.create', $this->data);
     }
 
-    public function store(Request $request)
+    public function store(StoreVendor $request)
     {
         abort_403(user()->permission('add_vendor') == 'none');
-
-        $request->validate([
-            'vendor_name' => 'required|string|max:255',
-            'email'       => 'nullable|email|max:255',
-            'mobile'      => 'nullable|string|max:30',
-        ]);
 
         Vendor::create([
             'company_id'       => company()->id,
             'vendor_name'      => $request->vendor_name,
             'company_name'     => $request->company_name,
             'designation'      => $request->designation,
+            'country_phonecode'=> $request->country_phonecode,
             'mobile'           => $request->mobile,
+            'alternate_country_phonecode' => $request->alternate_country_phonecode,
             'alternate_mobile' => $request->alternate_mobile,
             'email'            => $request->email,
             'office_address'   => $request->office_address,
@@ -104,6 +104,8 @@ class VendorController extends AccountBaseController
         $editPermission = user()->permission('edit_vendor');
         abort_403(!($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $this->vendor->added_by == user()->id)));
 
+        $this->countries = countries();
+
         if (request()->ajax()) {
             $html = view('workorder::vendors.ajax.edit', $this->data)->render();
             return Reply::dataOnly(['status' => 'success', 'html' => $html, 'title' => __('workorder::modules.vendor.editVendor')]);
@@ -112,23 +114,19 @@ class VendorController extends AccountBaseController
         return view('workorder::vendors.edit', $this->data);
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateVendor $request, $id)
     {
         $vendor = Vendor::where('company_id', company()->id)->findOrFail($id);
         $editPermission = user()->permission('edit_vendor');
         abort_403(!($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $vendor->added_by == user()->id)));
 
-        $request->validate([
-            'vendor_name' => 'required|string|max:255',
-            'email'       => 'nullable|email|max:255',
-            'mobile'      => 'nullable|string|max:30',
-        ]);
-
         $vendor->update([
             'vendor_name'      => $request->vendor_name,
             'company_name'     => $request->company_name,
             'designation'      => $request->designation,
+            'country_phonecode'=> $request->country_phonecode,
             'mobile'           => $request->mobile,
+            'alternate_country_phonecode' => $request->alternate_country_phonecode,
             'alternate_mobile' => $request->alternate_mobile,
             'email'            => $request->email,
             'office_address'   => $request->office_address,

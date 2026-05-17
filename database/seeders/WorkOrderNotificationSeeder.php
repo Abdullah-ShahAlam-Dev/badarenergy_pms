@@ -12,6 +12,7 @@ class WorkOrderNotificationSeeder extends Seeder
         $companies = DB::table('companies')->get();
 
         foreach ($companies as $company) {
+            // Seed Email Notification Setting
             DB::table('email_notification_settings')->updateOrInsert(
                 [
                     'company_id' => $company->id,
@@ -22,6 +23,30 @@ class WorkOrderNotificationSeeder extends Seeder
                     'send_email'   => 'yes',
                     'send_slack'   => 'no',
                     'send_push'    => 'yes'
+                ]
+            );
+
+            // Seed Module Setting for Admin
+            DB::table('module_settings')->updateOrInsert(
+                [
+                    'company_id'  => $company->id,
+                    'module_name' => 'work_order',
+                    'type'        => 'admin'
+                ],
+                [
+                    'status'      => 'active'
+                ]
+            );
+
+            // Seed Module Setting for Employee
+            DB::table('module_settings')->updateOrInsert(
+                [
+                    'company_id'  => $company->id,
+                    'module_name' => 'work_order',
+                    'type'        => 'employee'
+                ],
+                [
+                    'status'      => 'active'
                 ]
             );
         }

@@ -34,22 +34,27 @@ $updateLeaveQuotaPermission = user()->permission('update_leaves_quota');
                                 <th class="text-right">@lang('app.action')</th>
                             </x-slot>
 
-                            @forelse($leaveTypes as $key => $leave)
+                             @forelse($leaveTypes as $key => $leave)
                                 @if($leave->leaveTypeCodition($leave, $userRole))
-                                    <tr>
-                                        <td>
-                                            <x-status :value="$leave->type_name" :style="'color:'.$leave->color" />
-                                        </td>
-                                        <td> <input type="number" min="0" value="{{ isset($employeeLeavesQuota[$key]) ? $employeeLeavesQuota[$key]->no_of_leaves : 0 }}"
-                                                class="form-control height-35 f-14 leave-count-{{ $employeeLeavesQuota[$key]->id }}">
-                                        </td>
-                                        <td class="text-right">
-                                            <button type="button" data-type-id="{{ $employeeLeavesQuota[$key]->id }}"
-                                                class="btn btn-sm btn-primary btn-outline update-category">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    @php
+                                        $quotaRecord = $employeeLeavesQuota->firstWhere('leave_type_id', $leave->id);
+                                    @endphp
+                                    @if($quotaRecord)
+                                        <tr>
+                                            <td>
+                                                <x-status :value="$leave->type_name" :style="'color:'.$leave->color" />
+                                            </td>
+                                            <td> <input type="number" min="0" value="{{ $quotaRecord->no_of_leaves }}"
+                                                    class="form-control height-35 f-14 leave-count-{{ $quotaRecord->id }}">
+                                            </td>
+                                            <td class="text-right">
+                                                <button type="button" data-type-id="{{ $quotaRecord->id }}"
+                                                    class="btn btn-sm btn-primary btn-outline update-category">
+                                                    <i class="fa fa-check"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @endif
                                 @endif
                             @empty
                                 <x-cards.no-record icon="redo" :message="__('messages.noRecordFound')" />

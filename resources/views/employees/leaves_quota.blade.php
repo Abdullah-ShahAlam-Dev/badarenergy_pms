@@ -1,33 +1,47 @@
 <div class="card w-100 rounded-0 border-0 comment">
     <div class="card-horizontal">
         <div class="card-body border-0 pl-0 py-1">
-            @forelse ($leaveTypes as $key=>$leave)
-                @if($leave->leaveTypeCodition($leave, $userRole))
-                    <div class="card-text f-14 text-dark-grey text-justify">
-                        <x-table class="table-bordered my-3 rounded">
-                            <x-slot name="thead">
-                                <th>@lang('modules.leaves.leaveType')</th>
-                                <th>@lang('modules.leaves.noOfLeaves')</th>
-                                <th>@lang('modules.leaves.monthLimit')</th>
-                                <th class="text-right">@lang('app.total') @lang('modules.leaves.leavesTaken')</th>
-                            </x-slot>
+            <x-table class="table-bordered my-3 rounded">
+                <x-slot name="thead">
+                    <th>@lang('modules.leaves.leaveType')</th>
+                    <th>@lang('modules.leaves.noOfLeaves') (Allocated)</th>
+                    <th>Leaves Used</th>
+                    <th class="text-right">Leaves Remaining</th>
+                    <th class="text-right">@lang('modules.leaves.monthLimit')</th>
+                </x-slot>
 
-                            <tr>
-                                <td width="25%">
-                                    <x-status :value="$leave->type_name" :style="'color:'.$leave->color" />
-                                </td>
-                                <td width="25%">{{ isset($employeeLeavesQuota[$key]) ? $employeeLeavesQuota[$key]->no_of_leaves : 0 }}</td>
-                                <td width="25%">{{ ($leave->monthly_limit > 0) ? $leave->monthly_limit : '--' }}</td>
-                                <td class="text-right" width="25%">
-                                    {{ (!is_null($leave->leavesCount)) ? $leave->leavesCount->count - ($leave->leavesCount->halfday*0.5) : '0' }}
-                                </td>
-                            </tr>
-                        </x-table>
-                    </div>
+                @php $hasRecord = false; @endphp
+                @foreach ($leaveTypes as $key => $leave)
+                    @if($leave->leaveTypeCodition($leave, $userRole))
+                        @php
+                            $hasRecord = true;
+                            // Safe resolution of the leave quota record
+                            $quotaRecord = $employeeLeavesQuotas->firstWhere('leave_type_id', $leave->id);
+                            $allowedLeaves = $quotaRecord ? $quotaRecord->no_of_leaves : ($leave->employeeLeave ?? $leave->no_of_leaves ?? 0);
+                            
+                            $usedLeaves = $leave->leavesCount ? ($leave->leavesCount->count - ($leave->leavesCount->halfday * 0.5)) : 0;
+                            $remainingLeaves = max(0, $allowedLeaves - $usedLeaves);
+                        @endphp
+                        <tr>
+                            <td width="20%">
+                                <x-status :value="$leave->type_name" :style="'color:'.$leave->color" />
+                            </td>
+                            <td width="20%">{{ $allowedLeaves }}</td>
+                            <td width="20%">{{ $usedLeaves }}</td>
+                            <td width="20%" class="font-weight-bold text-success text-right">{{ $remainingLeaves }}</td>
+                            <td width="20%" class="text-right">{{ ($leave->monthly_limit > 0) ? $leave->monthly_limit : '--' }}</td>
+                        </tr>
+                    @endif
+                @endforeach
+
+                @if(!$hasRecord)
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            <x-cards.no-record icon="redo" :message="__('messages.noRecordFound')" />
+                        </td>
+                    </tr>
                 @endif
-            @empty
-                <x-cards.no-record icon="redo" :message="__('messages.noRecordFound')" />
-            @endforelse
+            </x-table>
         </div>
     </div>
 </div>

@@ -11,15 +11,38 @@ return new class extends Migration
 {
     public function up()
     {
-        // Activate the module via ModuleSetting (same as GatePass approach)
         if (class_exists(ModuleSetting::class)) {
-            $setting = ModuleSetting::where('module_name', 'work_order')->first();
-            if (!$setting) {
-                ModuleSetting::create([
-                    'module_name' => 'work_order',
-                    'status'      => 'active',
-                    'type'        => 'admin',
-                ]);
+            $companies = \App\Models\Company::all();
+            $moduleName = 'work_order';
+
+            foreach ($companies as $company) {
+                $module = ModuleSetting::where('company_id', $company->id)
+                    ->where('module_name', $moduleName)
+                    ->where('type', 'admin')
+                    ->first();
+
+                if (!$module) {
+                    ModuleSetting::create([
+                        'company_id' => $company->id,
+                        'module_name' => $moduleName,
+                        'status' => 'active',
+                        'type' => 'admin'
+                    ]);
+                }
+
+                $moduleEmployee = ModuleSetting::where('company_id', $company->id)
+                    ->where('module_name', $moduleName)
+                    ->where('type', 'employee')
+                    ->first();
+
+                if (!$moduleEmployee) {
+                    ModuleSetting::create([
+                        'company_id' => $company->id,
+                        'module_name' => $moduleName,
+                        'status' => 'active',
+                        'type' => 'employee'
+                    ]);
+                }
             }
         }
 

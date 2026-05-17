@@ -131,7 +131,8 @@ class GatePassController extends AccountBaseController
     public function edit($id)
     {
         $this->gatePass = GatePassRequest::with('items')->findOrFail($id);
-        abort_403($this->gatePass->user_id != user()->id && user()->permission('edit_gate_pass') != 'all');
+        $editPermission = user()->permission('edit_gate_pass');
+        abort_403(!($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $this->gatePass->user_id == user()->id)));
         
         $this->departments = Team::all();
 
@@ -146,7 +147,8 @@ class GatePassController extends AccountBaseController
     public function update(Request $request, $id)
     {
         $gatePass = GatePassRequest::findOrFail($id);
-        abort_403($gatePass->user_id != user()->id && user()->permission('edit_gate_pass') != 'all');
+        $editPermission = user()->permission('edit_gate_pass');
+        abort_403(!($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $gatePass->user_id == user()->id)));
 
         $request->validate([
             'type' => 'required|in:in,out',
@@ -192,7 +194,8 @@ class GatePassController extends AccountBaseController
     public function destroy($id)
     {
         $gatePass = GatePassRequest::findOrFail($id);
-        abort_403($gatePass->user_id != user()->id && user()->permission('delete_gate_pass') != 'all');
+        $deletePermission = user()->permission('delete_gate_pass');
+        abort_403(!($deletePermission == 'all' || (in_array($deletePermission, ['added', 'owned', 'both']) && $gatePass->user_id == user()->id)));
         
         $gatePass->delete();
         return Reply::success(__('messages.recordDeleted'));

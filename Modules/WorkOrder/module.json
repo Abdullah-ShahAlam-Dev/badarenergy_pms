@@ -1,0 +1,13 @@
+{
+    "name": "WorkOrder",
+    "alias": "workorder",
+    "description": "Work Order Management System for issuing vendor work orders against events.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WorkOrder\\Providers\\WorkOrderServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

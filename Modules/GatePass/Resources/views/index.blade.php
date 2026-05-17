@@ -115,14 +115,28 @@
                                         <a href="{{ route('gate-pass.show', $request->id) }}" class="openRightModal text-darkest-grey mr-2" title="@lang('app.view')">
                                             <i class="fa fa-eye"></i>
                                         </a>
-                                        @if($request->status == 'pending_hod' || $request->status == 'draft' || $request->status == 'sent_back')
-                                            <a href="{{ route('gate-pass.edit', $request->id) }}" class="openRightModal text-darkest-grey mr-2" title="@lang('app.edit')">
-                                                <i class="fa fa-edit"></i>
+                                        @if(
+                                            user()->permission('edit_gate_pass') == 'all' || 
+                                            (user()->permission('edit_gate_pass') == 'added' && $request->user_id == user()->id) ||
+                                            (user()->permission('edit_gate_pass') == 'owned' && $request->user_id == user()->id) ||
+                                            (user()->permission('edit_gate_pass') == 'both' && $request->user_id == user()->id)
+                                        )
+                                            @if($request->status == 'pending_hod' || $request->status == 'draft' || $request->status == 'sent_back')
+                                                <a href="{{ route('gate-pass.edit', $request->id) }}" class="openRightModal text-darkest-grey mr-2" title="@lang('app.edit')">
+                                                    <i class="fa fa-edit"></i>
+                                                </a>
+                                            @endif
+                                        @endif
+                                        @if(
+                                            user()->permission('delete_gate_pass') == 'all' || 
+                                            (user()->permission('delete_gate_pass') == 'added' && $request->user_id == user()->id) ||
+                                            (user()->permission('delete_gate_pass') == 'owned' && $request->user_id == user()->id) ||
+                                            (user()->permission('delete_gate_pass') == 'both' && $request->user_id == user()->id)
+                                        )
+                                            <a href="javascript:;" class="text-darkest-grey delete-table-row" data-id="{{ $request->id }}" title="@lang('app.delete')">
+                                                <i class="fa fa-trash"></i>
                                             </a>
                                         @endif
-                                        <a href="javascript:;" class="text-darkest-grey delete-table-row" data-id="{{ $request->id }}" title="@lang('app.delete')">
-                                            <i class="fa fa-trash"></i>
-                                        </a>
                                     </div>
                                 </td>
                             </tr>

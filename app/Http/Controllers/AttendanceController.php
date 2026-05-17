@@ -7,6 +7,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Helper\Reply;
 use App\Models\Leave;
+use App\Models\LeaveType;
 use App\Models\Holiday;
 use Carbon\CarbonInterval;
 use Carbon\CarbonPeriod;
@@ -744,6 +745,7 @@ class AttendanceController extends AccountBaseController
         $this->year = now()->format('Y');
         $this->month = now()->format('m');
         $this->location = CompanyAddress::all();
+        $this->leaveTypes = LeaveType::all();
 
         if (request()->ajax()) {
             $html = view('attendances.ajax.create', $this->data)->render();
@@ -765,6 +767,83 @@ class AttendanceController extends AccountBaseController
     {
         $employees = $request->user_id;
         $employeeData = User::with('employeeDetail')->whereIn('id', $employees)->get();
+
+        if ($request->mark_as == 'leave') {
+            $uniqueId = \Illuminate\Support\Str::random(16);
+
+            // Determine selected dates/period
+            if ($request->mark_attendance_by == 'month') {
+                $startDate = Carbon::createFromFormat('d-m-Y', '01-' . $request->month . '-' . $request->year)->startOfMonth();
+                $endDate = $startDate->copy()->endOfMonth();
+                $period = CarbonPeriod::create($startDate, $endDate);
+                $holidays = Holiday::getHolidayByDates($startDate->format('Y-m-d'), $endDate->format('Y-m-d'))->pluck('holiday_date')->toArray();
+            } else {
+                $dates = explode(',', $request->multi_date);
+                $multiDates = CarbonPeriod::create($dates[0], $dates[1]);
+                $dateRange = [];
+                foreach ($multiDates as $multiDate) {
+                    $dateRange[] = $multiDate->format('Y-m-d');
+                }
+                $period = [];
+                $holidays = [];
+                foreach ($dateRange as $dateData) {
+                    array_push($period, Carbon::parse($dateData));
+                    $isHoliday = Holiday::checkHolidayByDate(Carbon::parse($dateData)->format('Y-m-d'));
+                    if (!is_null($isHoliday)) {
+                        $holidays[] = $isHoliday->date->format('Y-m-d');
+                    }
+                }
+            }
+
+            foreach ($employees as $userId) {
+                $userData = $employeeData->filter(function ($value) use ($userId) {
+                    return $value->id == $userId;
+                })->first();
+
+                if (request()->has('overwrite_attendance') && request()->overwrite_attendance == 'yes') {
+                    foreach ($period as $date) {
+                        Attendance::where('user_id', $userId)
+                            ->where(DB::raw('DATE(`clock_in_time`)'), $date->format('Y-m-d'))
+                            ->delete();
+                        Leave::where('user_id', $userId)
+                            ->where('leave_date', $date->format('Y-m-d'))
+                            ->delete();
+                    }
+                }
+
+                foreach ($period as $date) {
+                    $formattedDate = $date->format('Y-m-d');
+
+                    if (in_array($formattedDate, $holidays)) {
+                        continue;
+                    }
+
+                    $alreadyLeave = Leave::where('user_id', $userId)
+                        ->where('leave_date', $formattedDate)
+                        ->first();
+
+                    if (!$alreadyLeave && $date->greaterThanOrEqualTo($userData->employeeDetail->joining_date)) {
+                        $leave = new Leave();
+                        $leave->user_id = $userId;
+                        $leave->unique_id = $uniqueId;
+                        $leave->leave_type_id = $request->leave_type_id;
+                        $leave->duration = $request->leave_duration;
+                        $leave->leave_date = $formattedDate;
+                        $leave->reason = 'Marked manually by Administrator';
+                        $leave->status = 'approved';
+                        $leave->added_by = user()->id;
+                        $leave->save();
+                    }
+                }
+            }
+
+            $redirectUrl = urldecode($request->redirect_url);
+            if ($redirectUrl == '') {
+                $redirectUrl = route('attendances.index');
+            }
+
+            return Reply::redirect($redirectUrl, __('messages.leaveAssignSuccess'));
+        }
 
         $date = Carbon::createFromFormat('d-m-Y', '01-' . $request->month . '-' . $request->year)->format('Y-m-d');
         $clockIn = Carbon::createFromFormat('Y-m-d ' . $this->company->time_format, $date . ' ' . $request->clock_in_time, $this->company->timezone);

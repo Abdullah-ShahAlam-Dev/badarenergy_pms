@@ -83,6 +83,10 @@
                         </div>
                     @endif
 
+                    <div class="col-12 d-none" id="leave-quota-container">
+                        <!-- Dynamic Leave Quota Panel will be loaded here -->
+                    </div>
+
                     <div class="col-md-6 col-lg-4">
                         <div class="form-group my-3">
                             <label class="f-14 text-dark-grey mb-12 w-100" for="usr">@lang('modules.leaves.selectDuration')</label>
@@ -385,7 +389,7 @@
     }
 
     function getEmployeeLeaveTypes(employeeID) {
-        let id = employeeID || 0;
+        let id = employeeID || $('#user_id').val() || 0;
         var url = "{{ route('employee-leaves.employee_leave_types', ':id') }}";
         url = url.replace(':id', id);
 
@@ -394,10 +398,15 @@
             type: "GET",
             container: '#save-lead-data-form',
             blockUI: true,
-            success: function(data) {
-                if (data.data) {
-                    $('#leave_type_id').html(data.data);
+            success: function(response) {
+                if (response.data) {
+                    $('#leave_type_id').html(response.data);
                     $('#leave_type_id').selectpicker('refresh');
+                }
+                if (response.quotaHtml) {
+                    $('#leave-quota-container').html(response.quotaHtml).removeClass('d-none');
+                } else {
+                    $('#leave-quota-container').addClass('d-none').html('');
                 }
             }
         });

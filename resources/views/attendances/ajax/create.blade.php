@@ -39,6 +39,20 @@
                 <div class="row px-4 pb-4">
 
                     <div class="col-lg-3 col-md-6">
+                        <div class="form-group my-3">
+                            <x-forms.label fieldId="mark_as_present" fieldRequired="true" fieldLabel="Mark As">
+                            </x-forms.label>
+                            <div class="d-flex">
+                                <x-forms.radio fieldId="mark_as_present" fieldLabel="Present" fieldName="mark_as"
+                                    fieldValue="present" checked="true">
+                                </x-forms.radio>
+                                <x-forms.radio fieldId="mark_as_leave" fieldLabel="On Leave" fieldValue="leave"
+                                    fieldName="mark_as"></x-forms.radio>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 attendance-fields">
                         <x-forms.select fieldId="location" :fieldLabel="__('app.location')" fieldName="location"
                         search="true">
                             @foreach ($location as $locations)
@@ -88,7 +102,7 @@
                     </div>
 
                 </div>
-                <div class="row px-4">
+                <div class="row px-4 attendance-fields">
                     <div class="col-lg-4 col-md-6 col-xl-3">
                         <div class="bootstrap-timepicker timepicker">
                             <x-forms.text :fieldLabel="__('modules.attendance.clock_in')"
@@ -139,7 +153,7 @@
                 </div>
 
                 <div class="row p-20">
-                    <div class="col-lg-3 col-md-3">
+                    <div class="col-lg-3 col-md-3 attendance-fields">
                         <x-forms.select fieldId="work_from_type" :fieldLabel="__('modules.attendance.working_from')" fieldName="work_from_type" fieldRequired="true"
                             search="true" >
                                 <option value="office">@lang('modules.attendance.office')</option>
@@ -148,7 +162,7 @@
                         </x-forms.select>
                     </div>
 
-                    <div class="col-lg-3 col-md-6" id="other_place" style="display:none">
+                    <div class="col-lg-3 col-md-6 attendance-fields" id="other_place" style="display:none">
                         <x-forms.text fieldId="working_from" :fieldLabel="__('modules.attendance.otherPlace')" fieldName="working_from" fieldRequired="true" >
                         </x-forms.text>
                     </div>
@@ -156,6 +170,27 @@
                         <x-forms.checkbox class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="__('app.overwriteAttendance')"
                                           fieldName="overwrite_attendance" fieldId="overwrite_attendance" fieldValue="yes"
                                           fieldRequired="true" :popover="__('messages.overwriteAttendanceTooltip')"/>
+                    </div>
+                </div>
+
+                <div class="row px-4 d-none leave-fields">
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <x-forms.select fieldId="leave_type_id" fieldLabel="Leave Type"
+                            fieldName="leave_type_id" search="true">
+                            <option value="">-- Select Leave Type --</option>
+                            @foreach ($leaveTypes as $type)
+                                <option value="{{ $type->id }}">{{ mb_ucwords($type->type_name) }}</option>
+                            @endforeach
+                        </x-forms.select>
+                    </div>
+
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <x-forms.select fieldId="leave_duration" fieldLabel="Leave Duration"
+                            fieldName="leave_duration">
+                            <option value="full day">Full Day</option>
+                            <option value="first_half">First Half</option>
+                            <option value="second_half">Second Half</option>
+                        </x-forms.select>
                     </div>
                 </div>
 
@@ -194,17 +229,46 @@
             format: 'yyyy-mm-d'
         });
 
+        $('input[type=radio][name=mark_as]').change(function() {
+            if(this.value == 'leave') {
+                $('.attendance-fields').addClass('d-none');
+                $('.leave-fields').removeClass('d-none');
+                if ($('input[name=mark_attendance_by]:checked').val() == 'date') {
+                    $('#multi_date').daterangepicker('destroy').daterangepicker({
+                        linkedCalendars: false,
+                        multidate: true,
+                        todayHighlight: true,
+                        format: 'yyyy-mm-d'
+                    });
+                }
+            } else {
+                $('.attendance-fields').removeClass('d-none');
+                $('.leave-fields').addClass('d-none');
+                if ($('input[name=mark_attendance_by]:checked').val() == 'date') {
+                    $('#multi_date').daterangepicker('destroy').daterangepicker({
+                        linkedCalendars: false,
+                        multidate: true,
+                        todayHighlight: true,
+                        format: 'yyyy-mm-d',
+                        maxDate: new Date()
+                    });
+                }
+            }
+        });
+
         $('input[type=radio][name=mark_attendance_by]').change(function() {
             if(this.value=='date') {
-                $('#multi_date').daterangepicker('clearDates').daterangepicker({
+                var options = {
                     linkedCalendars: false,
                     multidate: true,
                     todayHighlight: true,
-                    format: 'yyyy-mm-d',
-                    maxDate: new Date(),
-                });
+                    format: 'yyyy-mm-d'
+                };
+                if ($('input[name=mark_as]:checked').val() !== 'leave') {
+                    options.maxDate = new Date();
+                }
+                $('#multi_date').daterangepicker('clearDates').daterangepicker(options);
             }
-
         });
         $('#work_from_type').change(function(){
             ($(this).val() == 'other') ? $('#other_place').show() : $('#other_place').hide();

@@ -26,25 +26,25 @@ return new class extends Migration
                 'name'                => 'add_vendor',
                 'display_name'        => 'Add Vendor',
                 'allowed_permissions' => Permission::ALL_NONE,
-                'is_custom'           => 0,
+                'is_custom'           => 1,
             ],
             [
                 'name'                => 'view_vendor',
                 'display_name'        => 'View Vendor',
                 'allowed_permissions' => Permission::ALL_4_ADDED_1_OWNED_2_BOTH_3_NONE_5,
-                'is_custom'           => 0,
+                'is_custom'           => 1,
             ],
             [
                 'name'                => 'edit_vendor',
                 'display_name'        => 'Edit Vendor',
                 'allowed_permissions' => Permission::ALL_4_ADDED_1_OWNED_2_BOTH_3_NONE_5,
-                'is_custom'           => 0,
+                'is_custom'           => 1,
             ],
             [
                 'name'                => 'delete_vendor',
                 'display_name'        => 'Delete Vendor',
                 'allowed_permissions' => Permission::ALL_4_ADDED_1_OWNED_2_BOTH_3_NONE_5,
-                'is_custom'           => 0,
+                'is_custom'           => 1,
             ],
 
             // ── Work Order permissions ─────────────────────────────────────────

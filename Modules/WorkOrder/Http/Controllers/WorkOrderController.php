@@ -357,13 +357,13 @@ class WorkOrderController extends AccountBaseController
             
             // Log details of the Work Order to check for weird characters
             \Log::info('Work Order PDF Generation Staging Debug', [
-                'id' => $workOrder->id,
-                'number' => $workOrder->wo_number,
-                'description' => $workOrder->description,
-                'remarks' => $workOrder->remarks,
-                'terms' => $workOrder->terms_conditions,
-                'instructions' => $workOrder->special_instructions,
-                'items' => $workOrder->items->map(fn($item) => ['name' => $item->item_name, 'total' => $item->total])->toArray(),
+                'id' => $this->workOrder->id,
+                'number' => $this->workOrder->wo_number,
+                'description' => $this->workOrder->description,
+                'remarks' => $this->workOrder->remarks,
+                'terms' => $this->workOrder->terms_conditions,
+                'instructions' => $this->workOrder->special_instructions,
+                'items' => $this->workOrder->items->map(fn($item) => ['name' => $item->item_name, 'total' => $item->total])->toArray(),
             ]);
 
             $pdf->loadView('workorder::work-orders.pdf.work-order', $data);

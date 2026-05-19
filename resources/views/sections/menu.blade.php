@@ -103,7 +103,7 @@
         );
     @endphp
 
-    @if (in_array('gate_pass', user_modules()) && user()->permission('view_gate_pass') != 'none')
+    @if (in_array('gate_pass', user_modules()) && user()->permission('view_gate_pass') != 'none' && \Route::has('gate-pass.index'))
         <x-menu-item icon="shield-check" :link="route('gate-pass.index')" :text="__('gatepass::modules.gatePass.menuName')" :active="request()->routeIs('gate-pass.*')">
             <x-slot name="iconPath">
                 <path d="M8 0c-.69 0-1.843.265-2.928.56c-1.11.303-2.259.67-3.232.99c-.198.065-.34.247-.34.45V6c0 5.02 3.476 8.356 6.5 9.5c3.024-1.144 6.5-4.48 6.5-9.5V2c0-.203-.142-.385-.34-.45c-.973-.32-2.122-.687-3.232-.99C9.843.265 8.69 0 8 0zm0 1c.58 0 1.608.242 2.66.53c1.048.286 2.152.645 3.09.954V6c0 4.214-2.88 7.15-5.75 8.24c-2.87-1.09-5.75-4.026-5.75-8.24V2.484c.938-.309 2.042-.668 3.09-.954C6.392 1.242 7.42 1 8 1zm3.854 4.146a.5.5 0 0 0-.708 0L7 9.293L5.354 7.646a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l4.5-4.5a.5.5 0 0 0 0-.708z"/>
@@ -111,7 +111,7 @@
         </x-menu-item>
     @endif
 
-    @if (in_array('work_order', user_modules()) && user()->permission('view_work_order') != 'none')
+    @if (in_array('work_order', user_modules()) && user()->permission('view_work_order') != 'none' && \Route::has('work-orders.index'))
         <x-menu-item icon="file-contract" :link="route('work-orders.index')" :text="__('workorder::modules.workOrder.menuName')" :active="request()->routeIs('work-orders.*') || request()->routeIs('vendors.*') || request()->routeIs('approval-mappings.*')">
             <x-slot name="iconPath">
                 <path fill-rule="evenodd" d="M2.5 1A1.5 1.5 0 0 0 1 2.5v11A1.5 1.5 0 0 0 2.5 15h6.086a1.5 1.5 0 0 0 1.06-.44l4.915-4.914A1.5 1.5 0 0 0 15 8.586V2.5A1.5 1.5 0 0 0 13.5 1h-11zM2 2.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V8H9.5A1.5 1.5 0 0 0 8 9.5V14H2.5a.5.5 0 0 1-.5-.5v-11zm7 11.293V9.5a.5.5 0 0 1 .5-.5h4.293L9 13.793z"/>
@@ -139,7 +139,7 @@
                 @if (in_array('timelogs', user_modules()) && $sidebarUserPermissions['view_timelogs'] != 5 && $sidebarUserPermissions['view_timelogs'] != 'none')
                     <x-sub-menu-item :link="route('timelogs.index')" :text="__('app.menu.timeLogs')" />
                 @endif
-                @if (in_array('daily_reports', user_modules()) && user()->permission('view_daily_report') != 'none')
+                @if (in_array('daily_reports', user_modules()) && user()->permission('view_daily_report') != 'none' && \Route::has('daily-reports.index'))
                     <x-sub-menu-item :link="route('daily-reports.index')" :text="__('dailyreports::modules.dailyReports.menuName')" :active="request()->routeIs('daily-reports.index')" />
                 @endif
                 {{-- @endif --}}
@@ -367,13 +367,13 @@
                     <x-sub-menu-item :link="route('sales-report.index')"
                                      :text="__('app.menu.salesReport')" />
                 @endif
-                @if (in_array('daily_reports', user_modules()) && $viewDailyAnalysisPerm)
+                @if (in_array('daily_reports', user_modules()) && $viewDailyAnalysisPerm && \Route::has('reports.daily-reports'))
                     <x-sub-menu-item :link="route('reports.daily-reports')"
                                      :text="__('dailyreports::modules.dailyReports.analysisMenu')" :active="request()->routeIs('reports.daily-reports*')" />
                     <x-sub-menu-item :link="route('daily-reports.missing')"
                                      :text="__('dailyreports::modules.dailyReports.missingMenu')" :active="request()->routeIs('daily-reports.missing')" />
                 @endif
-                @if (in_array('gate_pass', user_modules()) && user()->permission('view_gate_pass_reports') != 'none')
+                @if (in_array('gate_pass', user_modules()) && user()->permission('view_gate_pass_reports') != 'none' && \Route::has('gate-pass.report'))
                     <x-sub-menu-item :link="route('gate-pass.report')" :text="__('gatepass::modules.gatePass.menuName') . ' ' . __('app.menu.reports')" />
                 @endif
             </div>

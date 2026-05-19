@@ -352,13 +352,25 @@ class WorkOrderController extends AccountBaseController
             
             $pdf = app('dompdf.wrapper');
             $pdf->setOption('enable_php', true);
-            $pdf->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
+            $pdf->setOption('isHtml5ParserEnabled', true);
+            $pdf->setOption('isRemoteEnabled', true);
             
+            // Log details of the Work Order to check for weird characters
+            \Log::info('Work Order PDF Generation Staging Debug', [
+                'id' => $workOrder->id,
+                'number' => $workOrder->wo_number,
+                'description' => $workOrder->description,
+                'remarks' => $workOrder->remarks,
+                'terms' => $workOrder->terms_conditions,
+                'instructions' => $workOrder->special_instructions,
+                'items' => $workOrder->items->map(fn($item) => ['name' => $item->item_name, 'total' => $item->total])->toArray(),
+            ]);
+
             $pdf->loadView('workorder::work-orders.pdf.work-order', $data);
 
             return $pdf->download('work-order-' . $this->workOrder->wo_number . '.pdf');
-        } catch (\Exception $e) {
-            \Log::error('Work Order PDF Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+        } catch (\Throwable $e) {
+            \Log::error('Work Order PDF Error Detail: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json([
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),

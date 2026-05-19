@@ -324,7 +324,12 @@ class WorkOrderController extends AccountBaseController
                 ->findOrFail($id);
 
             $this->company = company();
-            $data = ['workOrder' => $this->workOrder, 'company' => $this->company];
+            $this->invoiceSetting = invoice_setting();
+            $data = [
+                'workOrder' => $this->workOrder,
+                'company' => $this->company,
+                'invoiceSetting' => $this->invoiceSetting
+            ];
             
             $pdf = app('dompdf.wrapper');
             $pdf->setOption('enable_php', true);
@@ -352,7 +357,12 @@ class WorkOrderController extends AccountBaseController
             ->findOrFail($id);
 
         $this->company = company();
-        $data = ['workOrder' => $this->workOrder, 'company' => $this->company];
+        $this->invoiceSetting = invoice_setting();
+        $data = [
+            'workOrder' => $this->workOrder,
+            'company' => $this->company,
+            'invoiceSetting' => $this->invoiceSetting
+        ];
         return view('workorder::work-orders.pdf.work-order', $data);
     }
 

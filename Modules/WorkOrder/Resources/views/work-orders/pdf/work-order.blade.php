@@ -4,55 +4,101 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Work Order — {{ $workOrder->wo_number }}</title>
-    @includeIf('invoices.pdf.invoice_pdf_css')
     <style>
-        body { font-size: 12px; color: #333; }
-        .page { padding: 30px; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; color: #333; background: #f4f6f9; margin: 0; padding: 0; }
+        .no-print {
+            background: #1a1a2e;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .print-btn {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .print-btn:hover {
+            background: #0056b3;
+        }
+        .page { 
+            width: 820px; 
+            margin: 30px auto; 
+            padding: 40px; 
+            background: #fff; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
         /* Header */
         .header { display: table; width: 100%; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
         .header-left { display: table-cell; width: 60%; vertical-align: middle; }
         .header-right { display: table-cell; width: 40%; text-align: right; vertical-align: middle; }
         .company-logo { max-height: 70px; max-width: 200px; }
-        .company-name { font-size: 16px; font-weight: bold; }
-        .company-info { font-size: 10px; color: #666; }
-        .wo-title { font-size: 22px; font-weight: bold; color: #1a1a2e; }
-        .wo-number { font-size: 14px; color: #666; margin-top: 4px; }
+        .company-name { font-size: 18px; font-weight: bold; color: #1a1a2e; }
+        .company-info { font-size: 11px; color: #666; margin-top: 4px; line-height: 1.4; }
+        .wo-title { font-size: 24px; font-weight: bold; color: #1a1a2e; letter-spacing: 0.5px; }
+        .wo-number { font-size: 16px; color: #666; margin-top: 4px; font-weight: 600; }
         /* Info Section */
         .info-table { width: 100%; margin-bottom: 20px; border-collapse: collapse; }
-        .info-table td { padding: 5px 8px; font-size: 11px; }
-        .info-table .label { color: #888; width: 30%; }
-        .info-table .value { font-weight: bold; }
+        .info-table td { padding: 6px 8px; font-size: 12px; }
+        .info-table .label { color: #777; width: 25%; }
+        .info-table .value { font-weight: bold; color: #333; }
         /* Vendor Box */
-        .vendor-box { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 12px; margin-bottom: 20px; }
-        .vendor-box h4 { font-size: 12px; color: #888; margin-bottom: 6px; text-transform: uppercase; }
-        .vendor-box p { margin: 2px 0; font-size: 12px; }
+        .vendor-box { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 16px; margin-bottom: 20px; }
+        .vendor-box h4 { font-size: 13px; color: #1a1a2e; margin: 0 0 8px 0; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        .vendor-box p { margin: 3px 0; font-size: 12px; color: #555; }
         /* Items Table */
         .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .items-table th { background: #1a1a2e; color: #fff; padding: 8px; text-align: left; font-size: 11px; }
-        .items-table td { padding: 7px 8px; border-bottom: 1px solid #eee; font-size: 11px; }
+        .items-table th { background: #1a1a2e; color: #fff; padding: 10px 8px; text-align: left; font-size: 12px; font-weight: 600; }
+        .items-table td { padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; color: #444; }
         .items-table tr:nth-child(even) td { background: #f9f9f9; }
         .items-table .text-right { text-align: right; }
         /* Totals */
-        .totals-table { width: 40%; margin-left: auto; border-collapse: collapse; margin-bottom: 20px; }
-        .totals-table td { padding: 5px 10px; font-size: 12px; }
-        .totals-table .grand-row td { font-weight: bold; font-size: 14px; border-top: 2px solid #333; padding-top: 8px; }
+        .totals-table { width: 45%; margin-left: auto; border-collapse: collapse; margin-bottom: 20px; }
+        .totals-table td { padding: 6px 10px; font-size: 12px; color: #555; }
+        .totals-table .grand-row td { font-weight: bold; font-size: 15px; border-top: 2px solid #333; padding-top: 10px; color: #1a1a2e; }
         /* Notes */
-        .section-title { font-size: 12px; font-weight: bold; color: #1a1a2e; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 8px; margin-top: 15px; }
-        .notes-text { font-size: 11px; color: #555; line-height: 1.5; }
+        .section-title { font-size: 13px; font-weight: bold; color: #1a1a2e; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 10px; margin-top: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .notes-text { font-size: 12px; color: #555; line-height: 1.6; margin: 0 0 15px 0; }
         /* Signatures */
-        .signatures { display: table; width: 100%; margin-top: 40px; }
+        .signatures { display: table; width: 100%; margin-top: 50px; }
         .sig-cell { display: table-cell; width: 33%; text-align: center; padding: 0 10px; }
-        .sig-line { border-top: 1px solid #333; margin-top: 40px; padding-top: 5px; font-size: 10px; color: #666; }
+        .sig-line { border-top: 1px solid #333; margin-top: 50px; padding-top: 6px; font-size: 11px; color: #666; }
         /* Status badge */
-        .status-badge { display: inline-block; padding: 3px 10px; border-radius: 3px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        .status-approved { background: #d4edda; color: #155724; }
-        .status-pending { background: #fff3cd; color: #856404; }
-        .status-draft { background: #e2e3e5; color: #383d41; }
-        .status-rejected { background: #f8d7da; color: #721c24; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .status-approved { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-pending { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .status-draft { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+        .status-rejected { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: none; }
+            .page { 
+                width: 100%; 
+                margin: 0; 
+                padding: 0; 
+                box-shadow: none; 
+                border-radius: 0;
+            }
+        }
     </style>
 </head>
 <body>
-<div class="page">
+    <div class="no-print">
+        <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+    </div>
+    <div class="page">
 
     {{-- ── HEADER ─────────────────────────────────────────────────────────── --}}
     <div class="header">

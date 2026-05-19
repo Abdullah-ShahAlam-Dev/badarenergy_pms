@@ -159,8 +159,8 @@
 
             {{-- ── Action Buttons ──────────────────────────────────────────────── --}}
             <div class="border-top-grey pt-3 mt-3 d-flex">
-                <a href="{{ route('work-orders.pdf', $workOrder->id) }}" class="btn btn-secondary mr-2" target="_blank">
-                    <i class="fa fa-file-pdf mr-1"></i> @lang('workorder::modules.workOrder.downloadPdf')
+                <a href="{{ route('work-orders.print', $workOrder->id) }}" class="btn btn-secondary mr-2" target="_blank">
+                    <i class="fa fa-print mr-1"></i> Print / Save PDF
                 </a>
                 @if($workOrder->isRejected())
                 <button type="button" class="btn btn-outline-primary mr-2" id="btn-duplicate">

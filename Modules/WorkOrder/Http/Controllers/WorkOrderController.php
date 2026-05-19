@@ -318,88 +318,6 @@ class WorkOrderController extends AccountBaseController
 
     public function downloadPdf($id)
     {
-        try {
-            // Self-healing: clear stale Dompdf font cache with wrong absolute paths
-            $fontDir = storage_path('fonts');
-            $installedFontsJson = $fontDir . '/installed-fonts.json';
-            $familyCachePhp = $fontDir . '/dompdf_font_family_cache.php';
-            $currentBaseClean = str_replace('\\', '/', base_path());
-
-            if (file_exists($installedFontsJson)) {
-                $content = file_get_contents($installedFontsJson);
-                if (strpos($content, '/home/badars/') !== false || (strpos($content, '/') !== false && strpos(str_replace('\\', '/', $content), $currentBaseClean) === false)) {
-                    @unlink($installedFontsJson);
-                }
-            }
-            if (file_exists($familyCachePhp)) {
-                $content = file_get_contents($familyCachePhp);
-                if (strpos($content, '/home/badars/') !== false || (strpos($content, '/') !== false && strpos(str_replace('\\', '/', $content), $currentBaseClean) === false)) {
-                    @unlink($familyCachePhp);
-                }
-            }
-
-            $this->workOrder = WorkOrder::with(['vendor', 'event', 'items.tax', 'creator', 'approver'])
-                ->where('company_id', company()->id)
-                ->findOrFail($id);
-
-            $this->company = company();
-            $this->invoiceSetting = invoice_setting();
-            $data = [
-                'workOrder' => $this->workOrder,
-                'company' => $this->company,
-                'invoiceSetting' => $this->invoiceSetting
-            ];
-            
-            $pdf = app('dompdf.wrapper');
-            $pdf->setOption('enable_php', true);
-            $pdf->setOption('isHtml5ParserEnabled', true);
-            $pdf->setOption('isRemoteEnabled', true);
-            
-            // Log details of the Work Order to check for weird characters
-            \Log::info('Work Order PDF Generation Staging Debug', [
-                'id' => $this->workOrder->id,
-                'number' => $this->workOrder->wo_number,
-                'description' => $this->workOrder->description,
-                'remarks' => $this->workOrder->remarks,
-                'terms' => $this->workOrder->terms_conditions,
-                'instructions' => $this->workOrder->special_instructions,
-                'items' => $this->workOrder->items->map(fn($item) => ['name' => $item->item_name, 'total' => $item->total])->toArray(),
-            ]);
-
-            $pdf->loadView('workorder::work-orders.pdf.work-order', $data);
-
-            return $pdf->download('work-order-' . $this->workOrder->wo_number . '.pdf');
-        } catch (\Throwable $e) {
-            \Log::error('Work Order PDF Error Detail: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            return response()->json([
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ], 500);
-        }
-    }
-
-    public function printView($id)
-    {
-        // Self-healing: clear stale Dompdf font cache with wrong absolute paths
-        $fontDir = storage_path('fonts');
-        $installedFontsJson = $fontDir . '/installed-fonts.json';
-        $familyCachePhp = $fontDir . '/dompdf_font_family_cache.php';
-        $currentBaseClean = str_replace('\\', '/', base_path());
-
-        if (file_exists($installedFontsJson)) {
-            $content = file_get_contents($installedFontsJson);
-            if (strpos($content, '/home/badars/') !== false || (strpos($content, '/') !== false && strpos(str_replace('\\', '/', $content), $currentBaseClean) === false)) {
-                @unlink($installedFontsJson);
-            }
-        }
-        if (file_exists($familyCachePhp)) {
-            $content = file_get_contents($familyCachePhp);
-            if (strpos($content, '/home/badars/') !== false || (strpos($content, '/') !== false && strpos(str_replace('\\', '/', $content), $currentBaseClean) === false)) {
-                @unlink($familyCachePhp);
-            }
-        }
-
         $this->workOrder = WorkOrder::with(['vendor', 'event', 'items.tax', 'creator', 'approver'])
             ->where('company_id', company()->id)
             ->findOrFail($id);
@@ -412,6 +330,11 @@ class WorkOrderController extends AccountBaseController
             'invoiceSetting' => $this->invoiceSetting
         ];
         return view('workorder::work-orders.pdf.work-order', $data);
+    }
+
+    public function printView($id)
+    {
+        return $this->downloadPdf($id);
     }
 
     // ── PRIVATE HELPERS ────────────────────────────────────────────────────────

@@ -125,8 +125,8 @@
                                                 <i class="fa fa-edit"></i>
                                             </a>
                                         @endif
-                                        <a href="{{ route('work-orders.pdf', $wo->id) }}" class="text-darkest-grey mr-2" title="@lang('workorder::modules.workOrder.downloadPdf')" target="_blank">
-                                            <i class="fa fa-file-pdf"></i>
+                                        <a href="{{ route('work-orders.print', $wo->id) }}" class="text-darkest-grey mr-2" title="Print / Save PDF" target="_blank">
+                                            <i class="fa fa-print"></i>
                                         </a>
                                         @if(user()->permission('delete_work_order') == 'all' || (in_array(user()->permission('delete_work_order'), ['added','owned','both']) && $wo->created_by == user()->id))
                                             <a href="javascript:;" class="text-darkest-grey delete-wo-row" data-id="{{ $wo->id }}" title="@lang('app.delete')">

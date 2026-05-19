@@ -318,22 +318,31 @@ class WorkOrderController extends AccountBaseController
 
     public function downloadPdf($id)
     {
-        $this->workOrder = WorkOrder::with(['vendor', 'event', 'items.tax', 'creator', 'approver'])
-            ->where('company_id', company()->id)
-            ->findOrFail($id);
+        try {
+            $this->workOrder = WorkOrder::with(['vendor', 'event', 'items.tax', 'creator', 'approver'])
+                ->where('company_id', company()->id)
+                ->findOrFail($id);
 
-        $this->company = company();
-        $data = ['workOrder' => $this->workOrder, 'company' => $this->company];
-        
-        $pdf = app('dompdf.wrapper');
-        $pdf->setOption('enable_php', true);
-        $pdf->setOption('isHtml5ParserEnabled', true);
-        $pdf->setOption('isRemoteEnabled', true);
-        
-        $pdf->loadView('workorder::work-orders.pdf.work-order', $data);
-        $pdf->setPaper('A4', 'portrait');
+            $this->company = company();
+            $data = ['workOrder' => $this->workOrder, 'company' => $this->company];
+            
+            $pdf = app('dompdf.wrapper');
+            $pdf->setOption('enable_php', true);
+            $pdf->setOption('isHtml5ParserEnabled', true);
+            $pdf->setOption('isRemoteEnabled', true);
+            
+            $pdf->loadView('workorder::work-orders.pdf.work-order', $data);
+            $pdf->setPaper('A4', 'portrait');
 
-        return $pdf->download('work-order-' . $this->workOrder->wo_number . '.pdf');
+            return $pdf->download('work-order-' . $this->workOrder->wo_number . '.pdf');
+        } catch (\Exception $e) {
+            \Log::error('Work Order PDF Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            return response()->json([
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
+        }
     }
 
     public function printView($id)

@@ -6,6 +6,7 @@ use App\Helper\Reply;
 use App\Http\Controllers\AccountBaseController;
 use App\Models\Team;
 use App\Models\User;
+use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Modules\GatePass\Entities\GatePassRequest;
@@ -46,6 +47,7 @@ class GatePassController extends AccountBaseController
     {
         $this->departments = Team::all();
         $this->employees = User::allEmployees();
+        $this->products = Product::all();
         
         $this->lastRequest = GatePassRequest::withTrashed()->orderBy('id', 'desc')->first();
         $this->nextNumber = 'GP-' . date('Y') . '-' . sprintf('%04d', ($this->lastRequest ? $this->lastRequest->id + 1 : 1));
@@ -65,7 +67,7 @@ class GatePassController extends AccountBaseController
             'return_type' => 'required|in:returnable,non-returnable',
             'request_date' => 'required|date',
             'purpose' => 'required',
-            'item_name.*' => 'required',
+            'product_id.*' => 'required|exists:products,id',
             'quantity.*' => 'required|numeric'
         ]);
 
@@ -87,10 +89,13 @@ class GatePassController extends AccountBaseController
         $gatePass->save();
 
         // Save Items
-        if ($request->item_name) {
-            foreach ($request->item_name as $key => $name) {
+        if ($request->product_id) {
+            foreach ($request->product_id as $key => $productId) {
+                $product = Product::find($productId);
+                $name = $product ? $product->name : 'Unknown Product';
                 GatePassItem::create([
                     'gate_pass_request_id' => $gatePass->id,
+                    'product_id' => $productId,
                     'item_name' => $name,
                     'quantity' => $request->quantity[$key],
                     'unit' => $request->unit[$key] ?? null,
@@ -135,6 +140,7 @@ class GatePassController extends AccountBaseController
         abort_403(!($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $this->gatePass->user_id == user()->id)));
         
         $this->departments = Team::all();
+        $this->products = Product::all();
 
         if (request()->ajax()) {
             $html = view('gatepass::ajax.edit', $this->data)->render();
@@ -154,8 +160,12 @@ class GatePassController extends AccountBaseController
             'type' => 'required|in:in,out',
             'return_type' => 'required|in:returnable,non-returnable',
             'request_date' => 'required|date',
-            'purpose' => 'required'
+            'purpose' => 'required',
+            'product_id.*' => 'required|exists:products,id',
+            'quantity.*' => 'required|numeric'
         ]);
+
+        $wasSentBack = ($gatePass->status == 'sent_back');
 
         $gatePass->department_id = $request->department_id;
         $gatePass->request_date = Carbon::parse($request->request_date)->toDateString();
@@ -167,14 +177,21 @@ class GatePassController extends AccountBaseController
         $gatePass->vehicle_number = $request->vehicle_number;
         $gatePass->driver_name = $request->driver_name;
         $gatePass->expected_return_date = $request->expected_return_date ? Carbon::parse($request->expected_return_date)->toDateString() : null;
+        
+        if ($wasSentBack) {
+            $gatePass->status = 'pending_hod';
+        }
         $gatePass->save();
 
         // Update Items (Simple way: delete and recreate)
         $gatePass->items()->delete();
-        if ($request->item_name) {
-            foreach ($request->item_name as $key => $name) {
+        if ($request->product_id) {
+            foreach ($request->product_id as $key => $productId) {
+                $product = Product::find($productId);
+                $name = $product ? $product->name : 'Unknown Product';
                 GatePassItem::create([
                     'gate_pass_request_id' => $gatePass->id,
+                    'product_id' => $productId,
                     'item_name' => $name,
                     'quantity' => $request->quantity[$key],
                     'unit' => $request->unit[$key] ?? null,
@@ -184,6 +201,16 @@ class GatePassController extends AccountBaseController
                     'remarks' => $request->item_remarks[$key] ?? null
                 ]);
             }
+        }
+
+        if ($wasSentBack) {
+            GatePassApprovalLog::create([
+                'gate_pass_request_id' => $gatePass->id,
+                'user_id' => user()->id,
+                'action' => 'submitted',
+                'remarks' => 'Request resubmitted after correction',
+                'ip_address' => $request->ip()
+            ]);
         }
 
         return Reply::successWithData('Gate Pass request updated successfully!', [

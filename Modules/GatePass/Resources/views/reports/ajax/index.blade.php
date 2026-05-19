@@ -22,7 +22,29 @@
                             {{ $item->item_name }} ({{ $item->quantity }})@if(!$loop->last), @endif
                         @endforeach
                     </td>
-                    <td>{{ str_replace('_', ' ', strtoupper($report->status)) }}</td>
+                    <td>
+                        @php
+                            $statusClass = 'badge-warning';
+                            $statusText = str_replace('_', ' ', strtoupper($report->status));
+                            
+                            if($report->status == 'completed') {
+                                $statusClass = 'badge-success';
+                            } elseif($report->status == 'open') {
+                                $statusClass = 'badge-info';
+                                $statusText = 'OPEN (RETURN PENDING)';
+                            } elseif($report->status == 'sent_back') {
+                                $statusClass = 'badge-danger';
+                                $statusText = 'SENT BACK';
+                            } elseif(str_contains($report->status, 'rejected')) {
+                                $statusClass = 'badge-danger';
+                            } elseif($report->status == 'pending_security') {
+                                $statusClass = 'badge-info';
+                            }
+                        @endphp
+                        <span class="badge {{ $statusClass }}">
+                            {{ $statusText }}
+                        </span>
+                    </td>
                 </tr>
             @empty
                 <tr>

@@ -102,12 +102,24 @@
                                 <td>
                                     @php
                                         $statusClass = 'badge-warning';
-                                        if($request->status == 'completed') $statusClass = 'badge-success';
-                                        if(str_contains($request->status, 'rejected')) $statusClass = 'badge-danger';
-                                        if($request->status == 'pending_security') $statusClass = 'badge-info';
+                                        $statusText = str_replace('_', ' ', strtoupper($request->status));
+                                        
+                                        if($request->status == 'completed') {
+                                            $statusClass = 'badge-success';
+                                        } elseif($request->status == 'open') {
+                                            $statusClass = 'badge-info';
+                                            $statusText = 'OPEN (RETURN PENDING)';
+                                        } elseif($request->status == 'sent_back') {
+                                            $statusClass = 'badge-danger';
+                                            $statusText = 'SENT BACK';
+                                        } elseif(str_contains($request->status, 'rejected')) {
+                                            $statusClass = 'badge-danger';
+                                        } elseif($request->status == 'pending_security') {
+                                            $statusClass = 'badge-info';
+                                        }
                                     @endphp
                                     <span class="badge {{ $statusClass }}">
-                                        {{ str_replace('_', ' ', strtoupper($request->status)) }}
+                                        {{ $statusText }}
                                     </span>
                                 </td>
                                 <td class="text-right">

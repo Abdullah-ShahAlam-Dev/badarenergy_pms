@@ -27,7 +27,12 @@ class StoreProductRequest extends CoreRequest
     public function rules()
     {
         $rules = [
-            'name' => 'required',
+            'name' => [
+                'required',
+                \Illuminate\Validation\Rule::unique('products')->where(function ($query) {
+                    return $query->where('company_id', company()->id);
+                })
+            ],
             'price' => 'required|numeric',
             'downloadable_file' => 'required_if:downloadable,true|file',
         ];

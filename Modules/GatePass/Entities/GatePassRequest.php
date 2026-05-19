@@ -73,6 +73,11 @@ class GatePassRequest extends BaseModel
         return $this->hasMany(GatePassAttachment::class, 'gate_pass_request_id');
     }
 
+    public function returns(): HasMany
+    {
+        return $this->hasMany(GatePassItemReturn::class, 'gate_pass_request_id');
+    }
+
     public function hod(): BelongsTo
     {
         return $this->belongsTo(User::class, 'hod_id');

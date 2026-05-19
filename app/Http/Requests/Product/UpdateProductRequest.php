@@ -27,7 +27,12 @@ class UpdateProductRequest extends CoreRequest
     public function rules()
     {
         $rules = [
-            'name' => 'required',
+            'name' => [
+                'required',
+                \Illuminate\Validation\Rule::unique('products')->where(function ($query) {
+                    return $query->where('company_id', company()->id);
+                })->ignore($this->route('product'))
+            ],
             'price' => 'required|numeric',
             'downloadable_file' => 'nullable|file',
         ];

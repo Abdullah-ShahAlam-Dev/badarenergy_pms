@@ -21,6 +21,8 @@
                             <option value="pending_hod">Pending HOD</option>
                             <option value="pending_store">Pending Store</option>
                             <option value="pending_security">Pending Security</option>
+                            <option value="open">Open (Return Pending)</option>
+                            <option value="sent_back">Sent Back</option>
                             <option value="completed">Completed</option>
                         </x-forms.select>
                     </div>

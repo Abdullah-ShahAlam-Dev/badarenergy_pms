@@ -9,6 +9,8 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     Route::post('gate-pass/hod-action/{id}', 'GatePassApprovalController@hodAction')->name('gate-pass.hod-action');
     Route::post('gate-pass/store-action/{id}', 'GatePassApprovalController@storeAction')->name('gate-pass.store-action');
     Route::post('gate-pass/security-action/{id}', 'GatePassApprovalController@securityAction')->name('gate-pass.security-action');
+    Route::post('gate-pass/record-return/{id}', 'GatePassApprovalController@recordReturn')->name('gate-pass.record-return');
+    Route::post('gate-pass/manually-close/{id}', 'GatePassApprovalController@manuallyClose')->name('gate-pass.manually-close');
     
     // Printing & QR
     Route::get('gate-pass/print/{id}', 'GatePassController@printPass')->name('gate-pass.print');

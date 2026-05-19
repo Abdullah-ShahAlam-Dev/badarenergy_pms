@@ -4,10 +4,9 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Work Order — {{ $workOrder->wo_number }}</title>
-    @includeIf('invoices.pdf.invoice_pdf_css')
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: sans-serif; font-size: 12px; color: #333; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { font-size: 12px; color: #333; }
         .page { padding: 30px; }
         /* Header */
         .header { display: table; width: 100%; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }

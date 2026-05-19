@@ -355,6 +355,8 @@ class WorkOrderController extends AccountBaseController
             $pdf->setOption('isHtml5ParserEnabled', true);
             $pdf->setOption('isRemoteEnabled', true);
             $pdf->setOption('defaultFont', 'sans-serif');
+            $pdf->setOption('fontDir', storage_path('app'));
+            $pdf->setOption('fontCache', storage_path('app'));
             
             $pdf->loadView('workorder::work-orders.pdf.work-order', $data);
             $pdf->setPaper('A4', 'portrait');

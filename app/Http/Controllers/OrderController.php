@@ -903,6 +903,12 @@ class OrderController extends AccountBaseController
         $this->order = Order::with('client', 'unit')->findOrFail($id);
         App::setLocale($this->invoiceSetting->locale);
         Carbon::setLocale($this->invoiceSetting->locale);
+        // Ensure the PDF view template exists, fallback to a default if not
+        if (!view()->exists('orders.pdf.' . $this->invoiceSetting->template)) {
+            // Use the first available template as fallback
+            $availableTemplates = ['invoice-1', 'invoice-2', 'invoice-3', 'invoice-4', 'invoice-5'];
+            $this->invoiceSetting->template = $availableTemplates[0];
+        }
 
         $this->paidAmount = $this->order->total;
 

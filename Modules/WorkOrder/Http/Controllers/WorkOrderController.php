@@ -323,7 +323,8 @@ class WorkOrderController extends AccountBaseController
             ->findOrFail($id);
 
         $this->company = company();
-        $pdf = Pdf::loadView('workorder::work-orders.pdf.work-order', $this->data);
+        $data = ['workOrder' => $this->workOrder, 'company' => $this->company];
+        $pdf = Pdf::loadView('workorder::work-orders.pdf.work-order', $data);
         $pdf->setPaper('A4', 'portrait');
 
         return $pdf->download('work-order-' . $this->workOrder->wo_number . '.pdf');
@@ -336,7 +337,8 @@ class WorkOrderController extends AccountBaseController
             ->findOrFail($id);
 
         $this->company = company();
-        return view('workorder::work-orders.pdf.work-order', $this->data);
+        $data = ['workOrder' => $this->workOrder, 'company' => $this->company];
+        return view('workorder::work-orders.pdf.work-order', $data);
     }
 
     // ── PRIVATE HELPERS ────────────────────────────────────────────────────────

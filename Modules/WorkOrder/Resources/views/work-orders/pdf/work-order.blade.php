@@ -4,8 +4,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Work Order — {{ $workOrder->wo_number }}</title>
+    @includeIf('invoices.pdf.invoice_pdf_css')
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
         body { font-size: 12px; color: #333; }
         .page { padding: 30px; }
         /* Header */
@@ -58,11 +58,7 @@
     <div class="header">
         <div class="header-left">
             @if($company->logo)
-                @if(file_exists(public_path('user-uploads/app-logo/' . $company->logo)))
-                    <img src="{{ public_path('user-uploads/app-logo/' . $company->logo) }}" class="company-logo" alt="Logo">
-                @else
-                    <img src="{{ $company->logo_url }}" class="company-logo" alt="Logo">
-                @endif
+                <img src="{{ $company->logo_url }}" class="company-logo" alt="Logo">
             @endif
             <div class="company-name mt-2">{{ $company->company_name }}</div>
             <div class="company-info">{{ $company->address ?? '' }}</div>

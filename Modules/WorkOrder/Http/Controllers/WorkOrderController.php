@@ -350,20 +350,11 @@ class WorkOrderController extends AccountBaseController
                 'invoiceSetting' => $this->invoiceSetting
             ];
             
-            // Bypass the corrupted storage/fonts cache completely BEFORE Dompdf is instantiated
-            config([
-                'dompdf.options.font_dir' => storage_path('app'),
-                'dompdf.options.font_cache' => storage_path('app'),
-                'dompdf.options.default_font' => 'sans-serif',
-            ]);
-            
             $pdf = app('dompdf.wrapper');
             $pdf->setOption('enable_php', true);
-            $pdf->setOption('isHtml5ParserEnabled', true);
-            $pdf->setOption('isRemoteEnabled', true);
+            $pdf->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
             
             $pdf->loadView('workorder::work-orders.pdf.work-order', $data);
-            $pdf->setPaper('A4', 'portrait');
 
             return $pdf->download('work-order-' . $this->workOrder->wo_number . '.pdf');
         } catch (\Exception $e) {

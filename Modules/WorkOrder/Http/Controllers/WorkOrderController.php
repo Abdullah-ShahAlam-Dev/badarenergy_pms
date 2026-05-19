@@ -319,6 +319,25 @@ class WorkOrderController extends AccountBaseController
     public function downloadPdf($id)
     {
         try {
+            // Self-healing: clear stale Dompdf font cache with wrong absolute paths
+            $fontDir = storage_path('fonts');
+            $installedFontsJson = $fontDir . '/installed-fonts.json';
+            $familyCachePhp = $fontDir . '/dompdf_font_family_cache.php';
+            $currentBaseClean = str_replace('\\', '/', base_path());
+
+            if (file_exists($installedFontsJson)) {
+                $content = file_get_contents($installedFontsJson);
+                if (strpos($content, '/home/badars/') !== false || (strpos($content, '/') !== false && strpos(str_replace('\\', '/', $content), $currentBaseClean) === false)) {
+                    @unlink($installedFontsJson);
+                }
+            }
+            if (file_exists($familyCachePhp)) {
+                $content = file_get_contents($familyCachePhp);
+                if (strpos($content, '/home/badars/') !== false || (strpos($content, '/') !== false && strpos(str_replace('\\', '/', $content), $currentBaseClean) === false)) {
+                    @unlink($familyCachePhp);
+                }
+            }
+
             $this->workOrder = WorkOrder::with(['vendor', 'event', 'items.tax', 'creator', 'approver'])
                 ->where('company_id', company()->id)
                 ->findOrFail($id);
@@ -352,6 +371,25 @@ class WorkOrderController extends AccountBaseController
 
     public function printView($id)
     {
+        // Self-healing: clear stale Dompdf font cache with wrong absolute paths
+        $fontDir = storage_path('fonts');
+        $installedFontsJson = $fontDir . '/installed-fonts.json';
+        $familyCachePhp = $fontDir . '/dompdf_font_family_cache.php';
+        $currentBaseClean = str_replace('\\', '/', base_path());
+
+        if (file_exists($installedFontsJson)) {
+            $content = file_get_contents($installedFontsJson);
+            if (strpos($content, '/home/badars/') !== false || (strpos($content, '/') !== false && strpos(str_replace('\\', '/', $content), $currentBaseClean) === false)) {
+                @unlink($installedFontsJson);
+            }
+        }
+        if (file_exists($familyCachePhp)) {
+            $content = file_get_contents($familyCachePhp);
+            if (strpos($content, '/home/badars/') !== false || (strpos($content, '/') !== false && strpos(str_replace('\\', '/', $content), $currentBaseClean) === false)) {
+                @unlink($familyCachePhp);
+            }
+        }
+
         $this->workOrder = WorkOrder::with(['vendor', 'event', 'items.tax', 'creator', 'approver'])
             ->where('company_id', company()->id)
             ->findOrFail($id);

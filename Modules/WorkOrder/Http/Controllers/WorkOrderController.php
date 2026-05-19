@@ -324,7 +324,13 @@ class WorkOrderController extends AccountBaseController
 
         $this->company = company();
         $data = ['workOrder' => $this->workOrder, 'company' => $this->company];
-        $pdf = Pdf::loadView('workorder::work-orders.pdf.work-order', $data);
+        
+        $pdf = app('dompdf.wrapper');
+        $pdf->setOption('enable_php', true);
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isRemoteEnabled', true);
+        
+        $pdf->loadView('workorder::work-orders.pdf.work-order', $data);
         $pdf->setPaper('A4', 'portrait');
 
         return $pdf->download('work-order-' . $this->workOrder->wo_number . '.pdf');

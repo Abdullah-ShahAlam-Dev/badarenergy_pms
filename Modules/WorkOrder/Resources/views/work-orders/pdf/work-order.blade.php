@@ -58,7 +58,11 @@
     <div class="header">
         <div class="header-left">
             @if($company->logo)
-                <img src="{{ public_path('user-uploads/app-logo/' . $company->logo) }}" class="company-logo" alt="Logo">
+                @if(file_exists(public_path('user-uploads/app-logo/' . $company->logo)))
+                    <img src="{{ public_path('user-uploads/app-logo/' . $company->logo) }}" class="company-logo" alt="Logo">
+                @else
+                    <img src="{{ $company->logo_url }}" class="company-logo" alt="Logo">
+                @endif
             @endif
             <div class="company-name mt-2">{{ $company->company_name }}</div>
             <div class="company-info">{{ $company->address ?? '' }}</div>

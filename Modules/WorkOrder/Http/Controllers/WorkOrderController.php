@@ -74,15 +74,24 @@ class WorkOrderController extends AccountBaseController
         abort_403(user()->permission('add_work_order') == 'none');
 
         $request->validate([
-            'event_id'     => 'required|exists:events,id',
-            'vendor_id'    => 'required|exists:vendors,id',
-            'wo_date'      => 'required|date',
-            'delivery_date' => 'nullable|date|after_or_equal:wo_date',
-            'item_name'    => 'required|array|min:1',
-            'item_name.*'  => 'required|string',
-            'quantity.*'   => 'required|numeric|min:0.01',
-            'rate.*'       => 'required|numeric|min:0',
+            'event_id'                   => 'required|exists:events,id',
+            'vendor_id'                  => 'required|exists:vendors,id',
+            'wo_date'                    => 'required|date',
+            'completion_date_time'       => 'nullable|date',
+            'item_name'                  => 'required|array|min:1',
+            'item_name.*'                => 'required|string',
+            'quantity.*'                 => 'required|numeric|min:0.01',
+            'without_amount.*'           => 'nullable|boolean',
+            'item_completion_date_time.*'=> 'nullable|date',
         ]);
+
+        // Conditionally validate rate only for items that are not without_amount
+        $withoutAmounts = $request->input('without_amount', []);
+        foreach ($request->input('item_name', []) as $key => $name) {
+            if (empty($withoutAmounts[$key])) {
+                $request->validate(['rate.' . $key => 'required|numeric|min:0']);
+            }
+        }
 
         // Guard: active vendor only
         $vendor = Vendor::where('company_id', company()->id)->where('status', 'active')->findOrFail($request->vendor_id);
@@ -110,7 +119,7 @@ class WorkOrderController extends AccountBaseController
             'company_id'          => company()->id,
             'wo_number'           => WorkOrder::nextWoNumber(),
             'wo_date'             => Carbon::parse($request->wo_date)->toDateString(),
-            'delivery_date'       => $request->delivery_date ? Carbon::parse($request->delivery_date)->toDateString() : null,
+            'completion_date_time' => $request->completion_date_time ? Carbon::parse($request->completion_date_time)->format('Y-m-d H:i:s') : null,
             'event_id'            => $request->event_id,
             'vendor_id'           => $request->vendor_id,
             'work_category'       => $request->work_category,
@@ -217,14 +226,24 @@ class WorkOrderController extends AccountBaseController
         abort_403(!($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $workOrder->created_by == user()->id)));
 
         $request->validate([
-            'event_id'    => 'required|exists:events,id',
-            'vendor_id'   => 'required|exists:vendors,id',
-            'wo_date'     => 'required|date',
-            'item_name'   => 'required|array|min:1',
-            'item_name.*' => 'required|string',
-            'quantity.*'  => 'required|numeric|min:0.01',
-            'rate.*'      => 'required|numeric|min:0',
+            'event_id'                   => 'required|exists:events,id',
+            'vendor_id'                  => 'required|exists:vendors,id',
+            'wo_date'                    => 'required|date',
+            'completion_date_time'       => 'nullable|date',
+            'item_name'                  => 'required|array|min:1',
+            'item_name.*'                => 'required|string',
+            'quantity.*'                 => 'required|numeric|min:0.01',
+            'without_amount.*'           => 'nullable|boolean',
+            'item_completion_date_time.*'=> 'nullable|date',
         ]);
+
+        // Conditionally validate rate only for items that are not without_amount
+        $withoutAmounts = $request->input('without_amount', []);
+        foreach ($request->input('item_name', []) as $key => $name) {
+            if (empty($withoutAmounts[$key])) {
+                $request->validate(['rate.' . $key => 'required|numeric|min:0']);
+            }
+        }
 
         [$subTotal, $taxAmount, $itemsData] = $this->buildItemTotals($request);
         $discount      = (float)($request->discount ?? 0);
@@ -234,7 +253,7 @@ class WorkOrderController extends AccountBaseController
 
         $workOrder->update([
             'wo_date'             => Carbon::parse($request->wo_date)->toDateString(),
-            'delivery_date'       => $request->delivery_date ? Carbon::parse($request->delivery_date)->toDateString() : null,
+            'completion_date_time' => $request->completion_date_time ? Carbon::parse($request->completion_date_time)->format('Y-m-d H:i:s') : null,
             'event_id'            => $request->event_id,
             'vendor_id'           => $request->vendor_id,
             'work_category'       => $request->work_category,
@@ -341,37 +360,73 @@ class WorkOrderController extends AccountBaseController
 
     /**
      * Build item rows and return [subTotal, taxAmount, itemsArray].
+     * Items flagged as without_amount are saved with zero financials
+     * and are excluded from all totals.
      */
     private function buildItemTotals(Request $request): array
     {
-        $subTotal  = 0;
-        $taxAmount = 0;
-        $items     = [];
+        $subTotal      = 0;
+        $taxAmount     = 0;
+        $items         = [];
+        $withoutAmounts = $request->input('without_amount', []);
+        $itemDateTimes  = $request->input('item_completion_date_time', []);
 
         foreach ($request->item_name as $key => $name) {
+            $isWithoutAmount = !empty($withoutAmounts[$key]);
+
+            // Parse item-level completion datetime safely
+            $itemDateTime = null;
+            if (!empty($itemDateTimes[$key])) {
+                try {
+                    $itemDateTime = Carbon::parse($itemDateTimes[$key])->format('Y-m-d H:i:s');
+                } catch (\Exception $e) {
+                    $itemDateTime = null;
+                }
+            }
+
+            if ($isWithoutAmount) {
+                // Without Amount: zero out all financial fields, skip totals
+                $items[] = [
+                    'item_name'            => $name,
+                    'description'          => $request->item_description[$key] ?? null,
+                    'completion_date_time' => $itemDateTime,
+                    'without_amount'       => 1,
+                    'quantity'             => (float)($request->quantity[$key] ?? 1),
+                    'unit'                 => $request->unit[$key] ?? null,
+                    'rate'                 => 0,
+                    'tax_id'               => null,
+                    'tax_type'             => 'exclusive',
+                    'tax_percent'          => 0,
+                    'tax_amount'           => 0,
+                    'total'                => 0,
+                ];
+                continue;
+            }
+
             $qty        = (float)($request->quantity[$key] ?? 1);
             $rate       = (float)($request->rate[$key] ?? 0);
             $taxPercent = (float)($request->tax_percent[$key] ?? 0);
             $taxType    = $request->tax_type[$key] ?? 'exclusive';
             $taxId      = $request->tax_id[$key] ?? null;
 
-            $calculated = WorkOrderItem::calculateTotal($qty, $rate, $taxPercent, $taxType);
-
+            $calculated   = WorkOrderItem::calculateTotal($qty, $rate, $taxPercent, $taxType);
             $lineSubtotal = $qty * $rate;
             $subTotal    += $lineSubtotal;
             $taxAmount   += $calculated['tax_amount'];
 
             $items[] = [
-                'item_name'   => $name,
-                'description' => $request->item_description[$key] ?? null,
-                'quantity'    => $qty,
-                'unit'        => $request->unit[$key] ?? null,
-                'rate'        => $rate,
-                'tax_id'      => $taxId,
-                'tax_type'    => $taxType,
-                'tax_percent' => $taxPercent,
-                'tax_amount'  => $calculated['tax_amount'],
-                'total'       => $calculated['total'],
+                'item_name'            => $name,
+                'description'          => $request->item_description[$key] ?? null,
+                'completion_date_time' => $itemDateTime,
+                'without_amount'       => 0,
+                'quantity'             => $qty,
+                'unit'                 => $request->unit[$key] ?? null,
+                'rate'                 => $rate,
+                'tax_id'               => $taxId,
+                'tax_type'             => $taxType,
+                'tax_percent'          => $taxPercent,
+                'tax_amount'           => $calculated['tax_amount'],
+                'total'                => $calculated['total'],
             ];
         }
 

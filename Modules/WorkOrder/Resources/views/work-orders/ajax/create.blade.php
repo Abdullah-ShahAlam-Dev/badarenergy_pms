@@ -18,8 +18,13 @@
                             :fieldValue="now()->format(company()->date_format)" />
                     </div>
                     <div class="col-lg-4 col-md-6">
-                        <x-forms.datepicker fieldId="delivery_date" :fieldLabel="__('workorder::modules.workOrder.deliveryDate')"
-                            fieldName="delivery_date" :fieldPlaceholder="__('placeholders.date')" />
+                        <div class="form-group my-3">
+                            <label class="f-14 text-dark-grey mb-12" for="completion_date_time">
+                                @lang('workorder::modules.workOrder.completionDateTime')
+                            </label>
+                            <input type="datetime-local" class="form-control height-35 f-14"
+                                id="completion_date_time" name="completion_date_time">
+                        </div>
                     </div>
 
                     <div class="col-lg-6 col-md-6">
@@ -97,13 +102,24 @@
                                     <input type="text" class="form-control height-35 f-14" name="unit[]">
                                 </div>
                             </div>
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label class="f-14 text-dark-grey mb-12">@lang('workorder::modules.workOrder.rate') <sup class="f-14">*</sup></label>
-                                    <input type="number" step="0.01" class="form-control height-35 f-14 item-rate" name="rate[]" value="0" required>
+                            {{-- Without Amount toggle --}}
+                            <div class="col-md-2 d-flex align-items-center pt-3">
+                                <div class="form-group mb-0">
+                                    <label class="f-14 text-dark-grey mb-12 d-block">Without Amount</label>
+                                    <div class="d-flex align-items-center">
+                                        <input type="hidden" name="without_amount[]" value="0" class="item-without-amount-hidden">
+                                        <input type="checkbox" class="item-without-amount-chk" style="width:18px;height:18px;">
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            {{-- Payment fields wrapper --}}
+                            <div class="col-md-2 payment-fields-wrapper">
+                                <div class="form-group">
+                                    <label class="f-14 text-dark-grey mb-12">@lang('workorder::modules.workOrder.rate') <sup class="f-14">*</sup></label>
+                                    <input type="number" step="0.01" class="form-control height-35 f-14 item-rate" name="rate[]" value="0">
+                                </div>
+                            </div>
+                            <div class="col-md-1 payment-fields-wrapper">
                                 <div class="form-group">
                                     <label class="f-14 text-dark-grey mb-12">@lang('workorder::modules.workOrder.taxType')</label>
                                     <select class="form-control height-35 f-14 item-tax-type" name="tax_type[]">
@@ -112,18 +128,28 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-1">
+                            <div class="col-md-1 payment-fields-wrapper">
                                 <div class="form-group">
                                     <label class="f-14 text-dark-grey mb-12">@lang('workorder::modules.workOrder.taxPercent')</label>
                                     <input type="number" step="0.01" class="form-control height-35 f-14 item-tax-pct" name="tax_percent[]" value="0">
                                 </div>
                             </div>
-                            <div class="col-md-1 d-flex align-items-center pt-3">
+                            <div class="col-md-1 d-flex align-items-center pt-3 payment-fields-wrapper">
                                 <div>
                                     <label class="f-14 text-dark-grey mb-12">Total</label>
                                     <p class="mb-0 f-14 font-weight-bold item-total-display">0.00</p>
                                 </div>
                             </div>
+                            {{-- Line break to prevent layout shift when payment fields are hidden --}}
+                            <div class="w-100"></div>
+                            {{-- Item-level Completion Date Time --}}
+                            <div class="col-md-3 mt-2">
+                                <div class="form-group">
+                                    <label class="f-14 text-dark-grey mb-12">@lang('workorder::modules.workOrder.completionDateTimeItem')</label>
+                                    <input type="datetime-local" class="form-control height-35 f-14" name="item_completion_date_time[]">
+                                </div>
+                            </div>
+
                         </div>
                     </div>
 
@@ -182,12 +208,11 @@
 <script>
 $(document).ready(function () {
     // ── Datepickers ────────────────────────────────────────────────────────────
-    datepicker('#wo_date',       { position: 'bl', ...datepickerConfig });
-    datepicker('#delivery_date', { position: 'bl', ...datepickerConfig });
+    datepicker('#wo_date', { position: 'bl', ...datepickerConfig });
 
-    // ── Item row template ──────────────────────────────────────────────────────
-    $('#add-wo-item').click(function () {
-        var html = `<div class="row p-10 item-row border-top-grey">
+    // ── Item row HTML template (for dynamic cloning) ───────────────────────────
+    function newItemRowHtml() {
+        return `<div class="row p-10 item-row border-top-grey">
             <div class="col-md-3"><div class="form-group">
                 <label class="f-14 text-dark-grey mb-12">Item Name <sup>*</sup></label>
                 <input type="text" class="form-control height-35 f-14" name="item_name[]" required>
@@ -200,36 +225,63 @@ $(document).ready(function () {
                 <label class="f-14 text-dark-grey mb-12">Unit</label>
                 <input type="text" class="form-control height-35 f-14" name="unit[]">
             </div></div>
-            <div class="col-md-2"><div class="form-group">
-                <label class="f-14 text-dark-grey mb-12">Rate <sup>*</sup></label>
-                <input type="number" step="0.01" class="form-control height-35 f-14 item-rate" name="rate[]" value="0" required>
+            <div class="col-md-2 d-flex align-items-center pt-3"><div class="form-group mb-0">
+                <label class="f-14 text-dark-grey mb-12 d-block">Without Amount</label>
+                <div class="d-flex align-items-center">
+                    <input type="hidden" name="without_amount[]" value="0" class="item-without-amount-hidden">
+                    <input type="checkbox" class="item-without-amount-chk" style="width:18px;height:18px;">
+                </div>
             </div></div>
-            <div class="col-md-2"><div class="form-group">
+            <div class="col-md-2 payment-fields-wrapper"><div class="form-group">
+                <label class="f-14 text-dark-grey mb-12">Rate <sup>*</sup></label>
+                <input type="number" step="0.01" class="form-control height-35 f-14 item-rate" name="rate[]" value="0">
+            </div></div>
+            <div class="col-md-1 payment-fields-wrapper"><div class="form-group">
                 <label class="f-14 text-dark-grey mb-12">Tax Type</label>
                 <select class="form-control height-35 f-14 item-tax-type" name="tax_type[]">
                     <option value="exclusive">Exclusive</option>
                     <option value="inclusive">Inclusive</option>
                 </select>
             </div></div>
-            <div class="col-md-1"><div class="form-group">
+            <div class="col-md-1 payment-fields-wrapper"><div class="form-group">
                 <label class="f-14 text-dark-grey mb-12">Tax %</label>
                 <input type="number" step="0.01" class="form-control height-35 f-14 item-tax-pct" name="tax_percent[]" value="0">
             </div></div>
-            <div class="col-md-1 d-flex align-items-center pt-3">
-                <div>
-                    <label class="f-14 text-dark-grey mb-12">Total</label>
-                    <p class="mb-0 f-14 font-weight-bold item-total-display">0.00</p>
-                </div>
-            </div>
+            <div class="col-md-1 d-flex align-items-center pt-3 payment-fields-wrapper"><div>
+                <label class="f-14 text-dark-grey mb-12">Total</label>
+                <p class="mb-0 f-14 font-weight-bold item-total-display">0.00</p>
+            </div></div>
+            <div class="w-100"></div>
+            <div class="col-md-3 mt-2"><div class="form-group">
+                <label class="f-14 text-dark-grey mb-12">Expected Completion</label>
+                <input type="datetime-local" class="form-control height-35 f-14" name="item_completion_date_time[]">
+            </div></div>
             <div class="col-12 text-right mt-1">
                 <button type="button" class="btn btn-sm btn-outline-danger remove-wo-item"><i class="fa fa-times"></i></button>
             </div>
         </div>`;
-        $('#wo-item-list').append(html);
+    }
+
+    $('#add-wo-item').click(function () {
+        $('#wo-item-list').append(newItemRowHtml());
     });
 
     $('body').on('click', '.remove-wo-item', function () {
         $(this).closest('.item-row').remove();
+        recalculate();
+    });
+
+    // ── Without Amount toggle ──────────────────────────────────────────────────
+    $('body').on('change', '.item-without-amount-chk', function () {
+        var $row = $(this).closest('.item-row');
+        var isChecked = $(this).is(':checked');
+        $row.find('.item-without-amount-hidden').val(isChecked ? '1' : '0');
+        $row.find('.payment-fields-wrapper').toggleClass('d-none', isChecked);
+        if (isChecked) {
+            $row.find('.item-rate').val(0);
+            $row.find('.item-tax-pct').val(0);
+            $row.find('.item-total-display').text('0.00');
+        }
         recalculate();
     });
 
@@ -244,6 +296,11 @@ $(document).ready(function () {
     function recalculate() {
         var subTotal = 0, totalTax = 0;
         $('.item-row').each(function () {
+            // Skip without_amount items from calculations
+            if ($(this).find('.item-without-amount-chk').is(':checked')) {
+                $(this).find('.item-total-display').text('0.00');
+                return;
+            }
             var qty      = parseFloat($(this).find('.item-qty').val()) || 0;
             var rate     = parseFloat($(this).find('.item-rate').val()) || 0;
             var taxPct   = parseFloat($(this).find('.item-tax-pct').val()) || 0;

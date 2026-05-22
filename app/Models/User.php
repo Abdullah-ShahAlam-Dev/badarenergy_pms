@@ -353,6 +353,16 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
         return null;
     }
 
+    // phpcs:ignore
+    public function routeNotificationForWhatsApp($notification = null)
+    {
+        if (!is_null($this->mobile) && !is_null($this->country_phonecode)) {
+            return '+' . $this->country_phonecode . $this->mobile;
+        }
+
+        return null;
+    }
+
     public function clientDetails(): HasOne
     {
         return $this->hasOne(ClientDetails::class, 'user_id');

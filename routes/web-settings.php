@@ -49,6 +49,7 @@ use App\Http\Controllers\GoogleCalendarSettingController;
 use App\Http\Controllers\OfflinePaymentSettingController;
 use App\Http\Controllers\PaymentGatewayCredentialController;
 use App\Http\Controllers\NotificationSettingController;
+use App\Http\Controllers\WhatsAppSettingController;
 use App\Http\Controllers\AdminNotificationSettingController;
 use App\Http\Controllers\QuickbookSettingsController;
 use App\Http\Controllers\TaxSettingController;
@@ -89,6 +90,9 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account/settings'], function 
     Route::resource('slack-settings', SlackSettingController::class);
     Route::resource('push-notification-settings', PushNotificationController::class);
     Route::resource('pusher-settings', PusherSettingsController::class);
+    Route::get('whatsapp-settings/test-connection', [WhatsAppSettingController::class, 'testConnection'])->name('whatsapp-settings.test-connection');
+    Route::get('whatsapp-settings/send-test', [WhatsAppSettingController::class, 'sendTestMessage'])->name('whatsapp-settings.send-test');
+    Route::resource('whatsapp-settings', WhatsAppSettingController::class);
 
     // Currency Settings routes
     Route::get('currency-settings/update/exchange-rates', [CurrencySettingController::class, 'updateExchangeRate'])->name('currency_settings.update_exchange_rates');

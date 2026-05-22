@@ -127,8 +127,8 @@
         <tr>
             <td class="label">WO Date</td>
             <td class="value">{{ $workOrder->wo_date ? $workOrder->wo_date->format(company()->date_format) : '--' }}</td>
-            <td class="label">Delivery Date</td>
-            <td class="value">{{ $workOrder->delivery_date ? $workOrder->delivery_date->format(company()->date_format) : '--' }}</td>
+            <td class="label">Completion Date Time</td>
+            <td class="value">{{ $workOrder->completion_date_time ? $workOrder->completion_date_time->format(company()->date_format . ' H:i') : '--' }}</td>
         </tr>
         <tr>
             <td class="label">Event</td>
@@ -175,6 +175,7 @@
             <tr>
                 <th>#</th>
                 <th>Item / Service</th>
+                <th>Expected Completion</th>
                 <th class="text-right">Qty</th>
                 <th>Unit</th>
                 <th class="text-right">Rate</th>
@@ -188,12 +189,13 @@
             <tr>
                 <td>{{ $i+1 }}</td>
                 <td>{{ $item->item_name }}</td>
+                <td style="font-size:11px;color:#666;">{{ $item->completion_date_time ? $item->completion_date_time->format(company()->date_format . ' H:i') : '--' }}</td>
                 <td class="text-right">{{ $item->quantity }}</td>
                 <td>{{ $item->unit ?? '--' }}</td>
-                <td class="text-right">{{ number_format($item->rate, 2) }}</td>
-                <td>{{ ucfirst($item->tax_type) }}</td>
-                <td class="text-right">{{ $item->tax_percent }}%</td>
-                <td class="text-right"><strong>{{ number_format($item->total, 2) }}</strong></td>
+                <td class="text-right">{{ $item->without_amount ? '--' : number_format($item->rate, 2) }}</td>
+                <td>{{ $item->without_amount ? '--' : ucfirst($item->tax_type) }}</td>
+                <td class="text-right">{{ $item->without_amount ? '--' : $item->tax_percent . '%' }}</td>
+                <td class="text-right"><strong>{{ $item->without_amount ? '--' : number_format($item->total, 2) }}</strong></td>
             </tr>
             @endforeach
         </tbody>

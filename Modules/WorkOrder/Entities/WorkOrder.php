@@ -20,7 +20,7 @@ class WorkOrder extends BaseModel
         'company_id',
         'wo_number',
         'wo_date',
-        'delivery_date',
+        'completion_date_time',
         'event_id',
         'vendor_id',
         'work_category',
@@ -46,12 +46,12 @@ class WorkOrder extends BaseModel
     ];
 
     protected $casts = [
-        'wo_date'      => 'datetime',
-        'delivery_date' => 'datetime',
-        'approved_at'  => 'datetime',
-        'created_at'   => 'datetime',
-        'updated_at'   => 'datetime',
-        'deleted_at'   => 'datetime',
+        'wo_date'               => 'datetime',
+        'completion_date_time'  => 'datetime',
+        'approved_at'           => 'datetime',
+        'created_at'            => 'datetime',
+        'updated_at'            => 'datetime',
+        'deleted_at'            => 'datetime',
     ];
 
     /**
@@ -102,6 +102,26 @@ class WorkOrder extends BaseModel
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    // ── Backward Compatibility ─────────────────────────────────────────────────
+
+    /**
+     * Accessor: allow reading $workOrder->delivery_date as an alias
+     * for completion_date_time to avoid breaking existing code.
+     */
+    public function getDeliveryDateAttribute(): mixed
+    {
+        return $this->completion_date_time;
+    }
+
+    /**
+     * Mutator: allow setting $workOrder->delivery_date as an alias
+     * for completion_date_time to avoid breaking existing code.
+     */
+    public function setDeliveryDateAttribute(mixed $value): void
+    {
+        $this->attributes['completion_date_time'] = $value;
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────

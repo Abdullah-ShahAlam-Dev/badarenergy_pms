@@ -39,6 +39,7 @@ class NotificationSettingController extends AccountBaseController
         $this->slackSettings = SlackSetting::first();
         $this->pushSettings = PushNotificationSetting::first();
         $this->pusherSettings = PusherSetting::first();
+        $this->whatsappSetting = \App\Models\NotificationIntegration::where('company_id', company()->id)->first();
 
         switch ($tab) {
         case 'slack-setting':
@@ -53,6 +54,23 @@ class NotificationSettingController extends AccountBaseController
         case 'email-templates':
             $this->emailTemplates = \App\Models\EmailTemplate::all();
             $this->view = 'notification-settings.ajax.email-templates';
+            break;
+        case 'whatsapp-setting':
+            $this->whatsappSetting = \App\Models\NotificationIntegration::firstOrCreate(
+                ['company_id' => company()->id, 'provider' => 'meta_cloud'],
+                ['status' => 'inactive', 'credentials' => []]
+            );
+            $this->whatsappTemplate = \App\Models\NotificationTemplate::firstOrCreate(
+                ['company_id' => company()->id, 'event_name' => \App\Models\NotificationDelivery::EVENT_TASK_OVERDUE],
+                ['template_id' => 'task_overdue_alert', 'language_code' => 'en', 'parameter_mappings' => ['{employee_name}', '{task_name}', '{due_date}']]
+            );
+            $this->whatsappLogs = \App\Models\NotificationDelivery::with('task')
+                ->where('company_id', company()->id)
+                ->where('channel', 'whatsapp')
+                ->latest()
+                ->limit(50)
+                ->get();
+            $this->view = 'notification-settings.ajax.whatsapp-setting';
             break;
         default:
             $this->smtpSetting = SmtpSetting::first();

@@ -14,6 +14,8 @@ class WorkOrderItem extends BaseModel
         'work_order_id',
         'item_name',
         'description',
+        'completion_date_time',
+        'without_amount',
         'quantity',
         'unit',
         'rate',
@@ -25,6 +27,8 @@ class WorkOrderItem extends BaseModel
     ];
 
     protected $casts = [
+        'completion_date_time' => 'datetime',
+        'without_amount'  => 'boolean',
         'quantity'    => 'decimal:2',
         'rate'        => 'decimal:2',
         'tax_percent' => 'decimal:2',

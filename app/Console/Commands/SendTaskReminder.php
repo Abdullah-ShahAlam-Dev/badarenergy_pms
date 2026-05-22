@@ -56,6 +56,13 @@ class SendTaskReminder extends Command
                 $onDeadline = $now->clone()->format('Y-m-d');
                 $this->sendReminders($onDeadline, $company);
             }
+
+            // INJECTED OVERDUE LOGIC:
+            // Resolves tasks strictly past the due date and locks them via NotificationDelivery
+            $overdueTasks = \App\Services\TaskReminderResolverService::resolveAndLockOverdueTasks($company, \App\Models\NotificationDelivery::EVENT_TASK_REMINDER);
+            foreach ($overdueTasks as $task) {
+                event(new TaskReminderEvent($task));
+            }
         }
     }
 

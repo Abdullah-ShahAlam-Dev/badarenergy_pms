@@ -9,7 +9,9 @@ return [
         'editWorkOrder'     => 'Edit Work Order',
         'workOrderNo'       => 'Work Order No.',
         'woDate'            => 'Work Order Date',
-        'deliveryDate'      => 'Delivery Date',
+        'completionDateTime' => 'Completion Date Time',
+        'completionDateTimeItem' => 'Expected Completion',
+
         'event'             => 'Event',
         'vendor'            => 'Vendor',
         'workCategory'      => 'Work Category',

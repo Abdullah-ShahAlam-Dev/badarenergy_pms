@@ -49,7 +49,17 @@ class TaskReminder extends BaseNotification
             array_push($via, OneSignalChannel::class);
         }
 
+        // Use caching resolver service instead of direct queries
+        if (\App\Services\NotificationChannelResolver::isWhatsAppEnabled($this->company, $this->getEventName())) {
+            array_push($via, \App\Channels\WhatsAppChannel::class);
+        }
+
         return $via;
+    }
+
+    public function getEventName()
+    {
+        return \App\Models\NotificationDelivery::EVENT_TASK_REMINDER;
     }
 
     /**

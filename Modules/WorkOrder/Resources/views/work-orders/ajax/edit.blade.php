@@ -18,9 +18,14 @@
                             :fieldValue="$workOrder->wo_date ? $workOrder->wo_date->format(company()->date_format) : ''" />
                     </div>
                     <div class="col-lg-4 col-md-6">
-                        <x-forms.datepicker fieldId="delivery_date" :fieldLabel="__('workorder::modules.workOrder.deliveryDate')"
-                            fieldName="delivery_date" :fieldPlaceholder="__('placeholders.date')"
-                            :fieldValue="$workOrder->delivery_date ? $workOrder->delivery_date->format(company()->date_format) : ''" />
+                        <div class="form-group my-3">
+                            <label class="f-14 text-dark-grey mb-12" for="completion_date_time">
+                                @lang('workorder::modules.workOrder.completionDateTime')
+                            </label>
+                            <input type="datetime-local" class="form-control height-35 f-14"
+                                id="completion_date_time" name="completion_date_time"
+                                value="{{ $workOrder->completion_date_time ? $workOrder->completion_date_time->format('Y-m-d\TH:i') : '' }}">
+                        </div>
                     </div>
 
                     <div class="col-lg-6 col-md-6">
@@ -75,6 +80,7 @@
                     <h5 class="f-15 f-w-500 mb-3">Items / Services</h5>
                     <div id="wo-item-list">
                         @foreach($workOrder->items as $item)
+                        @php $isWithoutAmt = (bool)$item->without_amount; @endphp
                         <div class="row p-10 item-row border-top-grey">
                             <div class="col-md-3"><div class="form-group">
                                 <label class="f-14 text-dark-grey mb-12">Item Name <sup>*</sup></label>
@@ -88,27 +94,44 @@
                                 <label class="f-14 text-dark-grey mb-12">Unit</label>
                                 <input type="text" class="form-control height-35 f-14" name="unit[]" value="{{ $item->unit }}">
                             </div></div>
-                            <div class="col-md-2"><div class="form-group">
-                                <label class="f-14 text-dark-grey mb-12">Rate <sup>*</sup></label>
-                                <input type="number" step="0.01" class="form-control height-35 f-14 item-rate" name="rate[]" value="{{ $item->rate }}" required>
+                            {{-- Without Amount toggle --}}
+                            <div class="col-md-2 d-flex align-items-center pt-3"><div class="form-group mb-0">
+                                <label class="f-14 text-dark-grey mb-12 d-block">Without Amount</label>
+                                <div class="d-flex align-items-center">
+                                    <input type="hidden" name="without_amount[]" value="{{ $isWithoutAmt ? '1' : '0' }}" class="item-without-amount-hidden">
+                                    <input type="checkbox" class="item-without-amount-chk" style="width:18px;height:18px;" {{ $isWithoutAmt ? 'checked' : '' }}>
+                                </div>
                             </div></div>
-                            <div class="col-md-2"><div class="form-group">
+                            {{-- Payment fields —  hidden when without_amount --}}
+                            <div class="col-md-2 payment-fields-wrapper {{ $isWithoutAmt ? 'd-none' : '' }}"><div class="form-group">
+                                <label class="f-14 text-dark-grey mb-12">Rate <sup>*</sup></label>
+                                <input type="number" step="0.01" class="form-control height-35 f-14 item-rate" name="rate[]" value="{{ $item->rate }}">
+                            </div></div>
+                            <div class="col-md-1 payment-fields-wrapper {{ $isWithoutAmt ? 'd-none' : '' }}"><div class="form-group">
                                 <label class="f-14 text-dark-grey mb-12">Tax Type</label>
                                 <select class="form-control height-35 f-14 item-tax-type" name="tax_type[]">
                                     <option value="exclusive" @selected($item->tax_type == 'exclusive')>Exclusive</option>
                                     <option value="inclusive" @selected($item->tax_type == 'inclusive')>Inclusive</option>
                                 </select>
                             </div></div>
-                            <div class="col-md-1"><div class="form-group">
+                            <div class="col-md-1 payment-fields-wrapper {{ $isWithoutAmt ? 'd-none' : '' }}"><div class="form-group">
                                 <label class="f-14 text-dark-grey mb-12">Tax %</label>
                                 <input type="number" step="0.01" class="form-control height-35 f-14 item-tax-pct" name="tax_percent[]" value="{{ $item->tax_percent }}">
                             </div></div>
-                            <div class="col-md-1 d-flex align-items-center pt-3">
-                                <div>
-                                    <label class="f-14 text-dark-grey mb-12">Total</label>
-                                    <p class="mb-0 f-14 font-weight-bold item-total-display">{{ number_format($item->total, 2) }}</p>
-                                </div>
-                            </div>
+                            <div class="col-md-1 d-flex align-items-center pt-3 payment-fields-wrapper {{ $isWithoutAmt ? 'd-none' : '' }}"><div>
+                                <label class="f-14 text-dark-grey mb-12">Total</label>
+                                <p class="mb-0 f-14 font-weight-bold item-total-display">{{ number_format($item->total, 2) }}</p>
+                            </div></div>
+                            {{-- Line break to prevent layout shift when payment fields are hidden --}}
+                            <div class="w-100"></div>
+                            {{-- Item-level Completion Date Time --}}
+                            <div class="col-md-3 mt-2"><div class="form-group">
+                                <label class="f-14 text-dark-grey mb-12">Expected Completion</label>
+                                <input type="datetime-local" class="form-control height-35 f-14"
+                                    name="item_completion_date_time[]"
+                                    value="{{ $item->completion_date_time ? $item->completion_date_time->format('Y-m-d\TH:i') : '' }}">
+                            </div></div>
+
                             <div class="col-12 text-right mt-1">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-wo-item"><i class="fa fa-times"></i></button>
                             </div>
@@ -163,40 +186,72 @@
 
 <script>
 $(document).ready(function () {
-    datepicker('#wo_date',       { position: 'bl', ...datepickerConfig });
-    datepicker('#delivery_date', { position: 'bl', ...datepickerConfig });
+    datepicker('#wo_date', { position: 'bl', ...datepickerConfig });
 
-    $('#add-wo-item').click(function () {
-        var html = `<div class="row p-10 item-row border-top-grey">
+    // ── Item row HTML template (for dynamic cloning) ───────────────────────────
+    function newItemRowHtml() {
+        return `<div class="row p-10 item-row border-top-grey">
             <div class="col-md-3"><div class="form-group"><label class="f-14 text-dark-grey mb-12">Item Name <sup>*</sup></label>
                 <input type="text" class="form-control height-35 f-14" name="item_name[]" required></div></div>
             <div class="col-md-2"><div class="form-group"><label class="f-14 text-dark-grey mb-12">Qty <sup>*</sup></label>
                 <input type="number" step="0.01" class="form-control height-35 f-14 item-qty" name="quantity[]" value="1" required></div></div>
             <div class="col-md-1"><div class="form-group"><label class="f-14 text-dark-grey mb-12">Unit</label>
                 <input type="text" class="form-control height-35 f-14" name="unit[]"></div></div>
-            <div class="col-md-2"><div class="form-group"><label class="f-14 text-dark-grey mb-12">Rate <sup>*</sup></label>
-                <input type="number" step="0.01" class="form-control height-35 f-14 item-rate" name="rate[]" value="0" required></div></div>
-            <div class="col-md-2"><div class="form-group"><label class="f-14 text-dark-grey mb-12">Tax Type</label>
+            <div class="col-md-2 d-flex align-items-center pt-3"><div class="form-group mb-0">
+                <label class="f-14 text-dark-grey mb-12 d-block">Without Amount</label>
+                <div class="d-flex align-items-center">
+                    <input type="hidden" name="without_amount[]" value="0" class="item-without-amount-hidden">
+                    <input type="checkbox" class="item-without-amount-chk" style="width:18px;height:18px;">
+                </div>
+            </div></div>
+            <div class="col-md-2 payment-fields-wrapper"><div class="form-group"><label class="f-14 text-dark-grey mb-12">Rate <sup>*</sup></label>
+                <input type="number" step="0.01" class="form-control height-35 f-14 item-rate" name="rate[]" value="0"></div></div>
+            <div class="col-md-1 payment-fields-wrapper"><div class="form-group"><label class="f-14 text-dark-grey mb-12">Tax Type</label>
                 <select class="form-control height-35 f-14 item-tax-type" name="tax_type[]">
                     <option value="exclusive">Exclusive</option><option value="inclusive">Inclusive</option>
                 </select></div></div>
-            <div class="col-md-1"><div class="form-group"><label class="f-14 text-dark-grey mb-12">Tax %</label>
+            <div class="col-md-1 payment-fields-wrapper"><div class="form-group"><label class="f-14 text-dark-grey mb-12">Tax %</label>
                 <input type="number" step="0.01" class="form-control height-35 f-14 item-tax-pct" name="tax_percent[]" value="0"></div></div>
-            <div class="col-md-1 d-flex align-items-center pt-3"><div>
+            <div class="col-md-1 d-flex align-items-center pt-3 payment-fields-wrapper"><div>
                 <label class="f-14 text-dark-grey mb-12">Total</label>
-                <p class="mb-0 f-14 font-weight-bold item-total-display">0.00</p></div></div>
+                <p class="mb-0 f-14 font-weight-bold item-total-display">0.00</p>
+            </div></div>
+            <div class="w-100"></div>
+            <div class="col-md-3 mt-2"><div class="form-group"><label class="f-14 text-dark-grey mb-12">Expected Completion</label>
+                <input type="datetime-local" class="form-control height-35 f-14" name="item_completion_date_time[]"></div></div>
             <div class="col-12 text-right mt-1">
                 <button type="button" class="btn btn-sm btn-outline-danger remove-wo-item"><i class="fa fa-times"></i></button>
-            </div></div>`;
-        $('#wo-item-list').append(html);
-    });
+            </div>
+        </div>`;
+    }
+
+    $('#add-wo-item').click(function () { $('#wo-item-list').append(newItemRowHtml()); });
 
     $('body').on('click', '.remove-wo-item', function () { $(this).closest('.item-row').remove(); recalculate(); });
+
+    // ── Without Amount toggle ──────────────────────────────────────────────────
+    $('body').on('change', '.item-without-amount-chk', function () {
+        var $row = $(this).closest('.item-row');
+        var isChecked = $(this).is(':checked');
+        $row.find('.item-without-amount-hidden').val(isChecked ? '1' : '0');
+        $row.find('.payment-fields-wrapper').toggleClass('d-none', isChecked);
+        if (isChecked) {
+            $row.find('.item-rate').val(0);
+            $row.find('.item-tax-pct').val(0);
+            $row.find('.item-total-display').text('0.00');
+        }
+        recalculate();
+    });
+
     $('body').on('input change', '.item-qty,.item-rate,.item-tax-pct,.item-tax-type,#wo-discount,#discount-type', recalculate);
 
     function recalculate() {
         var subTotal = 0, totalTax = 0;
         $('.item-row').each(function () {
+            if ($(this).find('.item-without-amount-chk').is(':checked')) {
+                $(this).find('.item-total-display').text('0.00');
+                return;
+            }
             var qty = parseFloat($(this).find('.item-qty').val()) || 0;
             var rate = parseFloat($(this).find('.item-rate').val()) || 0;
             var taxPct = parseFloat($(this).find('.item-tax-pct').val()) || 0;

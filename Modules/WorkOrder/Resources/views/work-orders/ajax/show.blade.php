@@ -32,8 +32,8 @@
                     <p class="mb-0 text-dark-grey f-14">{{ $workOrder->venue ?? '--' }}</p>
                 </div>
                 <div class="col-md-3">
-                    <p class="mb-1 text-lightest f-12">@lang('workorder::modules.workOrder.deliveryDate')</p>
-                    <p class="mb-0 text-dark-grey f-14">{{ $workOrder->delivery_date ? $workOrder->delivery_date->format(company()->date_format) : '--' }}</p>
+                    <p class="mb-1 text-lightest f-12">@lang('workorder::modules.workOrder.completionDateTime')</p>
+                    <p class="mb-0 text-dark-grey f-14">{{ $workOrder->completion_date_time ? $workOrder->completion_date_time->format(company()->date_format . ' H:i') : '--' }}</p>
                 </div>
             </div>
 
@@ -74,6 +74,7 @@
                             <tr>
                                 <th>#</th>
                                 <th>@lang('workorder::modules.workOrder.itemName')</th>
+                                <th>@lang('workorder::modules.workOrder.completionDateTimeItem')</th>
                                 <th class="text-right">@lang('workorder::modules.workOrder.quantity')</th>
                                 <th>@lang('workorder::modules.workOrder.unit')</th>
                                 <th class="text-right">@lang('workorder::modules.workOrder.rate')</th>
@@ -86,13 +87,19 @@
                             @foreach($workOrder->items as $i => $item)
                             <tr>
                                 <td>{{ $i+1 }}</td>
-                                <td>{{ $item->item_name }}</td>
+                                <td>
+                                    {{ $item->item_name }}
+                                    @if($item->without_amount)
+                                        <span class="badge badge-secondary ml-1" title="No amount">No Amount</span>
+                                    @endif
+                                </td>
+                                <td class="text-muted f-12">{{ $item->completion_date_time ? $item->completion_date_time->format(company()->date_format . ' H:i') : '--' }}</td>
                                 <td class="text-right">{{ $item->quantity }}</td>
                                 <td>{{ $item->unit ?? '--' }}</td>
-                                <td class="text-right">{{ number_format($item->rate, 2) }}</td>
-                                <td>{{ ucfirst($item->tax_type) }}</td>
-                                <td class="text-right">{{ $item->tax_percent }}%</td>
-                                <td class="text-right font-weight-bold">{{ number_format($item->total, 2) }}</td>
+                                <td class="text-right">{{ $item->without_amount ? '--' : number_format($item->rate, 2) }}</td>
+                                <td>{{ $item->without_amount ? '--' : ucfirst($item->tax_type) }}</td>
+                                <td class="text-right">{{ $item->without_amount ? '--' : $item->tax_percent . '%' }}</td>
+                                <td class="text-right font-weight-bold">{{ $item->without_amount ? '--' : number_format($item->total, 2) }}</td>
                             </tr>
                             @endforeach
                         </tbody>

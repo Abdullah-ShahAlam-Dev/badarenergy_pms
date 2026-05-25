@@ -13,7 +13,7 @@ class NotificationIntegration extends BaseModel
     
     // We cast credentials to array so we can easily mutate it
     protected $casts = [
-        'credentials' => 'array',
+        // 'credentials' => 'array',
     ];
 
     public function setCredentialsAttribute($value)

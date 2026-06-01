@@ -31,7 +31,11 @@
 </div>
 
 <script>
-    $('#selectGroupMembersEdit').selectpicker();
+    $('#selectGroupMembersEdit').selectpicker({
+        actionsBox: true,
+        selectAllText: "@lang('placeholders.selectAllText')",
+        deselectAllText: "@lang('placeholders.deselectAllText')"
+    });
 
     $('#save-group-members-btn').click(function() {
         var url = "{{ route('message-groups.update', $group->id) }}";

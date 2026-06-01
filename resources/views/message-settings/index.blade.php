@@ -104,7 +104,11 @@
 
 @push('scripts')
     <script>
-            $('#allowCreateGroup').selectpicker();
+            $('#allowCreateGroup').selectpicker({
+                actionsBox: true,
+                selectAllText: "@lang('placeholders.selectAllText')",
+                deselectAllText: "@lang('placeholders.deselectAllText')"
+            });
 
             $('#allow-client-employee').on('change', function() {
                 $('#restrict_client').toggleClass('d-none');

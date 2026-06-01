@@ -33,7 +33,11 @@
 </div>
 
 <script>
-    $('#selectGroupMembers').selectpicker();
+    $('#selectGroupMembers').selectpicker({
+        actionsBox: true,
+        selectAllText: "@lang('placeholders.selectAllText')",
+        deselectAllText: "@lang('placeholders.deselectAllText')"
+    });
 
     $('#save-group-btn').click(function() {
         var url = "{{ route('message-groups.store') }}";

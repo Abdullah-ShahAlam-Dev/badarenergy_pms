@@ -16,7 +16,7 @@
                     {{ $message->created_at->timezone(company()->timezone)->translatedFormat(company()->date_format . ' ' . company()->time_format) }}
                 </p>
 
-                @if ($user->id == user()->id || in_array('admin', user_roles()))
+                @if (($user->id == user()->id || in_array('admin', user_roles())) && !str_starts_with($message->message, '[deleted] '))
                     <div class="dropdown ml-auto message-action">
                         <button class="btn btn-lg f-14 p-0 text-lightest text-capitalize rounded  dropdown-toggle"
                             type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -37,7 +37,11 @@
 
             @if ($message->message != '')
                 <div class="card-text text-dark-grey text-justify mb-2 text-break f-13">
-                    <span>{!! nl2br($message->message) !!}</span>
+                    @if (str_starts_with($message->message, '[deleted] '))
+                        <span class="text-muted font-italic text-lightest"><i class="fa fa-ban mr-1"></i>{{ substr($message->message, 10) }}</span>
+                    @else
+                        <span>{!! nl2br($message->message) !!}</span>
+                    @endif
                 </div>
             @endif
 

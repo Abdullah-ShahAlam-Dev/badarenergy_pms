@@ -201,11 +201,12 @@ if (!function_exists('message_setting')) {
     // @codingStandardsIgnoreLine
     function message_setting()
     {
-        if (!session()->has('message_setting')) {
-            session(['message_setting' => \App\Models\MessageSetting::first()]);
+        static $messageSetting = null;
+        if (is_null($messageSetting)) {
+            $messageSetting = \App\Models\MessageSetting::first();
         }
 
-        return session('message_setting');
+        return $messageSetting;
     }
 
 }

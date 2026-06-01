@@ -801,6 +801,12 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
         return $this->hasMany(UserChat::class, 'to')->where('message_seen', 'no');
     }
 
+    public function messageGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(MessageGroup::class, 'message_group_members', 'user_id', 'message_group_id')
+            ->withTimestamps();
+    }
+
     public function employeeDetails(): HasOne
     {
         return $this->hasOne(EmployeeDetails::class);

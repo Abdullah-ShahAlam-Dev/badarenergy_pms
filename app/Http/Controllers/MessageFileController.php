@@ -51,6 +51,12 @@ class MessageFileController extends AccountBaseController
     {
         $file = UserchatFile::findOrFail($id);
 
+        // Authorization check: Only the uploader of the file or an administrator can delete it.
+        $currentUser = auth()->user();
+        if ($file->user_id !== $currentUser->id && !in_array('admin', $currentUser->roles->pluck('name')->toArray())) {
+            abort_403(true);
+        }
+
         Files::deleteFile($file->hashname, 'message-files/' . $file->users_chat_id);
 
         UserchatFile::destroy($id);

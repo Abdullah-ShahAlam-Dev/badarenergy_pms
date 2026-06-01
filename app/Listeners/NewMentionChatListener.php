@@ -18,7 +18,11 @@ class NewMentionChatListener
 
     public function handle(NewMentionChatEvent $event)
     {
-        Notification::send($event->notifyUser, new NewMentionChat($event->userChat));
+        try {
+            Notification::send($event->notifyUser, new NewMentionChat($event->userChat));
+        } catch (\Exception $e) {
+            logger()->error('NewMentionChat notification sending failed: ' . $e->getMessage());
+        }
     }
 
 }

@@ -21,6 +21,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\MessageGroupController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProjectController;
@@ -496,6 +497,7 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     Route::post('messages/fetch_messages/{id}', [MessageController::class, 'fetchUserMessages'])->name('messages.fetch_messages');
     Route::post('messages/check_messages', [MessageController::class, 'checkNewMessages'])->name('messages.check_new_message');
     Route::resource('messages', MessageController::class);
+    Route::resource('message-groups', MessageGroupController::class);
 
     // Chat Files
     Route::get('message-file/download/{id}', [MessageFileController::class, 'download'])->name('message_file.download');

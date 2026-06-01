@@ -35,5 +35,7 @@ class MessageSetting extends BaseModel
 
     use HasCompany;
 
-    //
+    protected $casts = [
+        'allow_create_group' => 'array',
+    ];
 }

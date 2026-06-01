@@ -74,19 +74,21 @@ class UserChat extends BaseModel
 
     public static function chatDetail($id, $userID)
     {
-        return UserChat::with('fromUser', 'toUser', 'files')->where(function ($q) use ($id, $userID) {
-            $q->Where('user_id', $id)->Where('user_one', $userID)
-                ->orwhere(function ($q) use ($id, $userID) {
-                    $q->Where('user_one', $id)
-                        ->Where('user_id', $userID);
-                });
-        })
+        return UserChat::with('fromUser', 'toUser', 'files')
+            ->whereNull('message_group_id')
+            ->where(function ($q) use ($id, $userID) {
+                $q->Where('user_id', $id)->Where('user_one', $userID)
+                    ->orwhere(function ($q) use ($id, $userID) {
+                        $q->Where('user_one', $id)
+                            ->Where('user_id', $userID);
+                    });
+            })
             ->orderBy('created_at', 'asc')->get();
     }
 
     public static function messageSeenUpdate($loginUser, $toUser, $updateData)
     {
-        return UserChat::where('from', $toUser)->where('to', $loginUser)->update($updateData);
+        return UserChat::whereNull('message_group_id')->where('from', $toUser)->where('to', $loginUser)->update($updateData);
     }
 
     /**
@@ -140,6 +142,7 @@ class UserChat extends BaseModel
                     GREATEST(user_one, user_id) AS receiver,
                     MAX(id) AS max_id
                 FROM users_chat
+                WHERE message_group_id IS NULL
                 GROUP BY
                     LEAST(user_one, user_id),
                     GREATEST(user_one, user_id)
@@ -147,7 +150,7 @@ class UserChat extends BaseModel
                 ON LEAST(t1.user_one, t1.user_id) = t2.sender AND
                 GREATEST(t1.user_one, t1.user_id) = t2.receiver AND
                 t1.id = t2.max_id
-                WHERE (t1.user_one = ? OR t1.user_id = ?) ' . $termCnd . '
+                WHERE (t1.user_one = ? OR t1.user_id = ?) AND t1.message_group_id IS NULL ' . $termCnd . '
                 ORDER BY t1.created_at DESC
             ', [$userID, $userID]);
     }
@@ -186,6 +189,11 @@ class UserChat extends BaseModel
     public function mentionProject(): HasMany
     {
         return $this->hasMany(MentionUser::class, 'project_id');
+    }
+
+    public function messageGroup(): BelongsTo
+    {
+        return $this->belongsTo(MessageGroup::class, 'message_group_id');
     }
 
 }

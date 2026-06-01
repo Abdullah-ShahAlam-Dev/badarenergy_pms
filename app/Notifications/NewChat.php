@@ -67,9 +67,12 @@ class NewChat extends BaseNotification
     {
         $build = parent::build();
         $content = $this->userChat->message;
+        $subject = $this->userChat->message_group_id
+            ? __('email.newChat.subject') . ' in ' . $this->userChat->messageGroup->group_name . ' ' . __('app.from') . ' ' . $this->userChat->fromUser->name
+            : __('email.newChat.subject'). ' ' . __('app.from') . ' ' . $this->userChat->fromUser->name;
 
         return $build
-            ->subject(__('email.newChat.subject'). ' ' . __('app.from') . ' ' . $this->userChat->fromUser->name)
+            ->subject($subject)
             ->markdown('mail.email', [
                 'url' => route('messages.index'),
                 'content' => $content,
@@ -92,31 +95,40 @@ class NewChat extends BaseNotification
             'id' => $this->userChat->id,
             'user_one' => $this->userChat->user_one,
             'from_name' => $this->userChat->fromUser->name,
+            'message_group_id' => $this->userChat->message_group_id,
+            'group_name' => $this->userChat->messageGroup ? $this->userChat->messageGroup->group_name : null,
         ];
     }
 
     public function toSlack($notifiable)
     {
         $slack = SlackSetting::setting();
+        $subject = $this->userChat->message_group_id
+            ? __('email.newChat.subject') . ' in ' . $this->userChat->messageGroup->group_name . ' ' . __('app.from') . ' ' . $this->userChat->fromUser->name
+            : __('email.newChat.subject'). ' ' . __('app.from') . ' ' . $this->userChat->fromUser->name;
 
         if (count($notifiable->employee) > 0 && (!is_null($notifiable->employee[0]->slack_username) && ($notifiable->employee[0]->slack_username != ''))) {
             return (new SlackMessage())
                 ->from(config('app.name'))
                 ->image($slack->slack_logo_url)
                 ->to('@' . $notifiable->employee[0]->slack_username)
-                ->content('<' . route('messages.index') . '|' .  __('email.newChat.subject') . ' ' . __('app.from') . ' ' . $this->userChat->fromUser->name . '>');
+                ->content('<' . route('messages.index') . '|' .  $subject . '>');
         }
 
         return (new SlackMessage())
             ->from(config('app.name'))
             ->image($slack->slack_logo_url)
-            ->content('*' . __('email.newChat.subject') . '*' . "\n" .'This is a redirected notification. Add slack username for *' . $notifiable->name . '*');
+            ->content('*' . $subject . '*' . "\n" .'This is a redirected notification. Add slack username for *' . $notifiable->name . '*');
     }
 
     public function toOneSignal()
     {
+        $subject = $this->userChat->message_group_id
+            ? __('email.newChat.subject') . ' in ' . $this->userChat->messageGroup->group_name . ' ' . __('app.from') . ' ' . $this->userChat->fromUser->name
+            : __('email.newChat.subject'). ' ' . __('app.from') . ' ' . $this->userChat->fromUser->name;
+
         return OneSignalMessage::create()
-            ->setSubject(__('email.newChat.subject') . ' ' . __('app.from') . ' ' . $this->userChat->fromUser->name)
+            ->setSubject($subject)
             ->setBody($this->userChat->message)
             ->setUrl(route('messages.index'));
     }

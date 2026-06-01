@@ -60,6 +60,28 @@
                         </x-forms.select>
                     </div>
 
+                    <div class="col-lg-12 mb-2">
+                        @php
+                        $allowedGroupCreators = [];
+                        if ($messageSettings->allow_create_group) {
+                            $allowedGroupCreators = $messageSettings->allow_create_group;
+                            if (is_string($allowedGroupCreators)) {
+                                $allowedGroupCreators = json_decode($allowedGroupCreators, true);
+                            }
+                            if (!is_array($allowedGroupCreators)) {
+                                $allowedGroupCreators = [];
+                            }
+                            $allowedGroupCreators = array_map('strval', $allowedGroupCreators);
+                        }
+                        @endphp
+                        <x-forms.select fieldId="allowCreateGroup" :fieldLabel="'Who can see the create group button'"
+                            fieldName="allow_create_group[]" search="true" :multiple="true" :popover="'Select specific employees permitted to see the create group button and create groups. Leave blank to allow everyone.'">
+                            @foreach ($employees as $item)
+                                <x-user-option :user="$item" :pill="true" :selected="in_array((string)$item->id, $allowedGroupCreators)"/>
+                            @endforeach
+                        </x-forms.select>
+                    </div>
+
                 </div>
             </div>
 
@@ -82,6 +104,7 @@
 
 @push('scripts')
     <script>
+            $('#allowCreateGroup').selectpicker();
 
             $('#allow-client-employee').on('change', function() {
                 $('#restrict_client').toggleClass('d-none');

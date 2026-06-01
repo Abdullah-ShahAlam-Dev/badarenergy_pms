@@ -17,20 +17,28 @@ class NewChatObserver
     {
         if (!isRunningInConsoleOrSeeding()) {
 
-            if ((request()->user_id == request()->mention_user_id) && request()->mention_user_id != null && request()->mention_user_id != '') {
-                $userChat->mentionUser()->sync(request()->mention_user_id);
-                $mentionUserIds = explode(',', request()->mention_user_id   );
-                $mentionUser = User::whereIn('id', $mentionUserIds)->get();
-                event(new NewMentionChatEvent($userChat, $mentionUser));
+            try {
+                if ((request()->user_id == request()->mention_user_id) && request()->mention_user_id != null && request()->mention_user_id != '') {
+                    $userChat->mentionUser()->sync(request()->mention_user_id);
+                    $mentionUserIds = explode(',', request()->mention_user_id   );
+                    $mentionUser = User::whereIn('id', $mentionUserIds)->get();
+                    event(new NewMentionChatEvent($userChat, $mentionUser));
 
-            } else {
-                event(new NewChatEvent($userChat));
+                } else {
+                    event(new NewChatEvent($userChat));
 
+                }
+            } catch (\Exception $e) {
+                logger()->error('Chat event dispatching or broadcasting failed: ' . $e->getMessage());
             }
 
             if (pusher_settings()->status == 1 && pusher_settings()->messages == 1) {
                 Config::set('queue.default', 'sync'); // Set intentionally for instant delivery of messages
-                broadcast(new NewMessage($userChat))->toOthers()->via('pusher');
+                try {
+                    broadcast(new NewMessage($userChat))->toOthers()->via('pusher');
+                } catch (\Exception $e) {
+                    logger()->error('Pusher broadcast failed: ' . $e->getMessage());
+                }
             }
         }
     }

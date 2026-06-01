@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helper\Reply;
 use App\Models\MessageSetting;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class MessageSettingController extends AccountBaseController
@@ -25,6 +26,7 @@ class MessageSettingController extends AccountBaseController
     public function index()
     {
         $this->messageSettings = message_setting();
+        $this->employees = User::allEmployees();
         return view('message-settings.index', $this->data);
     }
 
@@ -49,6 +51,7 @@ class MessageSettingController extends AccountBaseController
 
         $setting->restrict_client = $request->restrict_client;
         $setting->send_sound_notification = $request->send_sound_notification;
+        $setting->allow_create_group = $request->allow_create_group ? $request->allow_create_group : null;
         $setting->save();
 
         session()->forget('message_setting');

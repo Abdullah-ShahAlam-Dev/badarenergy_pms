@@ -20,8 +20,28 @@ class NewChatListener
 
     public function handle(NewChatEvent $event)
     {
-        $notifyUser = User::withoutGlobalScope(ActiveScope::class)->findOrFail($event->userChat->user_id);
-        Notification::send($notifyUser, new NewChat($event->userChat));
+        $userChat = $event->userChat;
+
+        try {
+            if ($userChat->message_group_id) {
+                $group = $userChat->messageGroup;
+                if ($group) {
+                    $members = $group->members;
+                    $notifyUsers = $members->filter(function ($user) use ($userChat) {
+                        return $user->id != $userChat->from;
+                    });
+                    
+                    if ($notifyUsers->isNotEmpty()) {
+                        Notification::send($notifyUsers, new NewChat($userChat));
+                    }
+                }
+            } else {
+                $notifyUser = User::withoutGlobalScope(ActiveScope::class)->findOrFail($userChat->user_id);
+                Notification::send($notifyUser, new NewChat($userChat));
+            }
+        } catch (\Exception $e) {
+            logger()->error('NewChat notification sending failed: ' . $e->getMessage());
+        }
     }
 
 }

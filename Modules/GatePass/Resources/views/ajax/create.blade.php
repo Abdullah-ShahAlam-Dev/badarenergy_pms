@@ -160,6 +160,9 @@
 
 <script>
     $(document).ready(function() {
+        $('.selectpicker').selectpicker();
+        $('#quickAddProductModal').appendTo('body');
+
         datepicker('#request_date', {
             position: 'bl',
             ...datepickerConfig
@@ -299,6 +302,14 @@
                     }
                 }
             });
+        });
+
+        // Cleanup modal backdrops and reset body classes on Turbo page transitions
+        document.addEventListener('turbo:before-cache', function cleanup() {
+            $('#quickAddProductModal').remove();
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open');
+            document.removeEventListener('turbo:before-cache', cleanup);
         });
 
         init(RIGHT_MODAL);

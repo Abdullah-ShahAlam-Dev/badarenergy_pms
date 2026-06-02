@@ -106,7 +106,7 @@ class WorkOrderController extends AccountBaseController
 
         // Approval check
         $mapping = ApprovalMapping::getApproverFor(user()->id);
-        $approvalRequired = (bool)($request->approval_required ?? 1);
+        $approvalRequired = $request->has('approval_required') ? ($request->approval_required == 1) : true;
         $status = 'draft';
 
         if ($approvalRequired) {

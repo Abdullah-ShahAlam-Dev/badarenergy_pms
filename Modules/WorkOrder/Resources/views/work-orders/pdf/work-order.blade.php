@@ -99,6 +99,9 @@
         <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
     </div>
     <div class="page">
+    @php
+        $isWithoutPayment = $workOrder->items->count() > 0 && $workOrder->items->every(fn($item) => $item->without_amount);
+    @endphp
 
     {{-- ── HEADER ─────────────────────────────────────────────────────────── --}}
     <div class="header">
@@ -178,10 +181,12 @@
                 <th>Expected Completion</th>
                 <th class="text-right">Qty</th>
                 <th>Unit</th>
-                <th class="text-right">Rate</th>
-                <th>Tax Type</th>
-                <th class="text-right">Tax %</th>
-                <th class="text-right">Total</th>
+                @if(!$isWithoutPayment)
+                    <th class="text-right">Rate</th>
+                    <th>Tax Type</th>
+                    <th class="text-right">Tax %</th>
+                    <th class="text-right">Total</th>
+                @endif
             </tr>
         </thead>
         <tbody>
@@ -192,22 +197,26 @@
                 <td style="font-size:11px;color:#666;">{{ $item->completion_date_time ? $item->completion_date_time->format(company()->date_format . ' H:i') : '--' }}</td>
                 <td class="text-right">{{ $item->quantity }}</td>
                 <td>{{ $item->unit ?? '--' }}</td>
-                <td class="text-right">{{ $item->without_amount ? '--' : number_format($item->rate, 2) }}</td>
-                <td>{{ $item->without_amount ? '--' : ucfirst($item->tax_type) }}</td>
-                <td class="text-right">{{ $item->without_amount ? '--' : $item->tax_percent . '%' }}</td>
-                <td class="text-right"><strong>{{ $item->without_amount ? '--' : number_format($item->total, 2) }}</strong></td>
+                @if(!$isWithoutPayment)
+                    <td class="text-right">{{ $item->without_amount ? '--' : number_format($item->rate, 2) }}</td>
+                    <td>{{ $item->without_amount ? '--' : ucfirst($item->tax_type) }}</td>
+                    <td class="text-right">{{ $item->without_amount ? '--' : $item->tax_percent . '%' }}</td>
+                    <td class="text-right"><strong>{{ $item->without_amount ? '--' : number_format($item->total, 2) }}</strong></td>
+                @endif
             </tr>
             @endforeach
         </tbody>
     </table>
 
     {{-- ── TOTALS ──────────────────────────────────────────────────────────── --}}
+    @if(!$isWithoutPayment)
     <table class="totals-table">
         <tr><td>Sub Total</td><td class="text-right">{{ number_format($workOrder->sub_total, 2) }}</td></tr>
         <tr><td>Discount ({{ $workOrder->discount_type == 'percent' ? $workOrder->discount.'%' : 'Fixed' }})</td><td class="text-right">-{{ number_format($workOrder->discount_type == 'percent' ? $workOrder->sub_total * ($workOrder->discount / 100) : $workOrder->discount, 2) }}</td></tr>
         <tr><td>Tax Amount</td><td class="text-right">{{ number_format($workOrder->tax_amount, 2) }}</td></tr>
         <tr class="grand-row"><td>Grand Total</td><td class="text-right">{{ number_format($workOrder->grand_total, 2) }}</td></tr>
     </table>
+    @endif
 
     {{-- ── REMARKS / TERMS ─────────────────────────────────────────────────── --}}
     @if($workOrder->remarks)

@@ -190,6 +190,7 @@
                             fieldName="special_instructions" />
                     </div>
                     <div class="col-md-4">
+                        <input type="hidden" name="approval_required" value="0">
                         <x-forms.checkbox fieldId="approval_required" :fieldLabel="__('workorder::modules.workOrder.approvalRequired')"
                             fieldName="approval_required" fieldValue="1" :checked="true" />
                     </div>

@@ -71,6 +71,12 @@
     <!-- SETTINGS END -->
 
     <script>
+        $('#reporter_ids').selectpicker({
+            actionsBox: true,
+            selectAllText: "@lang('placeholders.selectAllText')",
+            deselectAllText: "@lang('placeholders.deselectAllText')"
+        });
+
         $('#save-form').click(function() {
             var url = "{{ route('daily-report-settings.store') }}";
             $.easyAjax({

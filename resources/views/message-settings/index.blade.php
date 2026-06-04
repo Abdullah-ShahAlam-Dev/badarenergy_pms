@@ -8,7 +8,18 @@
         .client{
             margin: auto;
         }
-
+        /* Prevent bootstrap-select from overflowing parent container */
+        .bootstrap-select,
+        .bootstrap-select .dropdown-toggle {
+            max-width: 100% !important;
+        }
+        /* Wrap selected badges inside dropdown button if there are a few */
+        .bootstrap-select .dropdown-toggle .filter-option-inner-inner {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            white-space: normal !important;
+        }
     </style>
 @endpush
 
@@ -26,7 +37,7 @@
                         @lang($pageTitle)</h2>
                 </div>
             </x-slot>
-
+ 
             <div class="col-lg-12 col-md-12 ntfcn-tab-content-left w-100 p-4 ">
                 @method('PUT')
                 <div class="row">
@@ -75,7 +86,9 @@
                         }
                         @endphp
                         <x-forms.select fieldId="allowCreateGroup" :fieldLabel="'Who can see the create group button'"
-                            fieldName="allow_create_group[]" search="true" :multiple="true" :popover="'Select specific employees permitted to see the create group button and create groups. Leave blank to allow everyone.'">
+                            fieldName="allow_create_group[]" search="true" :multiple="true" 
+                            data-selected-text-format="count > 3"
+                            :popover="'Select specific employees permitted to see the create group button and create groups. Leave blank to allow everyone.'">
                             @foreach ($employees as $item)
                                 <x-user-option :user="$item" :pill="true" :selected="in_array((string)$item->id, $allowedGroupCreators)"/>
                             @endforeach

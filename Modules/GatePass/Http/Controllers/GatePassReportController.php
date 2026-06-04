@@ -19,7 +19,7 @@ class GatePassReportController extends AccountBaseController
 
     public function index(Request $request)
     {
-        abort_403(user()->permission('view_gate_pass_reports') == 'none');
+        abort_403(!in_array('admin', user_roles()) && user()->permission('view_gate_pass_reports') == 'none');
 
         $this->startDate = $request->startDate ? Carbon::parse($request->startDate)->toDateString() : now()->startOfMonth()->toDateString();
         $this->endDate = $request->endDate ? Carbon::parse($request->endDate)->toDateString() : now()->endOfMonth()->toDateString();

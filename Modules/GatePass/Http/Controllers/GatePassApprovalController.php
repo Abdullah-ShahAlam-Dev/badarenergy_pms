@@ -21,7 +21,7 @@ class GatePassApprovalController extends AccountBaseController
 
     public function hodAction(Request $request, $id)
     {
-        abort_403(user()->permission('approve_gate_pass') == 'none');
+        abort_403(!in_array('admin', user_roles()) && user()->permission('approve_gate_pass') == 'none');
 
         $gatePass = GatePassRequest::findOrFail($id);
         $action = $request->action; // approve, reject, revision
@@ -61,7 +61,7 @@ class GatePassApprovalController extends AccountBaseController
 
     public function storeAction(Request $request, $id)
     {
-        abort_403(user()->permission('verify_gate_pass') == 'none');
+        abort_403(!in_array('admin', user_roles()) && user()->permission('verify_gate_pass') == 'none');
 
         $gatePass = GatePassRequest::findOrFail($id);
         $action = $request->action; // authorize, reject, hold
@@ -110,7 +110,7 @@ class GatePassApprovalController extends AccountBaseController
 
     public function securityAction(Request $request, $id)
     {
-        abort_403(user()->permission('authorize_gate_pass') == 'none');
+        abort_403(!in_array('admin', user_roles()) && user()->permission('authorize_gate_pass') == 'none');
 
         $gatePass = GatePassRequest::findOrFail($id);
         $action = $request->action; // allow, reject, send_back
@@ -155,7 +155,7 @@ class GatePassApprovalController extends AccountBaseController
 
     public function recordReturn(Request $request, $id)
     {
-        abort_403(user()->permission('verify_gate_pass') == 'none');
+        abort_403(!in_array('admin', user_roles()) && user()->permission('verify_gate_pass') == 'none');
 
         $gatePass = GatePassRequest::with('items')->findOrFail($id);
         
@@ -272,7 +272,7 @@ class GatePassApprovalController extends AccountBaseController
 
     public function manuallyClose(Request $request, $id)
     {
-        abort_403(user()->permission('verify_gate_pass') == 'none');
+        abort_403(!in_array('admin', user_roles()) && user()->permission('verify_gate_pass') == 'none');
 
         $gatePass = GatePassRequest::with('items')->findOrFail($id);
         

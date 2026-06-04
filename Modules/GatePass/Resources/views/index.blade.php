@@ -4,7 +4,7 @@
 <div class="content-wrapper">
     <div class="d-flex justify-content-between action-bar mb-3">
         <div id="table-actions" class="d-flex align-items-center">
-            @if(user()->permission('add_gate_pass') == 'all' || user()->permission('add_gate_pass') == 'added')
+            @if(in_array('admin', user_roles()) || user()->permission('add_gate_pass') == 'all' || user()->permission('add_gate_pass') == 'added')
                 <x-forms.link-primary :link="route('gate-pass.create')" class="mr-3 openRightModal" icon="plus">
                     @lang('gatepass::modules.gatePass.addRequest')
                 </x-forms.link-primary>
@@ -128,6 +128,7 @@
                                             <i class="fa fa-eye"></i>
                                         </a>
                                         @if(
+                                            in_array('admin', user_roles()) ||
                                             user()->permission('edit_gate_pass') == 'all' || 
                                             (user()->permission('edit_gate_pass') == 'added' && $request->user_id == user()->id) ||
                                             (user()->permission('edit_gate_pass') == 'owned' && $request->user_id == user()->id) ||
@@ -140,6 +141,7 @@
                                             @endif
                                         @endif
                                         @if(
+                                            in_array('admin', user_roles()) ||
                                             user()->permission('delete_gate_pass') == 'all' || 
                                             (user()->permission('delete_gate_pass') == 'added' && $request->user_id == user()->id) ||
                                             (user()->permission('delete_gate_pass') == 'owned' && $request->user_id == user()->id) ||

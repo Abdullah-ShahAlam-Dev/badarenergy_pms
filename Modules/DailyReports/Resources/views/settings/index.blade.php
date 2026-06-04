@@ -1,5 +1,22 @@
 @extends('layouts.app')
 
+@push('styles')
+    <style>
+        /* Prevent bootstrap-select from overflowing parent container */
+        .bootstrap-select,
+        .bootstrap-select .dropdown-toggle {
+            max-width: 100% !important;
+        }
+        /* Wrap selected items/images inside dropdown button if there are a few */
+        .bootstrap-select .dropdown-toggle .filter-option-inner-inner {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            white-space: normal !important;
+        }
+    </style>
+@endpush
+
 @section('content')
     <!-- SETTINGS START -->
     <div class="w-100 d-flex ">
@@ -23,7 +40,7 @@
                             </x-forms.label>
                             <x-forms.input-group>
                                 <select class="form-control select-picker" name="reporter_ids[]" id="reporter_ids"
-                                    multiple data-live-search="true" data-size="8">
+                                    multiple data-live-search="true" data-size="8" data-selected-text-format="count > 3">
                                     @foreach ($employees as $employee)
                                         <option 
                                             @if(in_array($employee->id, $selectedReporters)) selected @endif

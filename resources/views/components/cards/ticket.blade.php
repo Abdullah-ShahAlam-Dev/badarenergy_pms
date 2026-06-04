@@ -71,6 +71,7 @@
                                         href="{{ $file->file_url }}">@lang('app.view')</a>
 
                                     <a class="dropdown-item"
+                                        data-turbo="false"
                                         href="{{ route('ticket-files.download', md5($file->id)) }}">@lang('app.download')</a>
 
                                     @if (user()->id == $user->id)

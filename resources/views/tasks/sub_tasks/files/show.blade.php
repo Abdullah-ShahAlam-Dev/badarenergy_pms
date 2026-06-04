@@ -26,7 +26,7 @@
                             <a class="cursor-pointer d-block text-dark-grey f-13 pt-3 px-3 " target="_blank"
                                 href="{{ $file->file_url }}">@lang('app.view')</a>
                         @endif
-                        <a class="cursor-pointer d-block text-dark-grey f-13 py-3 px-3 "
+                        <a class="cursor-pointer d-block text-dark-grey f-13 py-3 px-3 " data-turbo="false"
                             href="{{ route('sub-task-files.download', md5($file->id)) }}">@lang('app.download')</a>
                     @endif
 

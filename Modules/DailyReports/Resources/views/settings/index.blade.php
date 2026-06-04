@@ -40,7 +40,11 @@
                             </x-forms.label>
                             <x-forms.input-group>
                                 <select class="form-control select-picker" name="reporter_ids[]" id="reporter_ids"
-                                    multiple data-live-search="true" data-size="8" data-selected-text-format="count > 3">
+                                    multiple data-live-search="true" data-size="8" 
+                                    data-actions-box="true" 
+                                    data-select-all-text="@lang('placeholders.selectAllText')"
+                                    data-deselect-all-text="@lang('placeholders.deselectAllText')"
+                                    data-selected-text-format="count > 3">
                                     @foreach ($employees as $employee)
                                         <option 
                                             @if(in_array($employee->id, $selectedReporters)) selected @endif
@@ -70,31 +74,35 @@
     </div>
     <!-- SETTINGS END -->
 
-    <script>
-        $('#reporter_ids').selectpicker({
-            actionsBox: true,
-            selectAllText: "@lang('placeholders.selectAllText')",
-            deselectAllText: "@lang('placeholders.deselectAllText')"
-        });
-
-        $('#save-form').click(function() {
-            var url = "{{ route('daily-report-settings.store') }}";
-            $.easyAjax({
-                url: url,
-                container: '#editSettings',
-                type: "POST",
-                disableButton: true,
-                blockUI: true,
-                buttonSelector: "#save-form",
-                data: $('#editSettings').serialize(),
-                success: function(response) {
-                    if (response.status == 'success') {
-                        // success
-                    }
-                }
-            })
-        });
-
-        init('#editSettings');
-    </script>
 @endsection
+
+@push('scripts')
+    <script>
+        $(document).ready(function() {
+            $('#reporter_ids').selectpicker('destroy').selectpicker({
+                actionsBox: true,
+                selectAllText: "@lang('placeholders.selectAllText')",
+                deselectAllText: "@lang('placeholders.deselectAllText')"
+            });
+
+            $('#save-form').click(function() {
+                var url = "{{ route('daily-report-settings.store') }}";
+                $.easyAjax({
+                    url: url,
+                    container: '#editSettings',
+                    type: "POST",
+                    disableButton: true,
+                    blockUI: true,
+                    buttonSelector: "#save-form",
+                    data: $('#editSettings').serialize(),
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            // success
+                        }
+                    }
+                })
+            });
+
+            init('#editSettings');
+        });
+    </script>

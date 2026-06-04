@@ -46,7 +46,7 @@
 
                                                 <div class="dropdown-menu dropdown-menu-right border-grey rounded b-shadow-4 p-0">
                                                     <a class="dropdown-item" target="_blank" href="{{ $file->file_url }}">@lang('app.view')</a>
-                                                    <a class="dropdown-item" href="{{ route('ticket-files.download', md5($file->id)) }}">@lang('app.download')</a>
+                                                    <a class="dropdown-item" data-turbo="false" href="{{ route('ticket-files.download', md5($file->id)) }}">@lang('app.download')</a>
                                                 </div>
                                             </div>
                                         </x-slot>

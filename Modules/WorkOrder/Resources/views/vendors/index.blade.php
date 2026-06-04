@@ -14,7 +14,7 @@
                 @lang('workorder::modules.workOrder.menuName')
             </x-forms.link-secondary>
 
-            @if(user()->permission('manage_approval_mappings') == 'all')
+            @if(in_array('admin', user_roles()) || user()->permission('manage_approval_mappings') == 'all')
                 <x-forms.link-secondary :link="route('approval-mappings.index')" class="mr-3" icon="users">
                     @lang('workorder::modules.workOrder.approvalMappings')
                 </x-forms.link-secondary>

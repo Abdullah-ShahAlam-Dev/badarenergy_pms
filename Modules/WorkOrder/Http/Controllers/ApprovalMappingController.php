@@ -15,7 +15,7 @@ class ApprovalMappingController extends AccountBaseController
         parent::__construct();
         $this->pageTitle = __('workorder::modules.workOrder.approvalMappings');
         $this->middleware(function ($request, $next) {
-            abort_403(user()->permission('manage_approval_mappings') == 'none');
+            abort_403(!in_array('admin', user_roles()) && user()->permission('manage_approval_mappings') == 'none');
             return $next($request);
         });
     }

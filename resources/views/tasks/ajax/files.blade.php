@@ -107,77 +107,94 @@
         var namespace = '.taskFile';
         var taskFileDropzone;
 
-        // Clean up any existing listeners in this namespace before re-binding
-        $body.off(namespace);
+        function initTaskFileTab() {
+            // Destroy any pre-existing Dropzone on this element to prevent "Dropzone already attached" crash
+            var dzEl = document.querySelector('div#task-file-upload-dropzone');
+            if (dzEl && dzEl.dropzone) {
+                dzEl.dropzone.destroy();
+            }
 
-        if ("{{ $addTaskFilePermission }}" == "all" || "{{ $addTaskFilePermission }}" == "added") {
-            Dropzone.autoDiscover = false;
-            taskFileDropzone = new Dropzone("div#task-file-upload-dropzone", {
-                dictDefaultMessage: "{{ __('app.dragDrop') }}",
-                url: "{{ route('task-files.store') }}",
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                paramName: "file",
-                maxFilesize: DROPZONE_MAX_FILESIZE,
-                maxFiles: DROPZONE_MAX_FILES,
-                uploadMultiple: true,
-                addRemoveLinks: true,
-                parallelUploads: DROPZONE_MAX_FILES,
-                acceptedFiles: DROPZONE_FILE_ALLOW,
-                timeout: 0,
-                init: function () {
-                    window.taskFileDropzone = this;
+            // Clean up any existing listeners in this namespace before re-binding
+            $body.off(namespace);
+
+            if ("{{ $addTaskFilePermission }}" == "all" || "{{ $addTaskFilePermission }}" == "added") {
+                Dropzone.autoDiscover = false;
+                taskFileDropzone = new Dropzone("div#task-file-upload-dropzone", {
+                    dictDefaultMessage: "{{ __('app.dragDrop') }}",
+                    url: "{{ route('task-files.store') }}",
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    paramName: "file",
+                    maxFilesize: DROPZONE_MAX_FILESIZE,
+                    maxFiles: DROPZONE_MAX_FILES,
+                    uploadMultiple: true,
+                    addRemoveLinks: true,
+                    parallelUploads: DROPZONE_MAX_FILES,
+                    acceptedFiles: DROPZONE_FILE_ALLOW,
+                    timeout: 0,
+                    init: function () {
+                        window.taskFileDropzone = this;
+                    }
+                });
+
+                taskFileDropzone.on('sending', function (file, xhr, formData) {
+                    formData.append('task_id', "{{ $task->id }}");
+                    $.easyBlockUI();
+                });
+
+                taskFileDropzone.on('successmultiple', function (files, response) {
+                    if (response?.error?.message) {
+                        $('.error-block').removeClass('d-none');
+                        $('#error').html(response?.error?.message);
+                    }
+                    if (response.view) {
+                        $('#task-file-list').html(response.view);
+                    }
+                });
+
+                taskFileDropzone.on('queuecomplete', function () {
+                    taskFileDropzone.removeAllFiles();
+                    $.easyUnblockUI();
+                });
+
+                taskFileDropzone.on('error', function (file, message) {
+                    taskFileDropzone.removeFile(file);
+                    var $grp = $('div#task-file-upload-dropzone').closest(".form-group");
+                    $grp.find(".help-block").remove();
+                    $grp.append('<div class="help-block invalid-feedback">' + message + '</div>').addClass("has-error");
+                    $grp.siblings("label").addClass("is-invalid");
+                    $.easyUnblockUI();
+                });
+            }
+
+            $body.on('click' + namespace, '#add-task-file', function () {
+                $(this).closest('.row').addClass('d-none');
+                $('.error-block').addClass('d-none');
+                $('#save-taskfile-data-form').removeClass('d-none');
+            });
+
+            $body.on('click' + namespace, '#cancel-taskfile', function () {
+                $('#save-taskfile-data-form').addClass('d-none');
+                $('#add-task-file').closest('.row').removeClass('d-none');
+                return false;
+            });
+
+            window.addEventListener('turbo:before-cache', function cleanup() {
+                $body.off(namespace);
+                if (taskFileDropzone) {
+                    taskFileDropzone.destroy();
+                    window.taskFileDropzone = undefined;
                 }
-            });
-
-            taskFileDropzone.on('sending', function (file, xhr, formData) {
-                formData.append('task_id', "{{ $task->id }}");
-                $.easyBlockUI();
-            });
-
-            taskFileDropzone.on('successmultiple', function (files, response) {
-                if (response?.error?.message) {
-                    $('.error-block').removeClass('d-none');
-                    $('#error').html(response?.error?.message);
-                }
-                if (response.view) {
-                    $('#task-file-list').html(response.view);
-                }
-            });
-
-            taskFileDropzone.on('queuecomplete', function () {
-                taskFileDropzone.removeAllFiles();
-                $.easyUnblockUI();
-            });
-
-            taskFileDropzone.on('error', function (file, message) {
-                taskFileDropzone.removeFile(file);
-                var $grp = $('div#task-file-upload-dropzone').closest(".form-group");
-                $grp.find(".help-block").remove();
-                $grp.append('<div class="help-block invalid-feedback">' + message + '</div>').addClass("has-error");
-                $grp.siblings("label").addClass("is-invalid");
-                $.easyUnblockUI();
-            });
+                window.removeEventListener('turbo:before-cache', cleanup);
+            }, { once: true });
         }
 
-        $body.on('click' + namespace, '#add-task-file', function () {
-            $(this).closest('.row').addClass('d-none');
-            $('.error-block').addClass('d-none');
-            $('#save-taskfile-data-form').removeClass('d-none');
-        });
-
-        $body.on('click' + namespace, '#cancel-taskfile', function () {
-            $('#save-taskfile-data-form').addClass('d-none');
-            $('#add-task-file').closest('.row').removeClass('d-none');
-            return false;
-        });
-
-        window.addEventListener('turbo:before-cache', function cleanup() {
-            $body.off(namespace);
-            if (taskFileDropzone) {
-                taskFileDropzone.destroy();
-                window.taskFileDropzone = undefined;
-            }
-            window.removeEventListener('turbo:before-cache', cleanup);
-        }, { once: true });
+        // On a direct page load, main.js (which defines DROPZONE_MAX_FILESIZE etc.) has NOT yet
+        // been parsed — it loads after @yield('content'). Defer init until window load so all
+        // global vars are available. On AJAX tab switches, main.js already ran so run immediately.
+        if (typeof DROPZONE_MAX_FILESIZE !== 'undefined') {
+            initTaskFileTab();
+        } else {
+            window.addEventListener('load', initTaskFileTab, { once: true });
+        }
     })();
 </script>

@@ -61,7 +61,7 @@
                                     <a href="{{ route('vendors.show', $vendor->id) }}" class="openRightModal text-darkest-grey mr-2" title="@lang('app.view')">
                                         <i class="fa fa-eye"></i>
                                     </a>
-                                    @if(user()->permission('edit_vendor') == 'all' || (in_array(user()->permission('edit_vendor'),['added','owned','both']) && $vendor->added_by == user()->id))
+                                    @if(in_array('admin', user_roles()) || user()->permission('edit_vendor') == 'all' || (in_array(user()->permission('edit_vendor'),['added','owned','both']) && $vendor->added_by == user()->id))
                                     <a href="{{ route('vendors.edit', $vendor->id) }}" class="openRightModal text-darkest-grey mr-2" title="@lang('app.edit')">
                                         <i class="fa fa-edit"></i>
                                     </a>
@@ -69,7 +69,7 @@
                                     <a href="{{ route('work-orders.create') }}?vendor_id={{ $vendor->id }}" class="openRightModal text-darkest-grey mr-2" title="Create Work Order">
                                         <i class="fa fa-plus-circle"></i>
                                     </a>
-                                    @if(user()->permission('delete_vendor') == 'all' || (in_array(user()->permission('delete_vendor'),['added','owned','both']) && $vendor->added_by == user()->id))
+                                    @if(in_array('admin', user_roles()) || user()->permission('delete_vendor') == 'all' || (in_array(user()->permission('delete_vendor'),['added','owned','both']) && $vendor->added_by == user()->id))
                                     <a href="javascript:;" class="text-darkest-grey delete-vendor-row" data-id="{{ $vendor->id }}" title="@lang('app.delete')">
                                         <i class="fa fa-trash"></i>
                                     </a>

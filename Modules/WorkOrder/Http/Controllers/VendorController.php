@@ -17,17 +17,17 @@ class VendorController extends AccountBaseController
         parent::__construct();
         $this->pageTitle = __('workorder::modules.vendor.vendors');
         $this->middleware(function ($request, $next) {
-            abort_403(user()->permission('view_vendor') == 'none');
+            abort_403(!in_array('admin', user_roles()) && user()->permission('view_vendor') == 'none');
             return $next($request);
         });
     }
 
     public function index()
     {
-        abort_403(user()->permission('view_vendor') == 'none');
+        abort_403(!in_array('admin', user_roles()) && user()->permission('view_vendor') == 'none');
 
         $this->vendors = Vendor::where('company_id', company()->id)
-            ->when(user()->permission('view_vendor') !== 'all', function ($q) {
+            ->when(!in_array('admin', user_roles()) && user()->permission('view_vendor') !== 'all', function ($q) {
                 $q->where('added_by', user()->id);
             })
             ->orderBy('created_at', 'desc')
@@ -43,7 +43,7 @@ class VendorController extends AccountBaseController
 
     public function create()
     {
-        abort_403(user()->permission('add_vendor') == 'none');
+        abort_403(!in_array('admin', user_roles()) && user()->permission('add_vendor') == 'none');
 
         $this->countries = countries();
 
@@ -102,7 +102,7 @@ class VendorController extends AccountBaseController
     {
         $this->vendor = Vendor::where('company_id', company()->id)->findOrFail($id);
         $editPermission = user()->permission('edit_vendor');
-        abort_403(!($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $this->vendor->added_by == user()->id)));
+        abort_403(!in_array('admin', user_roles()) && !($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $this->vendor->added_by == user()->id)));
 
         $this->countries = countries();
 
@@ -118,7 +118,7 @@ class VendorController extends AccountBaseController
     {
         $vendor = Vendor::where('company_id', company()->id)->findOrFail($id);
         $editPermission = user()->permission('edit_vendor');
-        abort_403(!($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $vendor->added_by == user()->id)));
+        abort_403(!in_array('admin', user_roles()) && !($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $vendor->added_by == user()->id)));
 
         $vendor->update([
             'vendor_name'      => $request->vendor_name,
@@ -148,7 +148,7 @@ class VendorController extends AccountBaseController
     {
         $vendor = Vendor::where('company_id', company()->id)->findOrFail($id);
         $deletePermission = user()->permission('delete_vendor');
-        abort_403(!($deletePermission == 'all' || (in_array($deletePermission, ['added', 'owned', 'both']) && $vendor->added_by == user()->id)));
+        abort_403(!in_array('admin', user_roles()) && !($deletePermission == 'all' || (in_array($deletePermission, ['added', 'owned', 'both']) && $vendor->added_by == user()->id)));
 
         $vendor->delete();
         return Reply::success(__('messages.recordDeleted'));

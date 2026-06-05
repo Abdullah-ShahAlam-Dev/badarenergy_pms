@@ -23,7 +23,7 @@ class WorkOrderController extends AccountBaseController
         parent::__construct();
         $this->pageTitle = __('workorder::modules.workOrder.workOrders');
         $this->middleware(function ($request, $next) {
-            abort_403(user()->permission('view_work_order') == 'none');
+            abort_403(!in_array('admin', user_roles()) && user()->permission('view_work_order') == 'none');
             return $next($request);
         });
     }
@@ -34,9 +34,9 @@ class WorkOrderController extends AccountBaseController
     {
         $query = WorkOrder::with(['vendor', 'event', 'creator'])
             ->where('company_id', company()->id)
-            ->when(user()->permission('view_work_order') === 'added', fn($q) => $q->where('created_by', user()->id))
-            ->when(user()->permission('view_work_order') === 'owned', fn($q) => $q->where('created_by', user()->id))
-            ->when(user()->permission('view_work_order') === 'both',  fn($q) => $q->where('created_by', user()->id))
+            ->when(!in_array('admin', user_roles()) && user()->permission('view_work_order') === 'added', fn($q) => $q->where('created_by', user()->id))
+            ->when(!in_array('admin', user_roles()) && user()->permission('view_work_order') === 'owned', fn($q) => $q->where('created_by', user()->id))
+            ->when(!in_array('admin', user_roles()) && user()->permission('view_work_order') === 'both',  fn($q) => $q->where('created_by', user()->id))
             ->orderBy('created_at', 'desc');
 
         $this->workOrders  = $query->paginate(15);
@@ -52,7 +52,7 @@ class WorkOrderController extends AccountBaseController
 
     public function create()
     {
-        abort_403(user()->permission('add_work_order') == 'none');
+        abort_403(!in_array('admin', user_roles()) && user()->permission('add_work_order') == 'none');
 
         $this->events  = Event::where('company_id', company()->id)->orderBy('event_name')->get();
         $this->vendors = Vendor::where('company_id', company()->id)->where('status', 'active')->orderBy('vendor_name')->get();
@@ -201,7 +201,7 @@ class WorkOrderController extends AccountBaseController
         abort_403($this->workOrder->isLocked());
 
         $editPermission = user()->permission('edit_work_order');
-        abort_403(!($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $this->workOrder->created_by == user()->id)));
+        abort_403(!in_array('admin', user_roles()) && !($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $this->workOrder->created_by == user()->id)));
 
         $this->events  = Event::where('company_id', company()->id)->orderBy('event_name')->get();
         $this->vendors = Vendor::where('company_id', company()->id)->where('status', 'active')->orderBy('vendor_name')->get();
@@ -223,7 +223,7 @@ class WorkOrderController extends AccountBaseController
 
         abort_403($workOrder->isLocked());
         $editPermission = user()->permission('edit_work_order');
-        abort_403(!($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $workOrder->created_by == user()->id)));
+        abort_403(!in_array('admin', user_roles()) && !($editPermission == 'all' || (in_array($editPermission, ['added', 'owned', 'both']) && $workOrder->created_by == user()->id)));
 
         $request->validate([
             'event_id'                   => 'required|exists:events,id',
@@ -289,7 +289,7 @@ class WorkOrderController extends AccountBaseController
     {
         $workOrder = WorkOrder::where('company_id', company()->id)->findOrFail($id);
         $deletePermission = user()->permission('delete_work_order');
-        abort_403(!($deletePermission == 'all' || (in_array($deletePermission, ['added', 'owned', 'both']) && $workOrder->created_by == user()->id)));
+        abort_403(!in_array('admin', user_roles()) && !($deletePermission == 'all' || (in_array($deletePermission, ['added', 'owned', 'both']) && $workOrder->created_by == user()->id)));
 
         $workOrder->delete();
         return Reply::success(__('messages.recordDeleted'));

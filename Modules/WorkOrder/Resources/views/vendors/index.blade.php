@@ -4,7 +4,7 @@
 <div class="content-wrapper">
     <div class="d-flex justify-content-between action-bar mb-3">
         <div id="table-actions" class="d-flex align-items-center">
-            @if(user()->permission('add_vendor') != 'none')
+            @if(in_array('admin', user_roles()) || user()->permission('add_vendor') != 'none')
                 <x-forms.link-primary :link="route('vendors.create')" class="mr-3 openRightModal" icon="plus">
                     @lang('workorder::modules.vendor.addVendor')
                 </x-forms.link-primary>

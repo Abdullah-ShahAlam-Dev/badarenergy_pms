@@ -360,6 +360,7 @@
     <!-- CARD FOOTER START -->
     <div class="card-footer bg-white border-0 d-flex justify-content-start py-0 py-lg-4 py-md-4 mb-4 mb-lg-3 mb-md-3 ">
         <a class="f-14 text-light mt-2 ml btn-primary"
+            data-turbo="false"
             href="{{ route('proposal-template.download', [$invoice->id]) }}">
             <i class="fa fa-download f-w-500 mr-1 f-11"></i> @lang('app.download')
         </a>

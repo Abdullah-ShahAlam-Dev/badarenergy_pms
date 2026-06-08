@@ -401,6 +401,7 @@
                             <i class="fa fa-link f-w-500 mr-2 f-11"></i> @lang('modules.proposal.publicLink')
                         </a>
                         <a class="dropdown-item f-14 text-dark"
+                            data-turbo="false"
                             href="{{ route('proposals.download', [$invoice->id]) }}">
                             <i class="fa fa-download f-w-500 mr-2 f-11"></i> @lang('app.download')
                         </a>

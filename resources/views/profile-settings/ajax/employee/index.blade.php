@@ -63,6 +63,7 @@ $editDocumentPermission = user()->permission('edit_documents');
                                         target="_blank" href="{{ $file->doc_url }}">@lang('app.view')</a>
 
                                     <a class="cursor-pointer d-block text-dark-grey f-13 py-3 px-3 "
+                                        data-turbo="false"
                                         href="{{ route('employee-docs.download', md5($file->id)) }}">@lang('app.download')</a>
                                 @endif
 

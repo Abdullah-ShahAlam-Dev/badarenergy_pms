@@ -37,6 +37,7 @@ $permission = 0; // assuming we do have permission for all uploaded files
                                     href="{{ $file->doc_url }}">@lang('app.view')</a>
                             @endif
                             <a class="cursor-pointer d-block text-dark-grey f-13 py-3 px-3 "
+                                data-turbo="false"
                                 href="{{ route('client-docs.download', md5($file->id)) }}">@lang('app.download')</a>
                         @endif
 

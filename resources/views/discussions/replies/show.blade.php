@@ -103,6 +103,7 @@
 
 
                                         <a class="cursor-pointer d-block text-dark-grey f-13 py-3 px-3 "
+                                            data-turbo="false"
                                             href="{{ route('discussion_file.download', md5($file->id)) }}">@lang('app.download')</a>
 
                                         @if (user()->id == $user->id)

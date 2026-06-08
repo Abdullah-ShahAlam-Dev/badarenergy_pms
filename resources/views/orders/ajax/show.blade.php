@@ -355,7 +355,7 @@ $deleteOrderPermission = user()->permission('delete_order');
                     </button>
                     <!-- DROPDOWN - INFORMATION -->
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton" tabindex="0">
-                        <li><a href="{{ route('orders.download', $order->id) }}" class="dropdown-item"><i class="fa fa-download f-w-500 mr-2 f-11"></i> @lang('app.download')</a></li>
+                        <li><a data-turbo="false" href="{{ route('orders.download', $order->id) }}" class="dropdown-item"><i class="fa fa-download f-w-500 mr-2 f-11"></i> @lang('app.download')</a></li>
                         @if(
                             (in_array('admin', user_roles()) || in_array('employee', user_roles()))
                         )

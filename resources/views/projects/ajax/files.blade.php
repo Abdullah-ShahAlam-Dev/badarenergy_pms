@@ -75,6 +75,7 @@ $deleteFilePermission = user()->permission('delete_project_files');
                                                     href="{{ $file->file_url }}">@lang('app.view')</a>
 
                                            <a class="cursor-pointer d-block text-dark-grey f-13 py-3 px-3 "
+                                                data-turbo="false"
                                                 href="{{ route('files.download', md5($file->id)) }}">@lang('app.download')</a>
                                         @endif
 

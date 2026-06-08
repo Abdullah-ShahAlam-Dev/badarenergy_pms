@@ -526,6 +526,7 @@
 
                     <li>
                         <a class="dropdown-item f-14 text-dark"
+                            data-turbo="false"
                             href="{{ route('invoices.download', [$invoice->id]) }}">
                             <i class="fa fa-download f-w-500 mr-2 f-11"></i> @lang('app.download')
                         </a>
@@ -870,6 +871,7 @@
                                             href="{{ $file->file_url }}">@lang('app.view')</a>
                                     @endif
                                     <a class="cursor-pointer d-block text-dark-grey f-13 py-3 px-3 "
+                                        data-turbo="false"
                                         href="{{ route('invoice-files.download', md5($file->id)) }}">@lang('app.download')</a>
                                 @endif
 

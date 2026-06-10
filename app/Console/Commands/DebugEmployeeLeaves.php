@@ -101,14 +101,22 @@ class DebugEmployeeLeaves extends Command
             $probation = $empDetail ? ($empDetail->probation_end_date ? $empDetail->probation_end_date->format('Y-m-d') : null) : null;
             $noticePeriod = $empDetail ? ($empDetail->notice_period_start_date ? $empDetail->notice_period_start_date->format('Y-m-d') : null) : null;
 
-            // Clauses
+            // Helper: decode JSON restriction column to array of strings
+            $toStr = fn($json) => array_map('strval', (array) json_decode($json, true));
+
+            // Clauses — mirror the exact logic in LeaveType::leaveTypeCodition()
+            $userGender   = $user->gender;
+            $userMarital  = $empDetail?->marital_status;
+            $userDeptId   = $empDetail?->department_id;
+            $userDesigId  = $empDetail?->designation_id;
+
             $probationOk = (is_null($probation) || ($leave->allowed_probation == 0 && $probation < $currentDate) || $leave->allowed_probation == 1);
-            $noticeOk = (is_null($noticePeriod) || ($leave->allowed_notice == 0 && $noticePeriod > $currentDate) || $leave->allowed_notice == 1);
-            $genderOk = (is_null($leave->gender) || in_array($user->gender, (array)json_decode($leave->gender)));
-            $maritalOk = (is_null($leave->marital_status) || in_array($empDetail ? $empDetail->marital_status : null, (array)json_decode($leave->marital_status)));
-            $deptOk = (is_null($leave->department) || in_array($empDetail ? $empDetail->department_id : null, (array)json_decode($leave->department)));
-            $desigOk = (is_null($leave->designation) || in_array($empDetail ? $empDetail->designation_id : null, (array)json_decode($leave->designation)));
-            $roleOk = (is_null($leave->role) || array_intersect($userRole, (array)json_decode($leaveRole)));
+            $noticeOk    = (is_null($noticePeriod) || ($leave->allowed_notice == 0 && $noticePeriod > $currentDate) || $leave->allowed_notice == 1);
+            $genderOk    = (is_null($leave->gender)  || is_null($userGender)  || in_array((string)$userGender,  $toStr($leave->gender),  true));
+            $maritalOk   = (is_null($leave->marital_status)  || is_null($userMarital)  || in_array((string)$userMarital,  $toStr($leave->marital_status),  true));
+            $deptOk      = (is_null($leave->department) || is_null($userDeptId)  || in_array((string)$userDeptId,  $toStr($leave->department),  true));
+            $desigOk     = (is_null($leave->designation) || is_null($userDesigId) || in_array((string)$userDesigId, $toStr($leave->designation), true));
+            $roleOk      = (is_null($leave->role) || array_intersect(array_map('strval', (array)$userRole), $toStr(json_encode($leaveRole))));
             $effectiveOk = (is_null($leave->effective_after) || $currentDate > $effectiveDate);
 
             $this->line(" - probation check: " . ($probationOk ? "PASS" : "FAIL") . " (probation end: " . ($probation ?? 'NULL') . ", allowed_probation: {$leave->allowed_probation})");

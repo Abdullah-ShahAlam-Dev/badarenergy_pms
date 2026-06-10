@@ -185,13 +185,16 @@ class LeaveType extends BaseModel
         $probation = Carbon::parse($leave->probation_end_date)->format('Y-m-d');
         $noticePeriod = Carbon::parse($leave->notice_period_start_date)->format('Y-m-d');
 
+        // Helper: decode a JSON restriction column into an array of strings
+        $toStrArray = fn($json) => array_map('strval', (array) json_decode($json, true));
+
         if((is_null($leave->probation_end_date) || ($leave->allowed_probation == 0 && $probation < $currentDate) || $leave->allowed_probation == 1) &&
         (is_null($leave->notice_period_start_date) || ($leave->allowed_notice == 0 && $noticePeriod > $currentDate) || $leave->allowed_notice == 1) &&
-        (is_null($leave->gender) || is_null($leave->usergender) || in_array($leave->usergender, (array)json_decode($leave->gender))) &&
-        (is_null($leave->marital_status) || is_null($leave->maritalStatus) || in_array($leave->maritalStatus, (array)json_decode($leave->marital_status))) &&
-        (is_null($leave->department) || is_null($leave->employee_department) || in_array($leave->employee_department, (array)json_decode($leave->department))) &&
-        (is_null($leave->designation) || is_null($leave->employee_designation) || in_array($leave->employee_designation, (array)json_decode($leave->designation))) &&
-        (is_null($leave->role) || array_intersect($userRole, (array)json_decode($leaveRole))) &&
+        (is_null($leave->gender) || is_null($leave->usergender) || in_array((string)$leave->usergender, $toStrArray($leave->gender), true)) &&
+        (is_null($leave->marital_status) || is_null($leave->maritalStatus) || in_array((string)$leave->maritalStatus, $toStrArray($leave->marital_status), true)) &&
+        (is_null($leave->department) || is_null($leave->employee_department) || in_array((string)$leave->employee_department, $toStrArray($leave->department), true)) &&
+        (is_null($leave->designation) || is_null($leave->employee_designation) || in_array((string)$leave->employee_designation, $toStrArray($leave->designation), true)) &&
+        (is_null($leave->role) || array_intersect(array_map('strval', (array)$userRole), $toStrArray(json_encode($leaveRole)))) &&
         (is_null($leave->effective_after) || $currentDate > $effectiveDate)){ /** @phpstan-ignore-line */
             return true;
         }

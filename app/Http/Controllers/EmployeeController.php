@@ -672,12 +672,17 @@ class EmployeeController extends AccountBaseController
 
             $totalLeaves = 0;
 
-            foreach($this->leaveTypes as $key => $leavesCount)
+            foreach($this->leaveTypes as $leavesCount)
             {
                 $leavesCountCheck = $leavesCount->leaveTypeCodition($leavesCount, $this->userRole);
 
-                if($leavesCountCheck && $this->employeeLeavesQuotas[$key]->leave_type_id == $leavesCount->id){
-                    $totalLeaves += $this->employeeLeavesQuotas[$key]->no_of_leaves;
+                if($leavesCountCheck){
+                    $quotaRecord = $this->employeeLeavesQuotas->firstWhere('leave_type_id', $leavesCount->id);
+                    if ($quotaRecord) {
+                        $totalLeaves += $quotaRecord->no_of_leaves;
+                    } else {
+                        $totalLeaves += $leavesCount->no_of_leaves;
+                    }
                 }
             }
 

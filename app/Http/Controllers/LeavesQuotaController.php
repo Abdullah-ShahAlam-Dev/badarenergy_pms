@@ -44,7 +44,7 @@ class LeavesQuotaController extends AccountBaseController
             $user = User::withoutGlobalScope(ActiveScope::class)->withOut('clientDetails', 'role')->findOrFail($userId);
             $setting = company();
             $leaveDate = Carbon::createFromFormat('d-m-Y', '01-'.company()->year_starts_from.'-'.now(company()->timezone)->year)->startOfMonth();
-            if ($setting->leaves_start_from == 'joining_date' && isset($user->employee[0])) {
+            if ($setting->leaves_start_from == 'joining_date' && isset($user->employee[0]) && !is_null($user->employee[0]->joining_date)) {
                 $currentYearJoiningDate = Carbon::parse($user->employee[0]->joining_date->format((now(company()->timezone)->year) . '-m-d'));
                 if ($currentYearJoiningDate->isFuture()) {
                     $currentYearJoiningDate->subYear();
@@ -64,8 +64,8 @@ class LeavesQuotaController extends AccountBaseController
                     $join->on('employee_leave_quotas.leave_type_id', '=', 'leave_types.id')
                         ->where('employee_leave_quotas.user_id', $userId);
                 })
-                ->join('users', 'users.id', '=', \Illuminate\Support\Facades\DB::raw($userId))
-                ->join('employee_details', 'employee_details.user_id', '=', 'users.id')
+                ->leftJoin('users', 'users.id', '=', \Illuminate\Support\Facades\DB::raw($userId))
+                ->leftJoin('employee_details', 'employee_details.user_id', '=', 'users.id')
                 ->with(['leavesCount' => function ($q) use ($userId, $startDate, $endDate) {
                     $q->where('leaves.user_id', $userId);
                     $q->whereBetween('leaves.leave_date', [$startDate, $endDate]);

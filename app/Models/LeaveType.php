@@ -96,7 +96,7 @@ class LeaveType extends BaseModel
         $setting = company();
 
         if (isset($user->employee[0])) {
-            if ($setting->leaves_start_from == 'joining_date') {
+            if ($setting->leaves_start_from == 'joining_date' && !is_null($user->employee[0]->joining_date)) {
                 $currentYearJoiningDate = Carbon::parse($user->employee[0]->joining_date->format((now(company()->timezone)->year) . '-m-d'));
 
                 if ($currentYearJoiningDate->isFuture()) {

@@ -674,8 +674,7 @@ class EmployeeController extends AccountBaseController
                     \App\Models\EmployeeLeaveQuota::create([
                         'user_id' => $id,
                         'leave_type_id' => $leaveType->id,
-                        'no_of_leaves' => $leaveType->no_of_leaves,
-                        'company_id' => $this->employee->company_id
+                        'no_of_leaves' => $leaveType->no_of_leaves
                     ]);
                 }
             }

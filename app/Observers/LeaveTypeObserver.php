@@ -19,7 +19,10 @@ class LeaveTypeObserver
     public function created(LeaveType $leaveType)
     {
         if (!isRunningInConsoleOrSeeding()) {
-            $employees = EmployeeDetails::select('id', 'user_id')->get();
+            $employees = EmployeeDetails::where('company_id', $leaveType->company_id)
+                ->whereHas('user')
+                ->select('id', 'user_id')
+                ->get();
 
             foreach ($employees as $key => $employee) {
                 EmployeeLeaveQuota::create(

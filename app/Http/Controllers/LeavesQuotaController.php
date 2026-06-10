@@ -49,13 +49,19 @@ class LeavesQuotaController extends AccountBaseController
                 ->first();
 
             if (!$employeeDetail) {
-                $employeeDetail = \App\Models\EmployeeDetails::create([
-                    'user_id' => $userId,
-                    'company_id' => $user->company_id,
-                    'joining_date' => $user->created_at ?? now(),
-                    'added_by' => user() ? user()->id : null,
-                    'employee_id' => 'EMP-' . $userId
-                ]);
+                try {
+                    $employeeDetail = \App\Models\EmployeeDetails::create([
+                        'user_id' => $userId,
+                        'company_id' => $user->company_id,
+                        'joining_date' => $user->created_at ?? now(),
+                        'added_by' => user() ? user()->id : null,
+                        'employee_id' => 'EMP-' . $userId
+                    ]);
+                } catch (\Exception $e) {
+                    $employeeDetail = \App\Models\EmployeeDetails::withoutGlobalScope(\App\Scopes\CompanyScope::class)
+                        ->where('user_id', $userId)
+                        ->first();
+                }
             } elseif (is_null($employeeDetail->company_id) || $employeeDetail->company_id != $user->company_id) {
                 $employeeDetail->company_id = $user->company_id;
                 $employeeDetail->save();

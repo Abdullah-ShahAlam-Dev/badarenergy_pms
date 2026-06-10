@@ -99,13 +99,19 @@ class LeaveType extends BaseModel
             ->first();
 
         if (!$employeeDetail) {
-            $employeeDetail = \App\Models\EmployeeDetails::create([
-                'user_id' => $user->id,
-                'company_id' => $user->company_id,
-                'joining_date' => $user->created_at ?? now(),
-                'added_by' => user() ? user()->id : null,
-                'employee_id' => 'EMP-' . $user->id
-            ]);
+            try {
+                $employeeDetail = \App\Models\EmployeeDetails::create([
+                    'user_id' => $user->id,
+                    'company_id' => $user->company_id,
+                    'joining_date' => $user->created_at ?? now(),
+                    'added_by' => user() ? user()->id : null,
+                    'employee_id' => 'EMP-' . $user->id
+                ]);
+            } catch (\Exception $e) {
+                $employeeDetail = \App\Models\EmployeeDetails::withoutGlobalScope(\App\Scopes\CompanyScope::class)
+                    ->where('user_id', $user->id)
+                    ->first();
+            }
         } elseif (is_null($employeeDetail->company_id) || $employeeDetail->company_id != $user->company_id) {
             $employeeDetail->company_id = $user->company_id;
             $employeeDetail->save();

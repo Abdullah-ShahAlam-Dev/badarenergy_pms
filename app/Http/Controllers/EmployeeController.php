@@ -670,13 +670,19 @@ class EmployeeController extends AccountBaseController
                 ->first();
 
             if (!$employeeDetail) {
-                $employeeDetail = \App\Models\EmployeeDetails::create([
-                    'user_id' => $id,
-                    'company_id' => $this->employee->company_id,
-                    'joining_date' => $this->employee->created_at ?? now(),
-                    'added_by' => user() ? user()->id : null,
-                    'employee_id' => 'EMP-' . $id
-                ]);
+                try {
+                    $employeeDetail = \App\Models\EmployeeDetails::create([
+                        'user_id' => $id,
+                        'company_id' => $this->employee->company_id,
+                        'joining_date' => $this->employee->created_at ?? now(),
+                        'added_by' => user() ? user()->id : null,
+                        'employee_id' => 'EMP-' . $id
+                    ]);
+                } catch (\Exception $e) {
+                    $employeeDetail = \App\Models\EmployeeDetails::withoutGlobalScope(\App\Scopes\CompanyScope::class)
+                        ->where('user_id', $id)
+                        ->first();
+                }
             } elseif (is_null($employeeDetail->company_id) || $employeeDetail->company_id != $this->employee->company_id) {
                 $employeeDetail->company_id = $this->employee->company_id;
                 $employeeDetail->save();

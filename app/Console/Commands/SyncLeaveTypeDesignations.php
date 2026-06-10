@@ -35,7 +35,8 @@ class SyncLeaveTypeDesignations extends Command
 
             // --- Designation ---
             if (!is_null($lt->designation)) {
-                $existing  = array_map('strval', json_decode($lt->designation, true) ?? []);
+                preg_match_all('/\d+/', $lt->designation, $matches);
+                $existing  = array_map('strval', $matches[0] ?? []);
                 $merged    = array_values(array_unique(array_merge($existing, $allDesignationIds)));
                 sort($merged, SORT_NUMERIC);
                 $newJson   = json_encode($merged);
@@ -49,7 +50,8 @@ class SyncLeaveTypeDesignations extends Command
 
             // --- Department ---
             if (!is_null($lt->department)) {
-                $existing  = array_map('strval', json_decode($lt->department, true) ?? []);
+                preg_match_all('/\d+/', $lt->department, $matches);
+                $existing  = array_map('strval', $matches[0] ?? []);
                 $merged    = array_values(array_unique(array_merge($existing, $allDepartmentIds)));
                 sort($merged, SORT_NUMERIC);
                 $newJson   = json_encode($merged);

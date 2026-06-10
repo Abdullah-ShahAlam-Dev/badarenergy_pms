@@ -116,7 +116,7 @@ class DebugEmployeeLeaves extends Command
             $maritalOk   = (is_null($leave->marital_status)  || is_null($userMarital)  || in_array((string)$userMarital,  $toStr($leave->marital_status),  true));
             $deptOk      = (is_null($leave->department) || is_null($userDeptId)  || in_array((string)$userDeptId,  $toStr($leave->department),  true));
             $desigOk     = (is_null($leave->designation) || is_null($userDesigId) || in_array((string)$userDesigId, $toStr($leave->designation), true));
-            $roleOk      = (is_null($leave->role) || array_intersect(array_map('strval', (array)$userRole), $toStr(json_encode($leaveRole))));
+            $roleOk      = (is_null($leave->role) || array_intersect(array_map('strval', (array)$userRole), $toStr($leaveRole)));
             $effectiveOk = (is_null($leave->effective_after) || $currentDate > $effectiveDate);
 
             $this->line(" - probation check: " . ($probationOk ? "PASS" : "FAIL") . " (probation end: " . ($probation ?? 'NULL') . ", allowed_probation: {$leave->allowed_probation})");

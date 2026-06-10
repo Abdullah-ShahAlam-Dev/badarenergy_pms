@@ -194,7 +194,7 @@ class LeaveType extends BaseModel
         (is_null($leave->marital_status) || is_null($leave->maritalStatus) || in_array((string)$leave->maritalStatus, $toStrArray($leave->marital_status), true)) &&
         (is_null($leave->department) || is_null($leave->employee_department) || in_array((string)$leave->employee_department, $toStrArray($leave->department), true)) &&
         (is_null($leave->designation) || is_null($leave->employee_designation) || in_array((string)$leave->employee_designation, $toStrArray($leave->designation), true)) &&
-        (is_null($leave->role) || array_intersect(array_map('strval', (array)$userRole), $toStrArray(json_encode($leaveRole)))) &&
+        (is_null($leave->role) || array_intersect(array_map('strval', (array)$userRole), $toStrArray($leaveRole))) &&
         (is_null($leave->effective_after) || $currentDate > $effectiveDate)){ /** @phpstan-ignore-line */
             return true;
         }

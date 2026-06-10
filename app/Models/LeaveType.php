@@ -110,9 +110,12 @@ class LeaveType extends BaseModel
                 }])->select('leave_types.*', 'employee_details.notice_period_start_date', 'employee_details.probation_end_date',
                 'employee_details.department_id as employee_department', 'employee_details.designation_id as employee_designation',
                 'employee_details.marital_status as maritalStatus', 'users.gender as usergender', 'employee_details.joining_date')
-                ->join('employee_leave_quotas', 'employee_leave_quotas.leave_type_id', 'leave_types.id')
-                ->join('users', 'users.id', 'employee_leave_quotas.user_id')
-                ->join('employee_details', 'employee_details.user_id', 'users.id')->where('users.id', $user->id);
+                ->leftJoin('employee_leave_quotas', function($join) use ($user) {
+                    $join->on('employee_leave_quotas.leave_type_id', '=', 'leave_types.id')
+                        ->where('employee_leave_quotas.user_id', $user->id);
+                })
+                ->leftJoin('users', 'users.id', '=', \Illuminate\Support\Facades\DB::raw($user->id))
+                ->leftJoin('employee_details', 'employee_details.user_id', '=', 'users.id');
 
 
                 if (!is_null($leaveTypeId)) {
@@ -130,9 +133,12 @@ class LeaveType extends BaseModel
                 }])->select('leave_types.*', 'employee_details.notice_period_start_date', 'employee_details.probation_end_date',
                 'employee_details.department_id as employee_department', 'employee_details.designation_id as employee_designation',
                 'employee_details.marital_status as maritalStatus', 'users.gender as usergender', 'employee_details.joining_date')
-                ->join('employee_leave_quotas', 'employee_leave_quotas.leave_type_id', 'leave_types.id')
-                ->join('users', 'users.id', 'employee_leave_quotas.user_id')
-                ->join('employee_details', 'employee_details.user_id', 'users.id')->where('users.id', $user->id);
+                ->leftJoin('employee_leave_quotas', function($join) use ($user) {
+                    $join->on('employee_leave_quotas.leave_type_id', '=', 'leave_types.id')
+                        ->where('employee_leave_quotas.user_id', $user->id);
+                })
+                ->leftJoin('users', 'users.id', '=', \Illuminate\Support\Facades\DB::raw($user->id))
+                ->leftJoin('employee_details', 'employee_details.user_id', '=', 'users.id');
             }
 
             if (!is_null($leaveTypeId)) {

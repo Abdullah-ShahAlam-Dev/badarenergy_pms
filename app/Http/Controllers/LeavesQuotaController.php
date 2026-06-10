@@ -42,6 +42,21 @@ class LeavesQuotaController extends AccountBaseController
         $quotaHtml = '';
         if ($userId != 0) {
             $user = User::withoutGlobalScope(ActiveScope::class)->withOut('clientDetails', 'role')->findOrFail($userId);
+
+            // Sync missing leave quotas for this user
+            $companyLeaveTypes = LeaveType::where('company_id', $user->company_id)->get();
+            $existingQuotas = EmployeeLeaveQuota::where('user_id', $userId)->pluck('leave_type_id')->toArray();
+            foreach ($companyLeaveTypes as $leaveType) {
+                if (!in_array($leaveType->id, $existingQuotas)) {
+                    EmployeeLeaveQuota::create([
+                        'user_id' => $userId,
+                        'leave_type_id' => $leaveType->id,
+                        'no_of_leaves' => $leaveType->no_of_leaves,
+                        'company_id' => $user->company_id
+                    ]);
+                }
+            }
+
             $setting = company();
             $leaveDate = Carbon::createFromFormat('d-m-Y', '01-'.company()->year_starts_from.'-'.now(company()->timezone)->year)->startOfMonth();
             if ($setting->leaves_start_from == 'joining_date' && isset($user->employee[0]) && !is_null($user->employee[0]->joining_date)) {

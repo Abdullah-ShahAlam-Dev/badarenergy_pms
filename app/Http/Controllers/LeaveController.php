@@ -883,6 +883,21 @@ class LeaveController extends AccountBaseController
             ->withCount('member', 'agents', 'tasks')
             ->findOrFail(user()->id);
 
+        // Auto-create missing leave quota records for this user
+        $companyLeaveTypes = LeaveType::where('company_id', $this->employee->company_id)->get();
+        $existingQuotas = EmployeeLeaveQuota::where('user_id', $this->employee->id)->pluck('leave_type_id')->toArray();
+        foreach ($companyLeaveTypes as $leaveType) {
+            if (!in_array($leaveType->id, $existingQuotas)) {
+                EmployeeLeaveQuota::create([
+                    'user_id' => $this->employee->id,
+                    'leave_type_id' => $leaveType->id,
+                    'no_of_leaves' => $leaveType->no_of_leaves,
+                    'company_id' => $this->employee->company_id
+                ]);
+            }
+        }
+        $this->employee->load('leaveTypes');
+
         $this->leaveTypes = LeaveType::byUser(user()->id);
         $this->leaveTypeRole(user()->id);
         $this->leavesTakenByUser = Leave::byUserCount(user()->id);

@@ -665,6 +665,22 @@ class EmployeeController extends AccountBaseController
             break;
         case 'leaves-quota':
             $this->leaveQuota($id);
+
+            // Sync missing leave quotas for this user
+            $companyLeaveTypes = LeaveType::where('company_id', $this->employee->company_id)->get();
+            $existingQuotas = \App\Models\EmployeeLeaveQuota::where('user_id', $id)->pluck('leave_type_id')->toArray();
+            foreach ($companyLeaveTypes as $leaveType) {
+                if (!in_array($leaveType->id, $existingQuotas)) {
+                    \App\Models\EmployeeLeaveQuota::create([
+                        'user_id' => $id,
+                        'leave_type_id' => $leaveType->id,
+                        'no_of_leaves' => $leaveType->no_of_leaves,
+                        'company_id' => $this->employee->company_id
+                    ]);
+                }
+            }
+            $this->employee->load('leaveTypes');
+
             $this->leavesTakenByUser = Leave::byUserCount($this->employee);
             $this->leaveTypes = LeaveType::byUser($this->employee);
             $this->employeeLeavesQuotas = $this->employee->leaveTypes;

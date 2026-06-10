@@ -60,6 +60,7 @@ class LeavesQuotaController extends AccountBaseController
                 } catch (\Exception $e) {
                     $employeeDetail = \App\Models\EmployeeDetails::withoutGlobalScope(\App\Scopes\CompanyScope::class)
                         ->where('user_id', $userId)
+                        
                         ->first();
                 }
             } elseif (is_null($employeeDetail->company_id) || $employeeDetail->company_id != $user->company_id) {
@@ -74,15 +75,11 @@ class LeavesQuotaController extends AccountBaseController
             $existingQuotas = EmployeeLeaveQuota::where('user_id', $userId)->pluck('leave_type_id')->toArray();
             foreach ($companyLeaveTypes as $leaveType) {
                 if (!in_array($leaveType->id, $existingQuotas)) {
-                    try {
-                        EmployeeLeaveQuota::create([
-                            'user_id' => $userId,
-                            'leave_type_id' => $leaveType->id,
-                            'no_of_leaves' => $leaveType->no_of_leaves
-                        ]);
-                    } catch (\Exception $e) {
-                        // Ignore unique key duplicate insertions from parallel requests
-                    }
+                    EmployeeLeaveQuota::create([
+                        'user_id' => $userId,
+                        'leave_type_id' => $leaveType->id,
+                        'no_of_leaves' => $leaveType->no_of_leaves
+                    ]);
                 }
             }
 

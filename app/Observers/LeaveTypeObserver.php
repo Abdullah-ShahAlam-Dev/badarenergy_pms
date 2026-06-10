@@ -25,13 +25,17 @@ class LeaveTypeObserver
                 ->get();
 
             foreach ($employees as $key => $employee) {
-                EmployeeLeaveQuota::create(
-                    [
-                        'user_id' => $employee->user_id,
-                        'leave_type_id' => $leaveType->id,
-                        'no_of_leaves' => $leaveType->no_of_leaves
-                    ]
-                );
+                try {
+                    EmployeeLeaveQuota::create(
+                        [
+                            'user_id' => $employee->user_id,
+                            'leave_type_id' => $leaveType->id,
+                            'no_of_leaves' => $leaveType->no_of_leaves
+                        ]
+                    );
+                } catch (\Exception $e) {
+                    // Ignore
+                }
             }
         }
     }

@@ -34,13 +34,17 @@ class EmployeeDetailsObserver
         $leaveTypes = $detail->company->leaveTypes;
 
         foreach ($leaveTypes as $value) {
-            EmployeeLeaveQuota::create(
-                [
-                    'user_id' => $detail->user_id,
-                    'leave_type_id' => $value->id,
-                    'no_of_leaves' => $value->no_of_leaves
-                ]
-            );
+            try {
+                EmployeeLeaveQuota::create(
+                    [
+                        'user_id' => $detail->user_id,
+                        'leave_type_id' => $value->id,
+                        'no_of_leaves' => $value->no_of_leaves
+                    ]
+                );
+            } catch (\Exception $e) {
+                // Ignore
+            }
         }
     }
 

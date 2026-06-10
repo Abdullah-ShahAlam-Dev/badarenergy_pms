@@ -697,11 +697,15 @@ class EmployeeController extends AccountBaseController
             $existingQuotas = \App\Models\EmployeeLeaveQuota::where('user_id', $id)->pluck('leave_type_id')->toArray();
             foreach ($companyLeaveTypes as $leaveType) {
                 if (!in_array($leaveType->id, $existingQuotas)) {
-                    \App\Models\EmployeeLeaveQuota::create([
-                        'user_id' => $id,
-                        'leave_type_id' => $leaveType->id,
-                        'no_of_leaves' => $leaveType->no_of_leaves
-                    ]);
+                    try {
+                        \App\Models\EmployeeLeaveQuota::create([
+                            'user_id' => $id,
+                            'leave_type_id' => $leaveType->id,
+                            'no_of_leaves' => $leaveType->no_of_leaves
+                        ]);
+                    } catch (\Exception $e) {
+                        // Ignore unique key duplicate insertions from parallel requests
+                    }
                 }
             }
             $this->employee->load('leaveTypes');

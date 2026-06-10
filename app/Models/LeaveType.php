@@ -187,10 +187,10 @@ class LeaveType extends BaseModel
 
         if((is_null($leave->probation_end_date) || ($leave->allowed_probation == 0 && $probation < $currentDate) || $leave->allowed_probation == 1) &&
         (is_null($leave->notice_period_start_date) || ($leave->allowed_notice == 0 && $noticePeriod > $currentDate) || $leave->allowed_notice == 1) &&
-        (is_null($leave->gender) || in_array($leave->usergender, (array)json_decode($leave->gender))) &&
-        (is_null($leave->marital_status) || in_array($leave->maritalStatus, (array)json_decode($leave->marital_status))) &&
-        (is_null($leave->department) || in_array($leave->employee_department, (array)json_decode($leave->department))) &&
-        (is_null($leave->designation) || in_array($leave->employee_designation, (array)json_decode($leave->designation))) &&
+        (is_null($leave->gender) || is_null($leave->usergender) || in_array($leave->usergender, (array)json_decode($leave->gender))) &&
+        (is_null($leave->marital_status) || is_null($leave->maritalStatus) || in_array($leave->maritalStatus, (array)json_decode($leave->marital_status))) &&
+        (is_null($leave->department) || is_null($leave->employee_department) || in_array($leave->employee_department, (array)json_decode($leave->department))) &&
+        (is_null($leave->designation) || is_null($leave->employee_designation) || in_array($leave->employee_designation, (array)json_decode($leave->designation))) &&
         (is_null($leave->role) || array_intersect($userRole, (array)json_decode($leaveRole))) &&
         (is_null($leave->effective_after) || $currentDate > $effectiveDate)){ /** @phpstan-ignore-line */
             return true;

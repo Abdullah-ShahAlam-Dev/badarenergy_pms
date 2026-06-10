@@ -43,6 +43,26 @@ class LeavesQuotaController extends AccountBaseController
         if ($userId != 0) {
             $user = User::withoutGlobalScope(ActiveScope::class)->withOut('clientDetails', 'role')->findOrFail($userId);
 
+            // Self-heal employee_details for this user
+            $employeeDetail = \App\Models\EmployeeDetails::withoutGlobalScope(\App\Scopes\CompanyScope::class)
+                ->where('user_id', $userId)
+                ->first();
+
+            if (!$employeeDetail) {
+                $employeeDetail = \App\Models\EmployeeDetails::create([
+                    'user_id' => $userId,
+                    'company_id' => $user->company_id,
+                    'joining_date' => $user->created_at ?? now(),
+                    'added_by' => user() ? user()->id : null,
+                    'employee_id' => 'EMP-' . $userId
+                ]);
+            } elseif (is_null($employeeDetail->company_id) || $employeeDetail->company_id != $user->company_id) {
+                $employeeDetail->company_id = $user->company_id;
+                $employeeDetail->save();
+            }
+
+            $user->load('employee');
+
             // Sync missing leave quotas for this user
             $companyLeaveTypes = LeaveType::where('company_id', $user->company_id)->get();
             $existingQuotas = EmployeeLeaveQuota::where('user_id', $userId)->pluck('leave_type_id')->toArray();

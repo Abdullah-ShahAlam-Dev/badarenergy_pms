@@ -664,6 +664,26 @@ class EmployeeController extends AccountBaseController
             $this->view = 'employees.ajax.appreciations';
             break;
         case 'leaves-quota':
+            // Self-heal employee_details for this user
+            $employeeDetail = \App\Models\EmployeeDetails::withoutGlobalScope(\App\Scopes\CompanyScope::class)
+                ->where('user_id', $id)
+                ->first();
+
+            if (!$employeeDetail) {
+                $employeeDetail = \App\Models\EmployeeDetails::create([
+                    'user_id' => $id,
+                    'company_id' => $this->employee->company_id,
+                    'joining_date' => $this->employee->created_at ?? now(),
+                    'added_by' => user() ? user()->id : null,
+                    'employee_id' => 'EMP-' . $id
+                ]);
+            } elseif (is_null($employeeDetail->company_id) || $employeeDetail->company_id != $this->employee->company_id) {
+                $employeeDetail->company_id = $this->employee->company_id;
+                $employeeDetail->save();
+            }
+
+            $this->employee->load('employee', 'employeeDetail');
+
             $this->leaveQuota($id);
 
             // Sync missing leave quotas for this user

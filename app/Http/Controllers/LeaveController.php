@@ -883,6 +883,26 @@ class LeaveController extends AccountBaseController
             ->withCount('member', 'agents', 'tasks')
             ->findOrFail(user()->id);
 
+        // Self-heal employee_details for this user
+        $employeeDetail = \App\Models\EmployeeDetails::withoutGlobalScope(\App\Scopes\CompanyScope::class)
+            ->where('user_id', $this->employee->id)
+            ->first();
+
+        if (!$employeeDetail) {
+            $employeeDetail = \App\Models\EmployeeDetails::create([
+                'user_id' => $this->employee->id,
+                'company_id' => $this->employee->company_id,
+                'joining_date' => $this->employee->created_at ?? now(),
+                'added_by' => user() ? user()->id : null,
+                'employee_id' => 'EMP-' . $this->employee->id
+            ]);
+        } elseif (is_null($employeeDetail->company_id) || $employeeDetail->company_id != $this->employee->company_id) {
+            $employeeDetail->company_id = $this->employee->company_id;
+            $employeeDetail->save();
+        }
+
+        $this->employee->load('employeeDetail', 'employee');
+
         // Auto-create missing leave quota records for this user
         $companyLeaveTypes = LeaveType::where('company_id', $this->employee->company_id)->get();
         $existingQuotas = EmployeeLeaveQuota::where('user_id', $this->employee->id)->pluck('leave_type_id')->toArray();

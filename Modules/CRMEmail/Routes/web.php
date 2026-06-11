@@ -13,11 +13,14 @@ Route::group(['middleware' => ['auth', 'web'], 'prefix' => 'account'], function 
     Route::post('crm-email-segments/{id}/duplicate', 'SegmentController@duplicate')->name('crm-email-segments.duplicate');
     Route::resource('crm-email-segments', 'SegmentController', ['names' => 'crm-email-segments']);
     Route::resource('crm-email-campaigns', 'CampaignController', ['names' => 'crm-email-campaigns']);
-    
+
     // Campaign trigger & status
     Route::post('crm-email-campaigns/{id}/launch', 'CampaignController@launch')->name('crm-email-campaigns.launch');
     Route::post('crm-email-campaigns/{id}/pause', 'CampaignController@pause')->name('crm-email-campaigns.pause');
     Route::get('crm-email-campaigns/{id}/stats', 'CampaignController@stats')->name('crm-email-campaigns.stats');
+
+    // Module Settings
+    Route::resource('crm-email-settings', 'CrmEmailSettingController', ['names' => 'crm-email-settings']);
 });
 
 // Public CRMEmail routes (Unsubscribe, etc.)

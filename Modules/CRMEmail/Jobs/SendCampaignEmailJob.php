@@ -133,7 +133,8 @@ class SendCampaignEmailJob implements ShouldQueue
                 $renderedBody,
                 $fromName,
                 $fromEmail,
-                $unsubscribeUrl
+                $unsubscribeUrl,
+                $campaign->company_id  // pass company_id for DB settings resolution
             );
 
             // Capture the message ID for delivery tracking.

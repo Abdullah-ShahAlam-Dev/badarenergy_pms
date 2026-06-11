@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
 use Modules\CRMEmail\DataTables\CampaignDataTable;
 use Modules\CRMEmail\Entities\Campaign;
+use Modules\CRMEmail\Entities\CrmEmailSetting;
 use Modules\CRMEmail\Entities\EmailMarketingTemplate;
 use Modules\CRMEmail\Entities\EmailSegment;
 use Modules\CRMEmail\Http\Requests\StoreCampaign;
@@ -216,8 +217,9 @@ class CampaignController extends AccountBaseController
             'launched_at' => now(),
         ]);
 
-        // Retrieve the configured emails-per-minute from module config (default 60).
-        $emailsPerMinute = config('crmemail.throttle_emails_per_minute', 60);
+        // Read throttle from DB settings (never hardcoded).
+        $crmSetting     = CrmEmailSetting::getForCompany();
+        $emailsPerMinute = $crmSetting->throttle_per_minute;
 
         // Dispatch the master launcher job.
         LaunchCampaignJob::dispatch($campaign->id, $emailsPerMinute);

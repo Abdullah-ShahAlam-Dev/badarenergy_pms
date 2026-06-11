@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use Modules\CRMEmail\Entities\CrmEmailSetting;
 
 class CampaignMailable extends Mailable implements ShouldQueue
 {
@@ -62,6 +63,13 @@ class CampaignMailable extends Mailable implements ShouldQueue
     public ?string $unsubscribeUrl;
 
     /**
+     * The company_id owning this campaign — used to resolve the DB settings row.
+     *
+     * @var int
+     */
+    public int $companyId;
+
+    /**
      * Create a new CampaignMailable instance.
      *
      * @param string      $subject        Pre-rendered subject
@@ -69,36 +77,53 @@ class CampaignMailable extends Mailable implements ShouldQueue
      * @param string|null $senderName     Template from_name override (may be null)
      * @param string|null $senderEmail    Template from_email override (may be null)
      * @param string|null $unsubscribeUrl One-click unsubscribe URL for the footer
+     * @param int         $companyId      Company ID for resolving module settings
      */
     public function __construct(
         string $subject,
         string $htmlBody,
         ?string $senderName = null,
         ?string $senderEmail = null,
-        ?string $unsubscribeUrl = null
+        ?string $unsubscribeUrl = null,
+        int $companyId = 0
     ) {
         $this->emailSubject   = $subject;
         $this->htmlBody       = $htmlBody;
         $this->senderName     = $senderName;
         $this->senderEmail    = $senderEmail;
         $this->unsubscribeUrl = $unsubscribeUrl;
+        $this->companyId      = $companyId;
     }
 
     /**
      * Build the Mailable.
      *
-     * Resolves sender details directly from the SmtpSetting DB record.
+     * Sender resolution priority (highest → lowest):
+     *   1. Template-level from_name / from_email (set per campaign template)
+     *   2. CRM Email Module Settings (crm_email_settings DB row for the company)
+     *   3. System SmtpSetting (mail_from_name / mail_from_email)
+     *   4. Laravel config mail.from.* as ultimate fallback
+     *
      * NEVER uses Config::set() — sender is applied on this Mailable instance only.
      *
      * @return $this
      */
     public function build()
     {
-        // Query SmtpSetting directly — cannot use smtp_setting() session helper in queue context.
+        // --- Priority 3: System SMTP settings (queue-safe: query directly, never session helper) ---
         $smtpSetting = SmtpSetting::first();
 
-        $resolvedSenderName  = $this->senderName  ?: ($smtpSetting->mail_from_name  ?? config('mail.from.name'));
-        $resolvedSenderEmail = $this->senderEmail ?: ($smtpSetting->mail_from_email ?? config('mail.from.address'));
+        // --- Priority 2: CRM Email module DB settings ---
+        $crmSetting = CrmEmailSetting::withoutGlobalScope(\App\Scopes\CompanyScope::class)
+            ->where('company_id', $this->companyId)
+            ->first();
+
+        // Resolve final sender: template override → CRM settings → SmtpSetting → Laravel config
+        $resolvedSenderName  = $this->senderName
+            ?: ($crmSetting?->from_name  ?: ($smtpSetting?->mail_from_name  ?? config('mail.from.name')));
+
+        $resolvedSenderEmail = $this->senderEmail
+            ?: ($crmSetting?->from_email ?: ($smtpSetting?->mail_from_email ?? config('mail.from.address')));
 
         if (config('mail.verified') === true) {
             // When mail is verified: the SMTP "From" must be the system address.
@@ -118,3 +143,4 @@ class CampaignMailable extends Mailable implements ShouldQueue
                     ]);
     }
 }
+

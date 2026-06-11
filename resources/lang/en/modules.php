@@ -1683,7 +1683,8 @@ return array (
         'emergency_contact' => 'Emergency Contact',
         'recruit' => 'Recruit',
         'bankaccount' => 'Bank Account',
-        'daily_reports' => 'Daily Reports'
+        'daily_reports' => 'Daily Reports',
+        'crm_email' => 'CRM Email'
     ),
     'projectSettings' => array (
         'sendNotificationsTo' => 'Send Reminder To',

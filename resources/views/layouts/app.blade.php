@@ -827,11 +827,10 @@
             theme: 'snow',
             bounds: quillContainer
         });
-        $.each(quillArray, function (key, quill) {
-            quill.getModule('toolbar').addHandler('image', selectLocalImage);
-        });
-
-
+        const toolbar = quillArray[ID].getModule('toolbar');
+        if (toolbar) {
+            toolbar.addHandler('image', selectLocalImage);
+        }
     }
         function destory_editor(selector){
             if($(selector)[0])

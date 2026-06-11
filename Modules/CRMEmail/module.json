@@ -1,0 +1,11 @@
+{
+    "name": "CRMEmail",
+    "alias": "crmemail",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\CRMEmail\\Providers\\CRMEmailServiceProvider"
+    ],
+    "files": []
+}

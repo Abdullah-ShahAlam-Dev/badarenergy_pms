@@ -16,6 +16,7 @@
         "barryvdh/laravel-translation-manager": "^0.6.3",
         "billowapp/payfast": "^0.6.2",
         "billowapp/show-me-the-money": "0.4.4",
+        "cloudinary-labs/cloudinary-laravel": "*",
         "craftsys/msg91-laravel-notification-channel": "^0.7.0",
         "doctrine/dbal": "^3.0",
         "dompdf/dompdf": "2.0.1",

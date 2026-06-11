@@ -62,6 +62,14 @@ class StoreRequest extends CoreRequest
             ];
         }
 
+        if ($this->storage == 'cloudinary') {
+            $rules = [
+                'cloudinary_cloud_name' => 'required|string',
+                'cloudinary_api_key' => 'required|string',
+                'cloudinary_api_secret' => 'required|string',
+            ];
+        }
+
         return $rules;
     }
 

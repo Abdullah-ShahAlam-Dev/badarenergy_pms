@@ -158,6 +158,20 @@ class Files
 
         // Delete from Cloud
 
+        if (config('filesystems.default') === 'cloudinary') {
+            $isImageOrVideo = in_array(strtolower(pathinfo($filename, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'mp4', 'mov', 'avi']);
+            $publicId = $dir . '/' . ($isImageOrVideo ? preg_replace('/\.[^.]+$/', '', $filename) : $filename);
+            $resourceType = $isImageOrVideo ? 'image' : 'raw';
+
+            try {
+                cloudinary()->uploadApi()->destroy($publicId, ['resource_type' => $resourceType]);
+            } catch (\Exception $e) {
+                // fall through
+            }
+
+            return true;
+        }
+
         if (in_array(config('filesystems.default'), StorageSetting::S3_COMPATIBLE_STORAGE)) {
 
             if (Storage::disk(config('filesystems.default'))->exists($dir . '/' . $filename)) {

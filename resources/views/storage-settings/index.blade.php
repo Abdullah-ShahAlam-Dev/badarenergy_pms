@@ -53,6 +53,11 @@
                                     @if (isset($minioCredentials) && $minioCredentials->status == 'enabled') selected @endif>
                                     @lang('app.storageSetting.minio')
                             </option>
+                            <option value="cloudinary"
+                                    data-content="<i class='fa fa-cloud'></i> Cloudinary"
+                                    @if (isset($cloudinaryCredentials) && $cloudinaryCredentials->status == 'enabled') selected @endif>
+                                    Cloudinary
+                            </option>
                         </x-forms.select>
 
                     </div>
@@ -61,6 +66,7 @@
                     @include('storage-settings.digitalocean')
                     @include('storage-settings.wasabi')
                     @include('storage-settings.minio')
+                    @include('storage-settings.cloudinary')
 
                 </div>
             </div>
@@ -127,18 +133,21 @@
             if (type === 'aws_s3') {
                 $('.aws-form').css('display', 'block');
                 $('.digitalocean-form').css('display', 'none');
-                $('.wasabi-form,.wasabi-form,.minio-form').css('display', 'none');
+                $('.wasabi-form,.wasabi-form,.minio-form,.cloudinary-form').css('display', 'none');
             } else if (type === 'digitalocean') {
                 $('.digitalocean-form').css('display', 'block');
-                $('.aws-form,.wasabi-form,.minio-form').css('display', 'none');
+                $('.aws-form,.wasabi-form,.minio-form,.cloudinary-form').css('display', 'none');
             } else if (type === 'wasabi') {
                 $('.wasabi-form').css('display', 'block');
-                $('.aws-form,.digitalocean-form,.minio-form').css('display', 'none');
+                $('.aws-form,.digitalocean-form,.minio-form,.cloudinary-form').css('display', 'none');
             } else if (type === 'minio') {
                 $('.minio-form').css('display', 'block');
-                $('.aws-form,.digitalocean-form,.wasabi-form').css('display', 'none');
+                $('.aws-form,.digitalocean-form,.wasabi-form,.cloudinary-form').css('display', 'none');
+            } else if (type === 'cloudinary') {
+                $('.cloudinary-form').css('display', 'block');
+                $('.aws-form,.digitalocean-form,.wasabi-form,.minio-form').css('display', 'none');
             } else if (type === 'local') {
-                $('.aws-form,.digitalocean-form,.wasabi-form,.move-form,.minio-form').css('display', 'none');
+                $('.aws-form,.digitalocean-form,.wasabi-form,.move-form,.minio-form,.cloudinary-form').css('display', 'none');
             }
         }
 

@@ -39,6 +39,7 @@ class StorageSettingController extends AccountBaseController
         $this->digitalOceanCredentials = StorageSetting::where('filesystem', 'digitalocean')->first();
         $this->wasabiCredentials = StorageSetting::where('filesystem', 'wasabi')->first();
         $this->minioCredentials = StorageSetting::where('filesystem', 'minio')->first();
+        $this->cloudinaryCredentials = StorageSetting::where('filesystem', 'cloudinary')->first();
         $this->localCredentials = StorageSetting::where('filesystem', 'local')->first();
 
         if (!is_null($this->awsCredentials)) {
@@ -55,6 +56,10 @@ class StorageSettingController extends AccountBaseController
 
         if (!is_null($this->minioCredentials)) {
             $this->minioKeys = json_decode($this->minioCredentials->auth_keys);
+        }
+
+        if (!is_null($this->cloudinaryCredentials)) {
+            $this->cloudinaryKeys = json_decode($this->cloudinaryCredentials->auth_keys);
         }
 
         $this->localFilesCount = FileStorage::where('storage_location', 'local')->count();
@@ -117,6 +122,16 @@ class StorageSettingController extends AccountBaseController
                 'region' => $request->minio_region,
                 'bucket' => $request->minio_bucket,
                 'endpoint' => $request->minio_endpoint,
+            ];
+            $storage->auth_keys = json_encode($arrayResponse);
+            break;
+
+        case 'cloudinary':
+            $arrayResponse = [
+                'driver' => 'cloudinary',
+                'cloud_name' => $request->cloudinary_cloud_name,
+                'api_key' => $request->cloudinary_api_key,
+                'api_secret' => $request->cloudinary_api_secret,
             ];
             $storage->auth_keys = json_encode($arrayResponse);
             break;

@@ -79,6 +79,16 @@ class FileStorageCustomConfigProvider extends ServiceProvider
                 config(['filesystems.disks.minio.endpoint' => $endpoint]);
                 break;
 
+            case 'cloudinary':
+                $authKeys = json_decode($setting->auth_keys);
+                config(['filesystems.default' => 'cloudinary']);
+                config(['filesystems.cloud' => 'cloudinary']);
+                config(['cloudinary.cloud_url' => "cloudinary://{$authKeys->api_key}:{$authKeys->api_secret}@{$authKeys->cloud_name}"]);
+                config(['filesystems.disks.cloudinary.cloud_name' => $authKeys->cloud_name]);
+                config(['filesystems.disks.cloudinary.api_key' => $authKeys->api_key]);
+                config(['filesystems.disks.cloudinary.api_secret' => $authKeys->api_secret]);
+                break;
+
                 // For local storage
             default :
                 config(['filesystems.default' => $setting->filesystem]);

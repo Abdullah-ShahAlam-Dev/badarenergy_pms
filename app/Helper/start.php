@@ -380,6 +380,16 @@ if (!function_exists('asset_url_local_s3')) {
     // @codingStandardsIgnoreLine
     function asset_url_local_s3($path, $appRoute = false, $type = 'file')
     {
+        if (config('filesystems.default') === 'cloudinary') {
+            if (!cache('cloudinary_migration_completed')) {
+                $localPath = public_path(Files::UPLOAD_FOLDER . '/' . $path);
+                if (file_exists($localPath)) {
+                    return url(Files::UPLOAD_FOLDER . '/' . $path);
+                }
+            }
+            return Storage::disk('cloudinary')->url($path);
+        }
+
         if (in_array(config('filesystems.default'), StorageSetting::S3_COMPATIBLE_STORAGE)) {
             if ($appRoute) {
                 $filePath = FileController::encryptDecrypt($path);
@@ -407,6 +417,19 @@ if (!function_exists('download_local_s3')) {
     // @codingStandardsIgnoreLine
     function download_local_s3($file, $path)
     {
+        if (config('filesystems.default') === 'cloudinary') {
+            $localPath = public_path(Files::UPLOAD_FOLDER . '/' . $path);
+            if (file_exists($localPath)) {
+                $ext = pathinfo($file->filename, PATHINFO_EXTENSION);
+                $filename = $file->name ? $file->name . '.' . $ext : $file->filename;
+                try {
+                    return response()->download($localPath, $filename);
+                } catch (\Exception $e) {
+                    // fall through
+                }
+            }
+            return Storage::disk('cloudinary')->download($path, basename($file->filename));
+        }
 
         if (in_array(config('filesystems.default'), StorageSetting::S3_COMPATIBLE_STORAGE)) {
             return Storage::disk(config('filesystems.default'))->download($path, basename($file->filename));

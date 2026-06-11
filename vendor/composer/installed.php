@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'laravel/laravel',
-        'pretty_version' => 'dev-master',
-        'version' => 'dev-master',
-        'reference' => '49c4734c7d0088f44f0bd9062a77d1e3ea16603a',
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => '5353d198d4b8f63526d011b259855818812f8b29',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -216,6 +216,33 @@
             'reference' => '0ad82ce168c82ba30d1c01ec86116ab52f589478',
             'type' => 'library',
             'install_path' => __DIR__ . '/../brick/math',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'cloudinary-labs/cloudinary-laravel' => array(
+            'pretty_version' => '2.3.0',
+            'version' => '2.3.0.0',
+            'reference' => 'ed74eec3b2453ae307e2dda7e8c5cf9556f4daa3',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../cloudinary-labs/cloudinary-laravel',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'cloudinary/cloudinary_php' => array(
+            'pretty_version' => '2.14.0',
+            'version' => '2.14.0.0',
+            'reference' => '5967558bbf5d88e851ebd554559e850ac45b9236',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../cloudinary/cloudinary_php',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'cloudinary/transformation-builder-sdk' => array(
+            'pretty_version' => '1.5.0',
+            'version' => '1.5.0.0',
+            'reference' => '8c225472e96291a7af23ddf8947bdf31baac403e',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../cloudinary/transformation-builder-sdk',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
@@ -1030,9 +1057,9 @@
             'dev_requirement' => false,
         ),
         'laravel/laravel' => array(
-            'pretty_version' => 'dev-master',
-            'version' => 'dev-master',
-            'reference' => '49c4734c7d0088f44f0bd9062a77d1e3ea16603a',
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => '5353d198d4b8f63526d011b259855818812f8b29',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -1259,7 +1286,7 @@
         'macsidigital/laravel-zoom' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => '25c819dc468a43f4bcafc737543bfc7158d226a1',
+            'reference' => 'cda36ec0cdbbfce9808a0634956a3a837c2f8b4d',
             'type' => 'library',
             'install_path' => __DIR__ . '/../macsidigital/laravel-zoom',
             'aliases' => array(
@@ -1876,8 +1903,8 @@
         'psr/http-client-implementation' => array(
             'dev_requirement' => false,
             'provided' => array(
-                0 => '1.0',
-                1 => '*',
+                0 => '*',
+                1 => '1.0',
             ),
         ),
         'psr/http-factory' => array(
@@ -1892,10 +1919,10 @@
         'psr/http-factory-implementation' => array(
             'dev_requirement' => false,
             'provided' => array(
-                0 => '1.0',
-                1 => '^1.0',
-                2 => '^1.1 || ^2.0',
-                3 => '*',
+                0 => '*',
+                1 => '1.0',
+                2 => '^1.0',
+                3 => '^1.1 || ^2.0',
             ),
         ),
         'psr/http-message' => array(
@@ -1910,9 +1937,9 @@
         'psr/http-message-implementation' => array(
             'dev_requirement' => false,
             'provided' => array(
-                0 => '1.0',
-                1 => '^1.1 || ^2.0',
-                2 => '*',
+                0 => '*',
+                1 => '1.0',
+                2 => '^1.1 || ^2.0',
             ),
         ),
         'psr/log' => array(
@@ -1927,8 +1954,8 @@
         'psr/log-implementation' => array(
             'dev_requirement' => false,
             'provided' => array(
-                0 => '3.0.0',
-                1 => '1.0|2.0|3.0',
+                0 => '1.0|2.0|3.0',
+                1 => '3.0.0',
             ),
         ),
         'psr/simple-cache' => array(
@@ -2191,7 +2218,7 @@
             'version' => '3.4.0.0',
             'reference' => '7f1e04a5380a91e41a1a68c363ec19f88619a870',
             'type' => 'metapackage',
-            'install_path' => NULL,
+            'install_path' => null,
             'aliases' => array(),
             'dev_requirement' => false,
         ),

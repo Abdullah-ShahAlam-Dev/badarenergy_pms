@@ -13,10 +13,8 @@
                 <x-sub-menu-item :link="route('crm-email-segments.index')" :text="__('Email Segments')" />
                 <x-sub-menu-item :link="route('crm-email-campaigns.index')" :text="__('Campaigns')" />
             @endif
-            @if (in_array('admin', user_roles()))
-                <x-sub-menu-item :link="route('crm-email-settings.index')" :text="__('Settings')" />
-            @endif
         </div>
     </x-menu-item>
 @endif
+
 

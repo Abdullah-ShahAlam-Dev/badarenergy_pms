@@ -1,37 +1,76 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="content-wrapper">
-        <x-setting-header :heading="__('CRM Email Settings')" />
 
-        <div class="row">
-            {{-- LEFT: Tab Navigation --}}
-            <div class="col-xl-3 col-lg-4 col-md-12 mb-3">
-                <div class="card">
-                    <div class="card-body p-0">
-                        <ul class="list-group list-group-flush setting-sidebar-list" id="crm-email-setting-tab">
+    <!-- SETTINGS START -->
+    <div class="w-100 d-flex">
 
-                            <a href="{{ route('crm-email-settings.index') . '?tab=general' }}"
-                               class="list-group-item list-group-item-action {{ $activeTab === 'general' ? 'active' : '' }}"
-                               data-tab-target="#general-panel">
-                                <i class="fa fa-cog mr-2"></i> @lang('General Settings')
+        <x-setting-sidebar :activeMenu="$activeSettingMenu"/>
+
+        <x-setting-card>
+
+            <x-slot name="header">
+                <h4 class="mb-0 p-20 f-21 font-weight-normal text-capitalize border-bottom-grey">
+                    CRM Email Settings
+                </h4>
+            </x-slot>
+
+            <x-slot name="header">
+                <div class="s-b-n-header" id="tabs">
+                    <nav class="tabs px-4 border-bottom-grey">
+                        <div class="nav" id="nav-tab" role="tablist">
+                            <a class="nav-item nav-link f-15 general {{ $activeTab === 'general' ? 'active' : '' }}"
+                               href="{{ route('crm-email-settings.index') }}"
+                               role="tab" aria-controls="nav-crm-email-setting" aria-selected="true"
+                               ajax="false">General
                             </a>
 
-                            <a href="{{ route('crm-email-settings.index') . '?tab=email' }}"
-                               class="list-group-item list-group-item-action {{ $activeTab === 'email' ? 'active' : '' }}"
-                               data-tab-target="#email-panel">
-                                <i class="fa fa-envelope mr-2"></i> @lang('Email & Sending')
+                            <a class="nav-item nav-link f-15 email {{ $activeTab === 'email' ? 'active' : '' }}"
+                               href="{{ route('crm-email-settings.index') }}?tab=email"
+                               role="tab" aria-controls="nav-crm-email-setting" aria-selected="false"
+                               ajax="false">Email &amp; Sending
                             </a>
-
-                        </ul>
-                    </div>
+                        </div>
+                    </nav>
                 </div>
-            </div>
+            </x-slot>
 
-            {{-- RIGHT: Tab Content --}}
-            <div class="col-xl-9 col-lg-8 col-md-12" id="crm-email-setting-content">
-                @include($view)
-            </div>
-        </div>
+            {{-- Tab content rendered server-side --}}
+            @include($view)
+
+        </x-setting-card>
+
     </div>
+    <!-- SETTINGS END -->
+
 @endsection
+
+@push('scripts')
+<script>
+    $('.nav-item').removeClass('active');
+    const activeTab = "{{ $activeTab }}";
+    $('.' + activeTab).addClass('active');
+
+    $(document).on('click', '#nav-tab .nav-item', function (event) {
+        event.preventDefault();
+
+        $('.nav-item').removeClass('active');
+        $(this).addClass('active');
+
+        const requestUrl = this.href;
+
+        $.easyAjax({
+            url: requestUrl,
+            blockUI: true,
+            container: '#nav-tabContent',
+            historyPush: true,
+            success: function (response) {
+                if (response.status === 'success') {
+                    $('#nav-tabContent .flex-wrap').html(response.html);
+                    init('#nav-tabContent');
+                }
+            }
+        });
+    });
+</script>
+@endpush

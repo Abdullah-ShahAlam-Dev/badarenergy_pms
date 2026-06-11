@@ -94,6 +94,10 @@
                             @lang('app.storageSetting.testMinio')
                         </x-forms.button-secondary>
 
+                        <x-forms.button-secondary id="test-aws" icon="location-arrow" class="cloudinary-form mr-3">
+                            Test Cloudinary Upload
+                        </x-forms.button-secondary>
+
                         @if($localFilesCount>0)
                             <x-forms.button-secondary id="local-to-aws" icon="location-arrow" class="move-form">
                                 @lang('app.moveFilesToCloud')

@@ -954,11 +954,18 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
         foreach ($rolePermissions as $key => $value) {
             $userPermission = UserPermission::where('permission_id', $value->permission_id)
                 ->where('user_id', $this->id)
-                ->firstOrNew();
-            $userPermission->permission_id = $value->permission_id;
-            $userPermission->user_id = $this->id;
-            $userPermission->permission_type_id = $value->permission_type_id;
-            $userPermission->save();
+                ->first();
+
+            if (!$userPermission) {
+                $userPermission = new UserPermission();
+                $userPermission->permission_id = $value->permission_id;
+                $userPermission->user_id = $this->id;
+                $userPermission->permission_type_id = $value->permission_type_id;
+                $userPermission->save();
+            } elseif ($this->customised_permissions == 0) {
+                $userPermission->permission_type_id = $value->permission_type_id;
+                $userPermission->save();
+            }
         }
     }
 

@@ -86,52 +86,55 @@
                         <div class="row p-10 item-row border-top-grey">
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label class="f-14 text-dark-grey mb-12">@lang('workorder::modules.workOrder.itemName') <sup class="f-14">*</sup></label>
-                                    <input type="text" class="form-control height-35 f-14" name="item_name[]" required>
+                                    <label class="f-14 text-dark-grey mb-12">Product <sup class="f-14">*</sup></label>
+                                    <select class="form-control height-35 f-14 selectpicker item-product" name="product_id[]" data-live-search="true" required>
+                                        <option value="">-- Select Product --</option>
+                                        @foreach($products as $product)
+                                            <option value="{{ $product->id }}" data-rate="{{ $product->price }}" data-unit="{{ $product->unit ? $product->unit->unit_type : '' }}">{{ $product->name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-1">
                                 <div class="form-group">
-                                    <label class="f-14 text-dark-grey mb-12">@lang('workorder::modules.workOrder.quantity') <sup class="f-14">*</sup></label>
+                                    <label class="f-14 text-dark-grey mb-12">Qty <sup class="f-14">*</sup></label>
                                     <input type="number" step="0.01" class="form-control height-35 f-14 item-qty" name="quantity[]" value="1" required>
                                 </div>
                             </div>
                             <div class="col-md-1">
                                 <div class="form-group">
-                                    <label class="f-14 text-dark-grey mb-12">@lang('workorder::modules.workOrder.unit')</label>
-                                    <input type="text" class="form-control height-35 f-14" name="unit[]">
+                                    <label class="f-14 text-dark-grey mb-12">Unit</label>
+                                    <input type="text" class="form-control height-35 f-14 item-unit" name="unit[]">
                                 </div>
                             </div>
-                            {{-- Without Amount toggle --}}
-                            <div class="col-md-2 d-flex align-items-center pt-3">
-                                <div class="form-group mb-0">
-                                    <label class="f-14 text-dark-grey mb-12 d-block">Without Amount</label>
-                                    <div class="d-flex align-items-center">
+                            <div class="col-md-1">
+                                <div class="form-group">
+                                    <label class="f-14 text-dark-grey mb-12">SQM From</label>
+                                    <input type="number" step="0.01" class="form-control height-35 f-14 item-sqm-from" name="sqm_from[]" value="0">
+                                </div>
+                            </div>
+                            <div class="col-md-1">
+                                <div class="form-group">
+                                    <label class="f-14 text-dark-grey mb-12">SQM To</label>
+                                    <input type="number" step="0.01" class="form-control height-35 f-14 item-sqm-to" name="sqm_to[]" value="0">
+                                </div>
+                            </div>
+                            {{-- Without Price toggle --}}
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label class="f-14 text-dark-grey mb-12">Without Price</label>
+                                    <div class="custom-control custom-switch pt-2">
                                         <input type="hidden" name="without_amount[]" value="0" class="item-without-amount-hidden">
-                                        <input type="checkbox" class="item-without-amount-chk" style="width:18px;height:18px;">
+                                        <input type="checkbox" class="custom-control-input item-without-amount-chk" id="without_amount_0">
+                                        <label class="custom-control-label f-14 cursor-pointer" for="without_amount_0"></label>
                                     </div>
                                 </div>
                             </div>
                             {{-- Payment fields wrapper --}}
                             <div class="col-md-2 payment-fields-wrapper">
                                 <div class="form-group">
-                                    <label class="f-14 text-dark-grey mb-12">@lang('workorder::modules.workOrder.rate') <sup class="f-14">*</sup></label>
+                                    <label class="f-14 text-dark-grey mb-12">Rate <sup class="f-14">*</sup></label>
                                     <input type="number" step="0.01" class="form-control height-35 f-14 item-rate" name="rate[]" value="0">
-                                </div>
-                            </div>
-                            <div class="col-md-1 payment-fields-wrapper">
-                                <div class="form-group">
-                                    <label class="f-14 text-dark-grey mb-12">@lang('workorder::modules.workOrder.taxType')</label>
-                                    <select class="form-control height-35 f-14 item-tax-type" name="tax_type[]">
-                                        <option value="exclusive">@lang('workorder::modules.workOrder.exclusive')</option>
-                                        <option value="inclusive">@lang('workorder::modules.workOrder.inclusive')</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-1 payment-fields-wrapper">
-                                <div class="form-group">
-                                    <label class="f-14 text-dark-grey mb-12">@lang('workorder::modules.workOrder.taxPercent')</label>
-                                    <input type="number" step="0.01" class="form-control height-35 f-14 item-tax-pct" name="tax_percent[]" value="0">
                                 </div>
                             </div>
                             <div class="col-md-1 d-flex align-items-center pt-3 payment-fields-wrapper">
@@ -140,10 +143,47 @@
                                     <p class="mb-0 f-14 font-weight-bold item-total-display">0.00</p>
                                 </div>
                             </div>
+                            
                             {{-- Line break to prevent layout shift when payment fields are hidden --}}
                             <div class="w-100"></div>
+                            
+                            <div class="col-md-2 payment-fields-wrapper">
+                                <div class="form-group">
+                                    <label class="f-14 text-dark-grey mb-12">Tax Name</label>
+                                    <select class="form-control height-35 f-14 item-tax-name" name="tax_name[]">
+                                        <option value="">None</option>
+                                        <option value="GST">GST</option>
+                                        <option value="SST">SST</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2 payment-fields-wrapper">
+                                <div class="form-group">
+                                    <label class="f-14 text-dark-grey mb-12">Tax Mode</label>
+                                    <select class="form-control height-35 f-14 item-tax-type" name="tax_type[]">
+                                        <option value="exclusive">Exclusive</option>
+                                        <option value="amount">Amount</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2.5 payment-fields-wrapper">
+                                <div class="form-group">
+                                    <label class="f-14 text-dark-grey mb-12">Tax Method</label>
+                                    <select class="form-control height-35 f-14 item-tax-method" name="tax_method[]">
+                                        <option value="percent">Percentage</option>
+                                        <option value="fixed">Fixed Amount</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-1.5 payment-fields-wrapper">
+                                <div class="form-group">
+                                    <label class="f-14 text-dark-grey mb-12">Tax Value</label>
+                                    <input type="number" step="0.01" class="form-control height-35 f-14 item-tax-pct" name="tax_percent[]" value="0">
+                                </div>
+                            </div>
                             {{-- Item-level Completion Date Time --}}
-                            <div class="col-md-3 mt-2">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label class="f-14 text-dark-grey mb-12">@lang('workorder::modules.workOrder.completionDateTimeItem')</label>
                                     <input type="datetime-local" class="form-control height-35 f-14" name="item_completion_date_time[]">
@@ -156,12 +196,18 @@
                     <button type="button" id="add-wo-item" class="btn btn-outline-primary btn-sm mt-2">
                         <i class="fa fa-plus mr-1"></i> @lang('workorder::modules.workOrder.addItem')
                     </button>
+                    @if(user()->permission('add_product') != 'none')
+                        <button type="button" class="btn btn-outline-success btn-sm mt-2 ml-2" id="add-product-button">
+                            <i class="fa fa-plus mr-1"></i> Add Product
+                        </button>
+                    @endif
                 </div>
 
                 {{-- ── SUMMARY ───────────────────────────────────────────────── --}}
                 <div class="row p-20 border-top-grey">
                     <div class="col-md-6 offset-md-6">
                         <table class="table table-sm">
+                            <tr><td class="text-right">Total SQM</td><td class="text-right font-weight-bold" id="wo-sqm-total">0.00</td></tr>
                             <tr><td class="text-right">@lang('workorder::modules.workOrder.subTotal')</td><td class="text-right font-weight-bold" id="wo-subtotal">0.00</td></tr>
                             <tr>
                                 <td class="text-right">
@@ -183,16 +229,16 @@
                 <div class="row p-20 border-top-grey">
                     <div class="col-md-12">
                         <x-forms.textarea fieldId="terms_conditions" :fieldLabel="__('workorder::modules.workOrder.termsConditions')"
-                            fieldName="terms_conditions" />
+                             fieldName="terms_conditions" />
                     </div>
                     <div class="col-md-12">
                         <x-forms.textarea fieldId="special_instructions" :fieldLabel="__('workorder::modules.workOrder.specialInstructions')"
-                            fieldName="special_instructions" />
+                             fieldName="special_instructions" />
                     </div>
                     <div class="col-md-4">
                         <input type="hidden" name="approval_required" value="0">
                         <x-forms.checkbox fieldId="approval_required" :fieldLabel="__('workorder::modules.workOrder.approvalRequired')"
-                            fieldName="approval_required" fieldValue="1" :checked="true" />
+                             fieldName="approval_required" fieldValue="1" :checked="true" />
                     </div>
                 </div>
 
@@ -208,67 +254,146 @@
 
 <script>
 $(document).ready(function () {
+    $('.selectpicker').selectpicker();
+
     // ── Datepickers ────────────────────────────────────────────────────────────
     datepicker('#wo_date', { position: 'bl', ...datepickerConfig });
 
+    // Generate product options
+    var productOptions = `<option value="">-- Select Product --</option>`;
+    @foreach($products as $product)
+        productOptions += `<option value="{{ $product->id }}" data-rate="{{ $product->price }}" data-unit="{{ $product->unit ? $product->unit->unit_type : '' }}">{{ addslashes($product->name) }}</option>`;
+    @endforeach
+
     // ── Item row HTML template (for dynamic cloning) ───────────────────────────
     function newItemRowHtml() {
+        var rowId = 'without_amount_' + $('.item-row').length + '_' + Date.now();
         return `<div class="row p-10 item-row border-top-grey">
-            <div class="col-md-3"><div class="form-group">
-                <label class="f-14 text-dark-grey mb-12">Item Name <sup>*</sup></label>
-                <input type="text" class="form-control height-35 f-14" name="item_name[]" required>
-            </div></div>
-            <div class="col-md-2"><div class="form-group">
-                <label class="f-14 text-dark-grey mb-12">Qty <sup>*</sup></label>
-                <input type="number" step="0.01" class="form-control height-35 f-14 item-qty" name="quantity[]" value="1" required>
-            </div></div>
-            <div class="col-md-1"><div class="form-group">
-                <label class="f-14 text-dark-grey mb-12">Unit</label>
-                <input type="text" class="form-control height-35 f-14" name="unit[]">
-            </div></div>
-            <div class="col-md-2 d-flex align-items-center pt-3"><div class="form-group mb-0">
-                <label class="f-14 text-dark-grey mb-12 d-block">Without Amount</label>
-                <div class="d-flex align-items-center">
-                    <input type="hidden" name="without_amount[]" value="0" class="item-without-amount-hidden">
-                    <input type="checkbox" class="item-without-amount-chk" style="width:18px;height:18px;">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label class="f-14 text-dark-grey mb-12">Product <sup>*</sup></label>
+                    <select class="form-control height-35 f-14 selectpicker item-product" name="product_id[]" data-live-search="true" required>
+                        ${productOptions}
+                    </select>
                 </div>
-            </div></div>
-            <div class="col-md-2 payment-fields-wrapper"><div class="form-group">
-                <label class="f-14 text-dark-grey mb-12">Rate <sup>*</sup></label>
-                <input type="number" step="0.01" class="form-control height-35 f-14 item-rate" name="rate[]" value="0">
-            </div></div>
-            <div class="col-md-1 payment-fields-wrapper"><div class="form-group">
-                <label class="f-14 text-dark-grey mb-12">Tax Type</label>
-                <select class="form-control height-35 f-14 item-tax-type" name="tax_type[]">
-                    <option value="exclusive">Exclusive</option>
-                    <option value="inclusive">Inclusive</option>
-                </select>
-            </div></div>
-            <div class="col-md-1 payment-fields-wrapper"><div class="form-group">
-                <label class="f-14 text-dark-grey mb-12">Tax %</label>
-                <input type="number" step="0.01" class="form-control height-35 f-14 item-tax-pct" name="tax_percent[]" value="0">
-            </div></div>
-            <div class="col-md-1 d-flex align-items-center pt-3 payment-fields-wrapper"><div>
-                <label class="f-14 text-dark-grey mb-12">Total</label>
-                <p class="mb-0 f-14 font-weight-bold item-total-display">0.00</p>
-            </div></div>
+            </div>
+            <div class="col-md-1">
+                <div class="form-group">
+                    <label class="f-14 text-dark-grey mb-12">Qty <sup>*</sup></label>
+                    <input type="number" step="0.01" class="form-control height-35 f-14 item-qty" name="quantity[]" value="1" required>
+                </div>
+            </div>
+            <div class="col-md-1">
+                <div class="form-group">
+                    <label class="f-14 text-dark-grey mb-12">Unit</label>
+                    <input type="text" class="form-control height-35 f-14 item-unit" name="unit[]">
+                </div>
+            </div>
+            <div class="col-md-1">
+                <div class="form-group">
+                    <label class="f-14 text-dark-grey mb-12">SQM From</label>
+                    <input type="number" step="0.01" class="form-control height-35 f-14 item-sqm-from" name="sqm_from[]" value="0">
+                </div>
+            </div>
+            <div class="col-md-1">
+                <div class="form-group">
+                    <label class="f-14 text-dark-grey mb-12">SQM To</label>
+                    <input type="number" step="0.01" class="form-control height-35 f-14 item-sqm-to" name="sqm_to[]" value="0">
+                </div>
+            </div>
+            {{-- Without Price toggle --}}
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label class="f-14 text-dark-grey mb-12">Without Price</label>
+                    <div class="custom-control custom-switch pt-2">
+                        <input type="hidden" name="without_amount[]" value="0" class="item-without-amount-hidden">
+                        <input type="checkbox" class="custom-control-input item-without-amount-chk" id="${rowId}">
+                        <label class="custom-control-label f-14 cursor-pointer" for="${rowId}"></label>
+                    </div>
+                </div>
+            </div>
+            {{-- Payment fields wrapper --}}
+            <div class="col-md-2 payment-fields-wrapper">
+                <div class="form-group">
+                    <label class="f-14 text-dark-grey mb-12">Rate <sup>*</sup></label>
+                    <input type="number" step="0.01" class="form-control height-35 f-14 item-rate" name="rate[]" value="0">
+                </div>
+            </div>
+            <div class="col-md-1 d-flex align-items-center pt-3 payment-fields-wrapper">
+                <div>
+                    <label class="f-14 text-dark-grey mb-12">Total</label>
+                    <p class="mb-0 f-14 font-weight-bold item-total-display">0.00</p>
+                </div>
+            </div>
+            
             <div class="w-100"></div>
-            <div class="col-md-3 mt-2"><div class="form-group">
-                <label class="f-14 text-dark-grey mb-12">Expected Completion</label>
-                <input type="datetime-local" class="form-control height-35 f-14" name="item_completion_date_time[]">
-            </div></div>
-            <div class="col-12 text-right mt-1">
-                <button type="button" class="btn btn-sm btn-outline-danger remove-wo-item"><i class="fa fa-times"></i></button>
+            
+            <div class="col-md-2 payment-fields-wrapper">
+                <div class="form-group">
+                    <label class="f-14 text-dark-grey mb-12">Tax Name</label>
+                    <select class="form-control height-35 f-14 item-tax-name" name="tax_name[]">
+                        <option value="">None</option>
+                        <option value="GST">GST</option>
+                        <option value="SST">SST</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2 payment-fields-wrapper">
+                <div class="form-group">
+                    <label class="f-14 text-dark-grey mb-12">Tax Mode</label>
+                    <select class="form-control height-35 f-14 item-tax-type" name="tax_type[]">
+                        <option value="exclusive">Exclusive</option>
+                        <option value="amount">Amount</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2.5 payment-fields-wrapper">
+                <div class="form-group">
+                    <label class="f-14 text-dark-grey mb-12">Tax Method</label>
+                    <select class="form-control height-35 f-14 item-tax-method" name="tax_method[]">
+                        <option value="percent">Percentage</option>
+                        <option value="fixed">Fixed Amount</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-1.5 payment-fields-wrapper">
+                <div class="form-group">
+                    <label class="f-14 text-dark-grey mb-12">Tax Value</label>
+                    <input type="number" step="0.01" class="form-control height-35 f-14 item-tax-pct" name="tax_percent[]" value="0">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label class="f-14 text-dark-grey mb-12">Expected Completion</label>
+                    <input type="datetime-local" class="form-control height-35 f-14" name="item_completion_date_time[]">
+                </div>
+            </div>
+            <div class="col-md-1 text-right pt-4">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-wo-item mt-2"><i class="fa fa-times"></i></button>
             </div>
         </div>`;
     }
 
     $('#add-wo-item').click(function () {
         $('#wo-item-list').append(newItemRowHtml());
+        $('select[name="product_id[]"]').last().selectpicker();
     });
 
     $('body').on('click', '.remove-wo-item', function () {
         $(this).closest('.item-row').remove();
+        recalculate();
+    });
+
+    // ── Product change auto-population ─────────────────────────────────────────
+    $('body').on('change', '.item-product', function () {
+        var $row = $(this).closest('.item-row');
+        var $selectedOption = $(this).find('option:selected');
+        var rate = $selectedOption.data('rate') || 0;
+        var unit = $selectedOption.data('unit') || '';
+        
+        $row.find('.item-rate').val(rate);
+        $row.find('.item-unit').val(unit);
         recalculate();
     });
 
@@ -287,7 +412,7 @@ $(document).ready(function () {
     });
 
     // ── Real-time calculation ──────────────────────────────────────────────────
-    $('body').on('input change', '.item-qty, .item-rate, .item-tax-pct, .item-tax-type', function () {
+    $('body').on('input change', '.item-qty, .item-rate, .item-tax-pct, .item-tax-type, .item-tax-method, .item-sqm-from, .item-sqm-to', function () {
         recalculate();
     });
     $('body').on('input change', '#wo-discount, #discount-type', function () {
@@ -295,25 +420,35 @@ $(document).ready(function () {
     });
 
     function recalculate() {
-        var subTotal = 0, totalTax = 0;
+        var subTotal = 0, totalTax = 0, totalSqm = 0;
         $('.item-row').each(function () {
+            var qty      = parseFloat($(this).find('.item-qty').val()) || 0;
+            var sqmFrom  = parseFloat($(this).find('.item-sqm-from').val()) || 0;
+            var sqmTo    = parseFloat($(this).find('.item-sqm-to').val()) || 0;
+            var rowSqm   = Math.max(0, sqmTo - sqmFrom) * qty;
+            totalSqm    += rowSqm;
+
             // Skip without_amount items from calculations
             if ($(this).find('.item-without-amount-chk').is(':checked')) {
                 $(this).find('.item-total-display').text('0.00');
                 return;
             }
-            var qty      = parseFloat($(this).find('.item-qty').val()) || 0;
-            var rate     = parseFloat($(this).find('.item-rate').val()) || 0;
-            var taxPct   = parseFloat($(this).find('.item-tax-pct').val()) || 0;
-            var taxType  = $(this).find('.item-tax-type').val();
-            var lineBase = qty * rate;
-            var taxAmt   = 0, lineTotal = 0;
+            var rate      = parseFloat($(this).find('.item-rate').val()) || 0;
+            var taxPct    = parseFloat($(this).find('.item-tax-pct').val()) || 0;
+            var taxType   = $(this).find('.item-tax-type').val();
+            var taxMethod = $(this).find('.item-tax-method').val();
+            var lineBase  = qty * rate;
+            var taxAmt    = 0, lineTotal = 0;
+
+            if (taxMethod === 'fixed') {
+                taxAmt = taxPct;
+            } else {
+                taxAmt = lineBase * (taxPct / 100);
+            }
 
             if (taxType === 'exclusive') {
-                taxAmt    = lineBase * (taxPct / 100);
                 lineTotal = lineBase + taxAmt;
             } else {
-                taxAmt    = lineBase - (lineBase / (1 + taxPct / 100));
                 lineTotal = lineBase;
             }
             subTotal += lineBase;
@@ -326,9 +461,70 @@ $(document).ready(function () {
         var discountAmt  = discountType === 'percent' ? subTotal * (discount / 100) : discount;
         var grandTotal   = subTotal + totalTax - discountAmt;
 
+        $('#wo-sqm-total').text(totalSqm.toFixed(2));
         $('#wo-subtotal').text(subTotal.toFixed(2));
         $('#wo-tax-total').text(totalTax.toFixed(2));
         $('#wo-grand-total').text(grandTotal.toFixed(2));
+    }
+
+    // ── Add Product modal flow ─────────────────────────────────────────────────
+    $('#add-product-button').click(function() {
+        var url = "{{ route('products.create') }}?redirect_url=no";
+        $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
+        $.easyAjax({
+            url: url,
+            type: "GET",
+            blockUI: true,
+            success: function (response) {
+                if (response.status === 'success') {
+                    $(MODAL_XL + ' .modal-content').html(response.html);
+                    $(MODAL_XL).modal({
+                        show: true,
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+                }
+            }
+        });
+    });
+
+    window.getProductOptions = function(response) {
+        $.easyAjax({
+            url: "{{ route('products.options') }}",
+            type: "GET",
+            success: function (optionsResponse) {
+                var options = '<option value="">-- Select Product --</option>' + optionsResponse.products;
+                // Update all product select elements
+                $('select[name="product_id[]"]').each(function() {
+                    var currentVal = $(this).val();
+                    $(this).html(options);
+                    $(this).val(currentVal);
+                });
+                $('select[name="product_id[]"]').selectpicker('refresh');
+                
+                // Select the newly created product in the last select picker if empty
+                if (response && response.productID) {
+                    var lastSelect = $('select[name="product_id[]"]').last();
+                    if (!lastSelect.val()) {
+                        lastSelect.val(response.productID).selectpicker('refresh');
+                        // Populate rate/unit for it
+                        var $selectedOption = lastSelect.find('option:selected');
+                        var rate = $selectedOption.data('rate') || 0;
+                        var unit = $selectedOption.data('unit') || '';
+                        var $row = lastSelect.closest('.item-row');
+                        $row.find('.item-rate').val(rate);
+                        $row.find('.item-unit').val(unit);
+                    }
+                }
+
+                // Close XL modal
+                $(MODAL_XL).modal('hide');
+                
+                // Update internal options variable for new rows
+                productOptions = options;
+                recalculate();
+            }
+        });
     }
 
     // ── Submit ─────────────────────────────────────────────────────────────────

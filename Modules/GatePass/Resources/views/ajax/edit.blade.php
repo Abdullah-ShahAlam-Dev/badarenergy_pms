@@ -117,8 +117,8 @@
                         <i class="fa fa-plus mr-1"></i> Add Another Item
                     </button>
                     @if(user()->permission('add_product') != 'none')
-                        <button type="button" class="btn btn-outline-success btn-sm ml-2" data-toggle="modal" data-target="#quickAddProductModal">
-                            <i class="fa fa-plus mr-1"></i> Create Product Master
+                        <button type="button" class="btn btn-outline-success btn-sm ml-2" id="add-product-button">
+                            <i class="fa fa-plus mr-1"></i> Create Product
                         </button>
                     @endif
                 </div>
@@ -130,42 +130,7 @@
                     </x-forms.button-cancel>
                 </x-form-actions>
 
-                @if(user()->permission('add_product') != 'none')
-                <!-- Quick Add Product Modal -->
-                <div class="modal fade" id="quickAddProductModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 1060;">
-                    <div class="modal-dialog modal-md modal-dialog-centered" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title text-dark">Create Product Master</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body text-left">
-                                <div class="form-group">
-                                    <label class="f-14 text-dark-grey mb-12">Product Name <sup class="f-14">*</sup></label>
-                                    <input type="text" class="form-control height-35 f-14" id="quick_product_name" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="f-14 text-dark-grey mb-12">Price <sup class="f-14">*</sup></label>
-                                    <input type="number" class="form-control height-35 f-14" id="quick_product_price" value="0" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="f-14 text-dark-grey mb-12">Purchase Allowed</label>
-                                    <select class="form-control height-35 f-14" id="quick_purchase_allow">
-                                        <option value="yes">Yes</option>
-                                        <option value="no">No</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Close</button>
-                                <button type="button" class="btn btn-primary btn-sm" id="save-quick-product">Save Product</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                @endif
+
             </div>
         </x-form>
     </div>
@@ -242,58 +207,56 @@
             $(this).closest('.item-row').remove();
         });
 
-        @if(user()->permission('add_product') != 'none')
-        $('#save-quick-product').click(function() {
-            var name = $('#quick_product_name').val();
-            var price = $('#quick_product_price').val();
-            var purchaseAllow = $('#quick_purchase_allow').val();
-
-            if (!name || !price) {
-                alert('Please fill out all required fields.');
-                return;
-            }
-
+        $('#add-product-button').click(function() {
+            var url = "{{ route('products.create') }}?redirect_url=no";
+            $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
             $.easyAjax({
-                url: "{{ route('products.store') }}",
-                type: "POST",
-                disableButton: true,
-                buttonSelector: "#save-quick-product",
-                data: {
-                    _token: "{{ csrf_token() }}",
-                    name: name,
-                    price: price,
-                    purchase_allow: purchaseAllow,
-                    default_image: 0
-                },
-                success: function(response) {
-                    if (response.status == 'success') {
-                        // Append newly created product to all product dropdowns
-                        var safeName = name.replace(/'/g, "\\'").replace(/"/g, '\\"');
-                        var optionHtml = `<option value="${response.productID}">${name}</option>`;
-                        productOptions += `<option value="${response.productID}">${safeName}</option>`;
-                        
-                        $('select[name="product_id[]"]').each(function() {
-                            var currentVal = $(this).val();
-                            $(this).append(optionHtml);
-                            $(this).val(currentVal);
+                url: url,
+                type: "GET",
+                blockUI: true,
+                success: function (response) {
+                    if (response.status === 'success') {
+                        $(MODAL_XL + ' .modal-content').html(response.html);
+                        $(MODAL_XL).modal({
+                            show: true,
+                            backdrop: 'static',
+                            keyboard: false
                         });
-                        $('select[name="product_id[]"]').selectpicker('refresh');
-                        
-                        // Select the new product in the last row if its value is currently empty
-                        var lastSelect = $('select[name="product_id[]"]').last();
-                        if (!lastSelect.val()) {
-                            lastSelect.val(response.productID).selectpicker('refresh');
-                        }
-
-                        $('#quickAddProductModal').modal('hide');
-                        $('#quick_product_name').val('');
-                        $('#quick_product_price').val('0');
-                        $('#quick_purchase_allow').val('yes');
                     }
                 }
             });
         });
-        @endif
+
+        window.getProductOptions = function(response) {
+            $.easyAjax({
+                url: "{{ route('products.options') }}",
+                type: "GET",
+                success: function (optionsResponse) {
+                    var options = '<option value="">-- Select Product --</option>' + optionsResponse.products;
+                    // Update all product select elements
+                    $('select[name="product_id[]"]').each(function() {
+                        var currentVal = $(this).val();
+                        $(this).html(options);
+                        $(this).val(currentVal);
+                    });
+                    $('select[name="product_id[]"]').selectpicker('refresh');
+                    
+                    // Select the newly created product in the last select picker if empty
+                    if (response && response.productID) {
+                        var lastSelect = $('select[name="product_id[]"]').last();
+                        if (!lastSelect.val()) {
+                            lastSelect.val(response.productID).selectpicker('refresh');
+                        }
+                    }
+
+                    // Close XL modal
+                    $(MODAL_XL).modal('hide');
+                    
+                    // Update internal options variable for new rows
+                    productOptions = options;
+                }
+            });
+        }
 
         $('#update-gate-pass-form').click(function() {
             const url = "{{ route('gate-pass.update', $gatePass->id) }}";
@@ -319,7 +282,6 @@
 
         // Cleanup modal backdrops and reset body classes on Turbo page transitions
         document.addEventListener('turbo:before-cache', function cleanup() {
-            $('#quickAddProductModal').remove();
             $('.modal-backdrop').remove();
             $('body').removeClass('modal-open');
             document.removeEventListener('turbo:before-cache', cleanup);

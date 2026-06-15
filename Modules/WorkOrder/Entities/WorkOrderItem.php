@@ -12,6 +12,7 @@ class WorkOrderItem extends BaseModel
 
     protected $fillable = [
         'work_order_id',
+        'product_id',
         'item_name',
         'description',
         'completion_date_time',
@@ -19,8 +20,12 @@ class WorkOrderItem extends BaseModel
         'quantity',
         'unit',
         'rate',
+        'sqm_from',
+        'sqm_to',
         'tax_id',
         'tax_type',
+        'tax_name',
+        'tax_method',
         'tax_percent',
         'tax_amount',
         'total',
@@ -31,6 +36,8 @@ class WorkOrderItem extends BaseModel
         'without_amount'  => 'boolean',
         'quantity'    => 'decimal:2',
         'rate'        => 'decimal:2',
+        'sqm_from'    => 'decimal:2',
+        'sqm_to'      => 'decimal:2',
         'tax_percent' => 'decimal:2',
         'tax_amount'  => 'decimal:2',
         'total'       => 'decimal:2',
@@ -46,22 +53,31 @@ class WorkOrderItem extends BaseModel
         return $this->belongsTo(Tax::class, 'tax_id');
     }
 
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Product::class, 'product_id');
+    }
+
     /**
-     * Calculate total for this item based on tax_type.
+     * Calculate total for this item based on tax_type and tax_method.
      * Exclusive: total = (quantity * rate) + tax_amount
-     * Inclusive: total = quantity * rate  (tax already inside rate)
+     * Amount: total = quantity * rate (tax tracked but not added to row total)
      */
-    public static function calculateTotal(float $qty, float $rate, float $taxPercent, string $taxType): array
+    public static function calculateTotal(float $qty, float $rate, float $taxPercent, string $taxType, string $taxMethod = 'percent'): array
     {
         $subtotal = $qty * $rate;
 
-        if ($taxType === 'exclusive') {
-            $taxAmount = $subtotal * ($taxPercent / 100);
-            $total     = $subtotal + $taxAmount;
+        if ($taxMethod === 'fixed') {
+            $taxAmount = $taxPercent;
         } else {
-            // Inclusive: tax is already embedded in rate
-            $taxAmount = $subtotal - ($subtotal / (1 + $taxPercent / 100));
-            $total     = $subtotal;
+            $taxAmount = $subtotal * ($taxPercent / 100);
+        }
+
+        if ($taxType === 'exclusive') {
+            $total = $subtotal + $taxAmount;
+        } else {
+            // 'amount' type: tax is tracked but not added to row total
+            $total = $subtotal;
         }
 
         return [

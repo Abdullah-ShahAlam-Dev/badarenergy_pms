@@ -447,7 +447,8 @@ class ProductController extends AccountBaseController
         $option = '';
 
         foreach ($products as $item) {
-            $option .= '<option data-content="' . $item->name . '" value="' . $item->id . '"> ' . $item->name . '</option>';
+            $unitType = $item->unit ? $item->unit->unit_type : '';
+            $option .= '<option value="' . $item->id . '" data-rate="' . $item->price . '" data-unit="' . $unitType . '"> ' . $item->name . '</option>';
         }
 
         return Reply::dataOnly(['products' => $option]);

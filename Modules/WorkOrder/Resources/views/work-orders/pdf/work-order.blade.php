@@ -72,7 +72,7 @@
         .notes-text { font-size: 12px; color: #555; line-height: 1.6; margin: 0 0 15px 0; }
         /* Signatures */
         .signatures { display: table; width: 100%; margin-top: 50px; }
-        .sig-cell { display: table-cell; width: 33%; text-align: center; padding: 0 10px; }
+        .sig-cell { display: table-cell; width: 50%; text-align: center; padding: 0 10px; }
         .sig-line { border-top: 1px solid #333; margin-top: 50px; padding-top: 6px; font-size: 11px; color: #666; }
         /* Status badge */
         .status-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -181,26 +181,39 @@
                 <th>Expected Completion</th>
                 <th class="text-right">Qty</th>
                 <th>Unit</th>
+                <th>SQM (From - To)</th>
+                <th class="text-right">Total SQM</th>
                 @if(!$isWithoutPayment)
                     <th class="text-right">Rate</th>
-                    <th>Tax Type</th>
-                    <th class="text-right">Tax %</th>
+                    <th>Tax Name</th>
+                    <th>Tax Mode</th>
+                    <th class="text-right">Tax Value</th>
                     <th class="text-right">Total</th>
                 @endif
             </tr>
         </thead>
         <tbody>
+            @php
+                $totalSqm = 0;
+            @endphp
             @foreach($workOrder->items as $i => $item)
+            @php
+                $rowSqm = max(0, $item->sqm_to - $item->sqm_from) * $item->quantity;
+                $totalSqm += $rowSqm;
+            @endphp
             <tr>
                 <td>{{ $i+1 }}</td>
                 <td>{{ $item->item_name }}</td>
                 <td style="font-size:11px;color:#666;">{{ $item->completion_date_time ? $item->completion_date_time->format(company()->date_format . ' H:i') : '--' }}</td>
                 <td class="text-right">{{ $item->quantity }}</td>
                 <td>{{ $item->unit ?? '--' }}</td>
+                <td>{{ $item->sqm_from }} - {{ $item->sqm_to }}</td>
+                <td class="text-right">{{ number_format($rowSqm, 2) }}</td>
                 @if(!$isWithoutPayment)
                     <td class="text-right">{{ $item->without_amount ? '--' : number_format($item->rate, 2) }}</td>
+                    <td>{{ $item->without_amount ? '--' : ($item->tax_name ?? 'None') }}</td>
                     <td>{{ $item->without_amount ? '--' : ucfirst($item->tax_type) }}</td>
-                    <td class="text-right">{{ $item->without_amount ? '--' : $item->tax_percent . '%' }}</td>
+                    <td class="text-right">{{ $item->without_amount ? '--' : ($item->tax_method == 'fixed' ? number_format($item->tax_percent, 2) : $item->tax_percent . '%') }}</td>
                     <td class="text-right"><strong>{{ $item->without_amount ? '--' : number_format($item->total, 2) }}</strong></td>
                 @endif
             </tr>
@@ -209,14 +222,15 @@
     </table>
 
     {{-- ── TOTALS ──────────────────────────────────────────────────────────── --}}
-    @if(!$isWithoutPayment)
     <table class="totals-table">
-        <tr><td>Sub Total</td><td class="text-right">{{ number_format($workOrder->sub_total, 2) }}</td></tr>
-        <tr><td>Discount ({{ $workOrder->discount_type == 'percent' ? $workOrder->discount.'%' : 'Fixed' }})</td><td class="text-right">-{{ number_format($workOrder->discount_type == 'percent' ? $workOrder->sub_total * ($workOrder->discount / 100) : $workOrder->discount, 2) }}</td></tr>
-        <tr><td>Tax Amount</td><td class="text-right">{{ number_format($workOrder->tax_amount, 2) }}</td></tr>
-        <tr class="grand-row"><td>Grand Total</td><td class="text-right">{{ number_format($workOrder->grand_total, 2) }}</td></tr>
+        <tr><td>Total SQM</td><td class="text-right">{{ number_format($totalSqm, 2) }}</td></tr>
+        @if(!$isWithoutPayment)
+            <tr><td>Sub Total</td><td class="text-right">{{ number_format($workOrder->sub_total, 2) }}</td></tr>
+            <tr><td>Discount ({{ $workOrder->discount_type == 'percent' ? $workOrder->discount.'%' : 'Fixed' }})</td><td class="text-right">-{{ number_format($workOrder->discount_type == 'percent' ? $workOrder->sub_total * ($workOrder->discount / 100) : $workOrder->discount, 2) }}</td></tr>
+            <tr><td>Tax Amount</td><td class="text-right">{{ number_format($workOrder->tax_amount, 2) }}</td></tr>
+            <tr class="grand-row"><td>Grand Total</td><td class="text-right">{{ number_format($workOrder->grand_total, 2) }}</td></tr>
+        @endif
     </table>
-    @endif
 
     {{-- ── REMARKS / TERMS ─────────────────────────────────────────────────── --}}
     @if($workOrder->remarks)
@@ -254,9 +268,6 @@
         </div>
         <div class="sig-cell">
             <div class="sig-line">Approved By<br>{{ $workOrder->approver->name ?? '' }}</div>
-        </div>
-        <div class="sig-cell">
-            <div class="sig-line">Authorized Signatory</div>
         </div>
     </div>
 

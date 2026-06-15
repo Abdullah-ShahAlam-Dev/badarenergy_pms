@@ -3,11 +3,13 @@
 <head>
     <title>Gate Pass - {{ $gatePass->request_number }}</title>
     <style>
+        *, *:before, *:after { box-sizing: border-box; }
         body { font-family: 'Helvetica', 'Arial', sans-serif; color: #333; line-height: 1.6; }
         .container { width: 800px; margin: 0 auto; border: 1px solid #eee; padding: 30px; }
-        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .header { display: table; width: 100%; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .company-info { display: table-cell; width: 50%; vertical-align: top; }
         .company-info h2 { margin: 0; color: #000; }
-        .pass-info { text-align: right; }
+        .pass-info { display: table-cell; width: 50%; text-align: right; vertical-align: top; }
         .pass-info h3 { margin: 0; color: #555; }
         .section-title { background: #f4f4f4; padding: 5px 10px; font-weight: bold; margin-top: 20px; border-left: 5px solid #000; }
         .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
@@ -22,7 +24,7 @@
         @media print {
             .no-print { display: none; }
             body { margin: 0; padding: 0; }
-            .container { border: none; width: 100%; }
+            .container { border: none; width: 100%; padding: 10px; }
         }
     </style>
 </head>

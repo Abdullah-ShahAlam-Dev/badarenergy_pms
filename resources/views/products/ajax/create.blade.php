@@ -11,8 +11,14 @@
             @include('sections.password-autocomplete-hide')
 
             <div class="add-client bg-white rounded">
-                <h4 class="mb-0 p-20 f-21 font-weight-normal text-capitalize border-bottom-grey">
-                    @lang('app.menu.addProducts')</h4>
+                <h4 class="mb-0 p-20 f-21 font-weight-normal text-capitalize border-bottom-grey d-flex justify-content-between align-items-center">
+                    @lang('app.menu.addProducts')
+                    @if(request()->redirect_url == 'no')
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    @endif
+                </h4>
                 <div class="row p-20">
                     <div class="col-lg-12">
                         <div class="row">
@@ -153,6 +159,7 @@
                                 <x-forms.file-multiple class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="__('app.menu.addFile')" fieldName="file" fieldId="file-upload-dropzone-product"/>
                             </div>
                             <input type ="hidden" name="add_more" value="false" id="add_more" />
+                            <input type="hidden" name="redirect_url" value="{{ request()->redirect_url }}" />
                         </div>
                     </div>
 
@@ -166,8 +173,12 @@
                     </x-forms.button-primary>
                     <x-forms.button-secondary class="mr-3" id="save-more-product" icon="check-double">@lang('app.saveAddMore')
                     </x-forms.button-secondary>
-                    <x-forms.button-cancel :link="route('products.index')" class="border-0">@lang('app.cancel')
-                    </x-forms.button-cancel>
+                    @if(request()->redirect_url == 'no')
+                        <button type="button" class="btn-cancel rounded f-14 p-2 border-0" data-dismiss="modal">@lang('app.cancel')</button>
+                    @else
+                        <x-forms.button-cancel :link="route('products.index')" class="border-0">@lang('app.cancel')
+                        </x-forms.button-cancel>
+                    @endif
                 </x-form-actions>
             </div>
         </x-form>
@@ -344,8 +355,8 @@
 
                     else{
                         if (response.redirectUrl == 'no') {
-                            getProductOptions();
-                            closeTaskDetail();
+                            if (typeof getProductOptions === 'function') { getProductOptions(response); }
+                            if (typeof closeTaskDetail === 'function') { closeTaskDetail(); }
                         } else if ($(MODAL_XL).hasClass('show')) {
                             $(MODAL_XL).modal('hide');
                             window.location.reload();

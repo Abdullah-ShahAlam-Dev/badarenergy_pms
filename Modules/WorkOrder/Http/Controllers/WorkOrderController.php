@@ -57,6 +57,7 @@ class WorkOrderController extends AccountBaseController
         $this->events  = Event::where('company_id', company()->id)->orderBy('event_name')->get();
         $this->vendors = Vendor::where('company_id', company()->id)->where('status', 'active')->orderBy('vendor_name')->get();
         $this->taxes   = Tax::where('company_id', company()->id)->get();
+        $this->products = \App\Models\Product::where('company_id', company()->id)->orderBy('name')->get();
         $this->nextWoNumber = WorkOrder::nextWoNumber();
 
         if (request()->ajax()) {
@@ -78,8 +79,8 @@ class WorkOrderController extends AccountBaseController
             'vendor_id'                  => 'required|exists:vendors,id',
             'wo_date'                    => 'required|date',
             'completion_date_time'       => 'nullable|date',
-            'item_name'                  => 'required|array|min:1',
-            'item_name.*'                => 'required|string',
+            'product_id'                 => 'required|array|min:1',
+            'product_id.*'               => 'required|exists:products,id',
             'quantity.*'                 => 'required|numeric|min:0.01',
             'without_amount.*'           => 'nullable|boolean',
             'item_completion_date_time.*'=> 'nullable|date',
@@ -87,7 +88,7 @@ class WorkOrderController extends AccountBaseController
 
         // Conditionally validate rate only for items that are not without_amount
         $withoutAmounts = $request->input('without_amount', []);
-        foreach ($request->input('item_name', []) as $key => $name) {
+        foreach ($request->input('product_id', []) as $key => $prodId) {
             if (empty($withoutAmounts[$key])) {
                 $request->validate(['rate.' . $key => 'required|numeric|min:0']);
             }
@@ -206,6 +207,7 @@ class WorkOrderController extends AccountBaseController
         $this->events  = Event::where('company_id', company()->id)->orderBy('event_name')->get();
         $this->vendors = Vendor::where('company_id', company()->id)->where('status', 'active')->orderBy('vendor_name')->get();
         $this->taxes   = Tax::where('company_id', company()->id)->get();
+        $this->products = \App\Models\Product::where('company_id', company()->id)->orderBy('name')->get();
 
         if (request()->ajax()) {
             $html = view('workorder::work-orders.ajax.edit', $this->data)->render();
@@ -230,8 +232,8 @@ class WorkOrderController extends AccountBaseController
             'vendor_id'                  => 'required|exists:vendors,id',
             'wo_date'                    => 'required|date',
             'completion_date_time'       => 'nullable|date',
-            'item_name'                  => 'required|array|min:1',
-            'item_name.*'                => 'required|string',
+            'product_id'                 => 'required|array|min:1',
+            'product_id.*'               => 'required|exists:products,id',
             'quantity.*'                 => 'required|numeric|min:0.01',
             'without_amount.*'           => 'nullable|boolean',
             'item_completion_date_time.*'=> 'nullable|date',
@@ -239,7 +241,7 @@ class WorkOrderController extends AccountBaseController
 
         // Conditionally validate rate only for items that are not without_amount
         $withoutAmounts = $request->input('without_amount', []);
-        foreach ($request->input('item_name', []) as $key => $name) {
+        foreach ($request->input('product_id', []) as $key => $prodId) {
             if (empty($withoutAmounts[$key])) {
                 $request->validate(['rate.' . $key => 'required|numeric|min:0']);
             }
@@ -370,8 +372,13 @@ class WorkOrderController extends AccountBaseController
         $items         = [];
         $withoutAmounts = $request->input('without_amount', []);
         $itemDateTimes  = $request->input('item_completion_date_time', []);
+        
+        $productIds = $request->input('product_id', []);
+        $products = \App\Models\Product::whereIn('id', $productIds)->get()->keyBy('id');
 
-        foreach ($request->item_name as $key => $name) {
+        foreach ($productIds as $key => $productId) {
+            $product = $products->get($productId);
+            $name = $product ? $product->name : '';
             $isWithoutAmount = !empty($withoutAmounts[$key]);
 
             // Parse item-level completion datetime safely
@@ -384,9 +391,13 @@ class WorkOrderController extends AccountBaseController
                 }
             }
 
+            $sqmFrom    = (float)($request->sqm_from[$key] ?? 0);
+            $sqmTo      = (float)($request->sqm_to[$key] ?? 0);
+
             if ($isWithoutAmount) {
                 // Without Amount: zero out all financial fields, skip totals
                 $items[] = [
+                    'product_id'           => $productId,
                     'item_name'            => $name,
                     'description'          => $request->item_description[$key] ?? null,
                     'completion_date_time' => $itemDateTime,
@@ -394,8 +405,12 @@ class WorkOrderController extends AccountBaseController
                     'quantity'             => (float)($request->quantity[$key] ?? 1),
                     'unit'                 => $request->unit[$key] ?? null,
                     'rate'                 => 0,
+                    'sqm_from'             => $sqmFrom,
+                    'sqm_to'               => $sqmTo,
                     'tax_id'               => null,
                     'tax_type'             => 'exclusive',
+                    'tax_name'             => null,
+                    'tax_method'           => 'percent',
                     'tax_percent'          => 0,
                     'tax_amount'           => 0,
                     'total'                => 0,
@@ -408,13 +423,16 @@ class WorkOrderController extends AccountBaseController
             $taxPercent = (float)($request->tax_percent[$key] ?? 0);
             $taxType    = $request->tax_type[$key] ?? 'exclusive';
             $taxId      = $request->tax_id[$key] ?? null;
+            $taxName    = $request->tax_name[$key] ?? null;
+            $taxMethod  = $request->tax_method[$key] ?? 'percent';
 
-            $calculated   = WorkOrderItem::calculateTotal($qty, $rate, $taxPercent, $taxType);
+            $calculated   = WorkOrderItem::calculateTotal($qty, $rate, $taxPercent, $taxType, $taxMethod);
             $lineSubtotal = $qty * $rate;
             $subTotal    += $lineSubtotal;
             $taxAmount   += $calculated['tax_amount'];
 
             $items[] = [
+                'product_id'           => $productId,
                 'item_name'            => $name,
                 'description'          => $request->item_description[$key] ?? null,
                 'completion_date_time' => $itemDateTime,
@@ -422,8 +440,12 @@ class WorkOrderController extends AccountBaseController
                 'quantity'             => $qty,
                 'unit'                 => $request->unit[$key] ?? null,
                 'rate'                 => $rate,
+                'sqm_from'             => $sqmFrom,
+                'sqm_to'               => $sqmTo,
                 'tax_id'               => $taxId,
                 'tax_type'             => $taxType,
+                'tax_name'             => $taxName,
+                'tax_method'           => $taxMethod,
                 'tax_percent'          => $taxPercent,
                 'tax_amount'           => $calculated['tax_amount'],
                 'total'                => $calculated['total'],

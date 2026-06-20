@@ -8,9 +8,9 @@ $envato_item_id = 20052522;
 // Product Url from codecanyon
 $productUrl = 'https://1.envato.market/worksuite';
 
-$updatesDomain = 'https://froiden-updates.s3.ap-south-1.amazonaws.com';
+$updatesDomain = 'http://127.0.0.1';
 
-$verifyDomain = 'https://envato.froid.works';
+$verifyDomain = 'http://127.0.0.1';
 
 return [
 

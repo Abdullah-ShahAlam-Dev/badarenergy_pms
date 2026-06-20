@@ -38,10 +38,14 @@ class EnvatoUpdate {
     }
     
     public static function plugins(){
-        $client = new Client();
-        $res = $client->request('GET', config('froiden_envato.plugins_url'), ['verify' => false]);
-        $lastVersion = $res->getBody();
-        return json_decode($lastVersion, true);
+        try {
+            $client = new Client();
+            $res = $client->request('GET', config('froiden_envato.plugins_url'), ['verify' => false]);
+            $lastVersion = $res->getBody();
+            return json_decode($lastVersion, true) ?? [];
+        } catch (\Exception $e) {
+            return [];
+        }
     }
     
      public static function updateVersionInfo()

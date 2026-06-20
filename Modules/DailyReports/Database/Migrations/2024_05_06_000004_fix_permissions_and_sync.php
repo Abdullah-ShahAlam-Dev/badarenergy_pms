@@ -28,6 +28,10 @@ return new class extends Migration
         $adminRole = Role::where('name', 'admin')->first();
         $employeeRole = Role::where('name', 'employee')->first();
 
+        if (!$adminRole || !$employeeRole) {
+            return;
+        }
+
         $permissions = Permission::where('module_id', $moduleId)->get();
 
         foreach ($permissions as $permission) {

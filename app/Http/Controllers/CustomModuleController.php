@@ -241,15 +241,23 @@ class CustomModuleController extends AccountBaseController
 
         $plugins = \Nwidart\Modules\Facades\Module::allEnabled();
 
-        foreach ($plugins as $plugin) {
-            Artisan::call('module:migrate', array($plugin, '--force' => true));
+        try {
+            foreach ($plugins as $plugin) {
+                Artisan::call('module:migrate', array($plugin, '--force' => true));
+            }
+        } catch (\Exception $e) {
+            logger()->error('Module migration failed via web toggle: ' . $e->getMessage());
         }
 
-        $command = strtolower($moduleName) . ':activate';
+        try {
+            $command = strtolower($moduleName) . ':activate';
 
-        // We will call the module function php artisan asset:activate, zoom:active , etc
-        if (array_has(\Artisan::all(), $command) && ($status == 'active')) {
-            Artisan::call($command);
+            // We will call the module function php artisan asset:activate, zoom:active , etc
+            if (array_has(\Artisan::all(), $command) && ($status == 'active')) {
+                Artisan::call($command);
+            }
+        } catch (\Exception $e) {
+            logger()->error('Module activation failed via web toggle: ' . $e->getMessage());
         }
 
         cache()->forget('user_modules');

@@ -21,12 +21,16 @@
                         @if (config(strtolower($module) . '.setting'))
                             @php
                                 $settingInstance = config(strtolower($module) . '.setting');
-
-                                $fetchSetting = $settingInstance::first();
+                                $fetchSetting = null;
+                                try {
+                                    $fetchSetting = $settingInstance ? $settingInstance::first() : null;
+                                } catch (\Exception $e) {
+                                    // Database table might not exist yet
+                                }
                             @endphp
 
                             @if (config(strtolower($module) . '.verification_required'))
-                                @if ($fetchSetting->purchase_code)
+                                @if ($fetchSetting && $fetchSetting->purchase_code)
                                     <span class="blur-code purchase-code">{{ $fetchSetting->purchase_code }}</span>
                                     <div class="show-hide-purchase-code d-inline" data-toggle="tooltip"
                                          data-original-title="{{__('messages.showHidePurchaseCode')}}">

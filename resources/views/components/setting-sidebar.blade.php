@@ -122,7 +122,7 @@
                                  :text="__('app.menu.taskSettings')"/>
         @endif
 
-        @if (in_array('admin', user_roles()) && in_array('daily_reports', user_modules()))
+        @if (in_array('admin', user_roles()) && in_array('daily_reports', user_modules()) && \Route::has('daily-report-settings.index'))
             <x-setting-menu-item :active="$activeMenu" menu="daily_report_settings" :href="route('daily-report-settings.index')"
                                  :text="__('dailyreports::modules.dailyReports.settings')"/>
         @endif

@@ -151,8 +151,8 @@ return array(
     'givenDataInvalid' => 'The given data was invalid.',
 
     'attributes' => [
-        'client_name' => 'client name',
-        'client_email' => 'client email',
+        'client_name' => 'dealer name',
+        'client_email' => 'dealer email',
         'website' => 'website',
         'name' => 'name',
         'email' => 'email',
@@ -202,7 +202,7 @@ return array(
         'clock_out_ip' => 'clock out ip',
         'designation_name' => 'designation name',
         'team_name' => 'team name',
-        'client_id' => 'client id',
+        'client_id' => 'dealer',
         'subject' => 'subject',
         'amount' => 'amount',
         'contract_type' => 'contract type',
@@ -315,7 +315,7 @@ return array(
         'group_name' => 'group name',
         'column_name' => 'column name',
         'label_color' => 'label color',
-        'clientName' => 'client name',
+        'clientName' => 'dealer name',
         'city' => 'city',
         'state' => 'state',
         'line1' => 'line1',

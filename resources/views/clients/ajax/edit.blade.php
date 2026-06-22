@@ -216,6 +216,34 @@ $addClientSubCategoryPermission = user()->permission('manage_client_subcategory'
                 </div>
 
                 <h4 class="mb-0 p-20 f-21 font-weight-normal text-capitalize border-top-grey">
+                    Dealer Credit Details</h4>
+                <div class="row p-20">
+                    <div class="col-md-3">
+                        <x-forms.text class="mb-3 mt-3 mt-lg-0 mt-md-0" fieldId="dealer_code" fieldName="dealer_code"
+                            fieldLabel="Dealer Code" fieldRequired="true"
+                            fieldPlaceholder="e.g. DLR-10001" :fieldValue="$client->clientDetails->dealer_code ?? ''">
+                        </x-forms.text>
+                    </div>
+                    <div class="col-md-3">
+                        <x-forms.select fieldId="dealer_tier" fieldLabel="Dealer Tier" fieldName="dealer_tier" fieldRequired="true">
+                            <option value="Tier A" {{ ($client->clientDetails->dealer_tier == 'Tier A') ? 'selected' : '' }}>Tier A</option>
+                            <option value="Tier B" {{ ($client->clientDetails->dealer_tier == 'Tier B') ? 'selected' : '' }}>Tier B</option>
+                            <option value="Tier C" {{ ($client->clientDetails->dealer_tier == 'Tier C' || !$client->clientDetails->dealer_tier) ? 'selected' : '' }}>Tier C</option>
+                        </x-forms.select>
+                    </div>
+                    <div class="col-md-3">
+                        <x-forms.number class="mb-3 mt-3 mt-lg-0 mt-md-0" fieldId="credit_limit" fieldLabel="Credit Limit" fieldName="credit_limit"
+                            fieldPlaceholder="e.g. 50000" :fieldValue="$client->clientDetails->credit_limit" min="0" step="0.01">
+                        </x-forms.number>
+                    </div>
+                    <div class="col-md-3">
+                        <x-forms.number class="mb-3 mt-3 mt-lg-0 mt-md-0" fieldId="credit_days" fieldLabel="Credit Days" fieldName="credit_days"
+                            fieldPlaceholder="e.g. 30" :fieldValue="$client->clientDetails->credit_days" min="0">
+                        </x-forms.number>
+                    </div>
+                </div>
+
+                <h4 class="mb-0 p-20 f-21 font-weight-normal text-capitalize border-top-grey">
                     @lang('modules.client.companyDetails')</h4>
                 <div class="row p-20">
                     <div class="col-lg-4 col-md-6">

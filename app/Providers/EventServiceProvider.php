@@ -243,6 +243,9 @@ use App\Models\ProjectTimeLogBreak;
 use App\Models\Proposal;
 use App\Models\ProposalTemplate;
 use App\Models\RecurringInvoice;
+use App\Models\Warehouse;
+use App\Models\Inventory;
+use App\Models\StockMovement;
 use App\Models\RemovalRequest;
 use App\Models\RemovalRequestLead;
 use App\Models\Role;
@@ -393,6 +396,9 @@ use App\Observers\RemovalRequestObserver;
 use App\Observers\RoleObserver;
 use App\Observers\SkillObserver;
 use App\Observers\StickyNoteObserver;
+use App\Observers\WarehouseObserver;
+use App\Observers\InventoryObserver;
+use App\Observers\StockMovementObserver;
 use App\Observers\SubTaskObserver;
 use App\Observers\TaskBoardColumnObserver;
 use App\Observers\TaskCategoryObserver;
@@ -658,6 +664,9 @@ class EventServiceProvider extends ServiceProvider
         LanguageSetting::class => [LanguageSettingObserver::class],
         GlobalSetting::class => [GlobalSettingObserver::class],
         CustomLinkSetting::class => [CustomLinkSettingObserver::class],
+        Warehouse::class => [WarehouseObserver::class],
+        Inventory::class => [InventoryObserver::class],
+        StockMovement::class => [StockMovementObserver::class],
 
     ];
 

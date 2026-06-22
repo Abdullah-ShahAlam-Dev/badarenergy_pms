@@ -33,7 +33,11 @@ class StoreClientRequest extends CoreRequest
             'slack_username' => 'nullable',
             'website' => 'nullable|url',
             'country' => 'required_with:mobile',
-            'mobile' => 'nullable|numeric'
+            'mobile' => 'nullable|numeric',
+            'dealer_code' => 'required|max:20|unique:client_details,dealer_code,null,id,company_id,' . company()->id,
+            'credit_limit' => 'nullable|numeric|min:0',
+            'credit_days' => 'nullable|integer|min:0',
+            'dealer_tier' => 'required|in:Tier A,Tier B,Tier C'
         ];
 
         $rules = $this->customFieldRules($rules);

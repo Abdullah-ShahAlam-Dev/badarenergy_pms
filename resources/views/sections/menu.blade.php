@@ -132,7 +132,6 @@
                 @if (in_array('projects', user_modules()) && $sidebarUserPermissions['view_projects'] != 5 && $sidebarUserPermissions['view_projects'] != 'none')
                     <x-sub-menu-item :link="route('projects.index')" :text="__('app.menu.projects')" />
                 @endif
-                {{-- @if (!in_array('client', user_roles())) --}}
                 @if (in_array('tasks', user_modules()) && $sidebarUserPermissions['view_tasks'] != 5 && $sidebarUserPermissions['view_tasks'] != 'none')
                     <x-sub-menu-item :link="route('tasks.index')" :text="__('app.menu.tasks')" />
                 @endif
@@ -142,7 +141,6 @@
                 @if (in_array('daily_reports', user_modules()) && user()->permission('view_daily_report') != 'none' && \Route::has('daily-reports.index'))
                     <x-sub-menu-item :link="route('daily-reports.index')" :text="__('dailyreports::modules.dailyReports.menuName')" :active="request()->routeIs('daily-reports.index')" />
                 @endif
-                {{-- @endif --}}
             </div>
         </x-menu-item>
     @endif
@@ -200,6 +198,30 @@
             <x-slot name="iconPath">
                 <path
                     d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .49.598l-1 5a.5.5 0 0 1-.465.401l-9.397.472L4.415 11H13a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5zM3.102 4l.84 4.479 9.144-.459L13.89 4H3.102zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+            </x-slot>
+        </x-menu-item>
+    @endif
+
+    <!-- NAV ITEM - INVENTORY GROUP -->
+    @if (!in_array('client', user_roles()))
+        <x-menu-item icon="box" :text="__('app.menu.inventory')" :active="request()->routeIs('warehouses.*') || request()->routeIs('inventory.*')">
+            <x-slot name="iconPath">
+                <path fill-rule="evenodd" d="M12 1a1 1 0 0 1 .897.553l2.917 5.834A.5.5 0 0 1 15.5 8V14a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1V8a.5.5 0 0 1 .186-.38L3.103 1.553A1 1 0 0 1 4 1h8zM4.646 2.057l-2.613 5.225h11.934L11.354 2.057H4.646zM14 8.283H2V14h12V8.283z"/>
+            </x-slot>
+            <div class="accordionItemContent pb-2">
+                <x-sub-menu-item :link="route('warehouses.index')" :text="__('modules.warehouse.warehouses')" />
+                @if (\Route::has('inventory.index'))
+                    <x-sub-menu-item :link="route('inventory.index')" :text="__('app.menu.stockMovements')" />
+                @endif
+            </div>
+        </x-menu-item>
+    @endif
+
+    <!-- NAV ITEM - LEDGERS -->
+    @if (!in_array('client', user_roles()) && \Route::has('ledgers.index'))
+        <x-menu-item icon="receipt" :text="__('app.menu.ledgers')" :link="route('ledgers.index')">
+            <x-slot name="iconPath">
+                <path d="M1.5 2A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13zM1 3.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9zM3.5 4.5A.5.5 0 0 1 4 4h8a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5zm0 2A.5.5 0 0 1 4 6h8a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5zm0 2A.5.5 0 0 1 4 8h5a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5z"/>
             </x-slot>
         </x-menu-item>
     @endif

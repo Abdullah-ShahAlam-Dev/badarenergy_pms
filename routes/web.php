@@ -78,6 +78,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TaskCalendarController;
 use App\Http\Controllers\TaskCategoryController;
 use App\Http\Controllers\InvoiceFilesController;
+use App\Http\Controllers\WarehouseController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ClientContactController;
 use App\Http\Controllers\ContractRenewController;
 use App\Http\Controllers\EventCalendarController;
@@ -165,6 +167,13 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
 
     Route::get('client-docs/download/{id}', [ClientDocController::class, 'download'])->name('client-docs.download');
     Route::resource('client-docs', ClientDocController::class);
+
+    // Warehouse Management (TSK-3.1)
+    Route::post('warehouses/toggle-status', [WarehouseController::class, 'toggleStatus'])->name('warehouses.toggle-status');
+    Route::resource('warehouses', WarehouseController::class);
+
+    // Inventory & Stock Movements (TSK-4.1)
+    Route::resource('inventory', InventoryController::class)->only(['index', 'create', 'store']);
 
     // client category & subcategory
     Route::resource('clientCategory', ClientCategoryController::class);
@@ -304,6 +313,9 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     Route::resource('productCategory', ProductCategoryController::class);
     Route::get('getProductSubCategories/{id}', [ProductSubCategoryController::class, 'getSubCategories'])->name('get_product_sub_categories');
     Route::resource('productSubCategory', ProductSubCategoryController::class);
+
+    /* INVENTORY & LEDGERS PLACEHOLDERS FOR TSK-1.1 */
+    Route::get('ledgers', function () { return 'Ledger Module (Under Construction)'; })->name('ledgers.index');
 
     /* PRODUCT FILES */
     Route::get('product-files/download/{id}', [ProductFileController::class, 'download'])->name('product-files.download');

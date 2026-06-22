@@ -33,7 +33,11 @@ class UpdateClientRequest extends CoreRequest
             'website' => 'nullable|url',
             'country' => 'required_with:mobile',
             'password' => 'nullable|min:8',
-            'mobile' => 'nullable|numeric'
+            'mobile' => 'nullable|numeric',
+            'dealer_code' => 'required|max:20|unique:client_details,dealer_code,' . $this->route('client') . ',user_id,company_id,' . company()->id,
+            'credit_limit' => 'nullable|numeric|min:0',
+            'credit_days' => 'nullable|integer|min:0',
+            'dealer_tier' => 'required|in:Tier A,Tier B,Tier C'
         ];
 
         $rules = $this->customFieldRules($rules);

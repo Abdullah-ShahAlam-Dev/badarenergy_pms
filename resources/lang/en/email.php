@@ -219,8 +219,8 @@ return array(
         'method' => 'Payment mode',
         'invoiceNumber' => 'Invoice Number',
         'clientsubject' => 'Payment Success',
-        'clientName' => 'Client Name',
-        'clientEmail' => 'Client Email',
+        'clientName' => 'Dealer Name',
+        'clientEmail' => 'Dealer Email',
         'Project' => 'Project',
     ),
     'ticketAgent' => array(

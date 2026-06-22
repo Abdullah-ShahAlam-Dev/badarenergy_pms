@@ -142,6 +142,10 @@ class ClientController extends AccountBaseController
      */
     public function store(StoreClientRequest $request)
     {
+        $request->merge([
+            'credit_limit' => $request->credit_limit !== null && $request->credit_limit !== '' ? $request->credit_limit : ($request->dealer_tier === 'Tier A' ? 50000 : ($request->dealer_tier === 'Tier B' ? 20000 : 0)),
+            'credit_days' => $request->credit_days !== null && $request->credit_days !== '' ? $request->credit_days : ($request->dealer_tier === 'Tier A' ? 60 : ($request->dealer_tier === 'Tier B' ? 30 : 0)),
+        ]);
 
         DB::beginTransaction();
 
@@ -310,6 +314,11 @@ class ClientController extends AccountBaseController
      */
     public function update(UpdateClientRequest $request, $id)
     {
+        $request->merge([
+            'credit_limit' => $request->credit_limit !== null && $request->credit_limit !== '' ? $request->credit_limit : ($request->dealer_tier === 'Tier A' ? 50000 : ($request->dealer_tier === 'Tier B' ? 20000 : 0)),
+            'credit_days' => $request->credit_days !== null && $request->credit_days !== '' ? $request->credit_days : ($request->dealer_tier === 'Tier A' ? 60 : ($request->dealer_tier === 'Tier B' ? 30 : 0)),
+        ]);
+
         $user = User::withoutGlobalScope(ActiveScope::class)->findOrFail($id);
         $data = $request->all();
 

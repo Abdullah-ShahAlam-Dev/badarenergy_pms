@@ -20,7 +20,7 @@ class CreateWarehousesTable extends Migration
             $table->enum('type', ['warehouse', 'outlet', 'assembly', 'transit'])->default('warehouse');
             $table->text('address')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->unsignedBigInteger('company_id')->nullable()->index();
+            $table->unsignedInteger('company_id')->nullable()->index();
             $table->timestamps();
 
             $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');

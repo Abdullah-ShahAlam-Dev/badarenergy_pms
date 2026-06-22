@@ -14,8 +14,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First modify company_id column type to match companies.id type (INT UNSIGNED)
-        DB::statement('ALTER TABLE `warehouses` MODIFY `company_id` INT UNSIGNED NULL');
+        // First modify company_id column type to match companies.id type (INT UNSIGNED) if it's not already
+        $columnType = DB::select(
+            "SELECT COLUMN_TYPE FROM information_schema.COLUMNS 
+             WHERE TABLE_SCHEMA = DATABASE() 
+               AND TABLE_NAME = 'warehouses' 
+               AND COLUMN_NAME = 'company_id'"
+        );
+        if (!empty($columnType)) {
+            $row = (array)$columnType[0];
+            $type = strtolower($row['COLUMN_TYPE'] ?? $row['column_type'] ?? '');
+            if ($type && !in_array($type, ['int(10) unsigned', 'int unsigned'])) {
+                DB::statement('ALTER TABLE `warehouses` MODIFY `company_id` INT UNSIGNED NULL');
+            }
+        }
 
         Schema::table('warehouses', function (Blueprint $table) {
             // Add unique index on code if not present

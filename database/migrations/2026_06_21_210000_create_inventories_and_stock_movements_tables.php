@@ -13,6 +13,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('stock_movements');
+        Schema::dropIfExists('inventories');
+
         Schema::create('inventories', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('company_id')->nullable()->index();

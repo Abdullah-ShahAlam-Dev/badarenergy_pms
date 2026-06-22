@@ -13,6 +13,7 @@ class CreateWarehousesTable extends Migration
      */
     public function up()
     {
+        Schema::dropIfExists('warehouses');
         Schema::create('warehouses', function (Blueprint $table) {
             $table->id();
             $table->string('name');

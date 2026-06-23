@@ -92,6 +92,26 @@
                         </small>
                     </div>
 
+                    <div class="col-lg-6">
+                        <x-forms.text class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="__('Login Footer Text (Powered By)')"
+                                      fieldPlaceholder="e.g. Powered By" fieldName="login_footer_text"
+                                      fieldId="login_footer_text" :fieldValue="company()->login_footer_text"
+                        />
+                    </div>
+                    <div class="col-lg-6">
+                        <x-forms.text class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="__('Login Footer Link (Website URL)')"
+                                      fieldPlaceholder="e.g. https://example.com" fieldName="login_footer_link"
+                                      fieldId="login_footer_link" :fieldValue="company()->login_footer_link"
+                        />
+                    </div>
+                    <div class="col-lg-6">
+                        <x-forms.file allowedFileExtensions="png jpg jpeg svg" class="mr-0 mr-lg-2 mr-md-2"
+                                      :fieldLabel="__('Login Footer Logo')"
+                                      :fieldValue="company()->login_footer_logo_url"
+                                      fieldName="login_footer_logo" fieldId="login_footer_logo"
+                                      :popover="__('messages.fileFormat.ImageFile')"/>
+                    </div>
+
 
 
                     <div class="col-lg-6">

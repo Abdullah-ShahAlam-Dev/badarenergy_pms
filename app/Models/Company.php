@@ -128,6 +128,9 @@ use Illuminate\Support\Facades\Schema;
  * @method static \Illuminate\Database\Eloquent\Builder|Setting whereLightLogo($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Setting whereTicketFormGoogleCaptcha($value)
  * @property string $sidebar_logo_style
+ * @property string|null $login_footer_text
+ * @property string|null $login_footer_logo
+ * @property string|null $login_footer_link
  * @property string $session_driver
  * @property int $allow_client_signup
  * @property int $admin_client_signup_approval
@@ -248,7 +251,8 @@ class Company extends BaseModel
         'logo_url',
         'login_background_url',
         'moment_date_format',
-        'favicon_url'
+        'favicon_url',
+        'login_footer_logo_url'
     ];
 
     const DATE_FORMATS = GlobalSetting::DATE_FORMATS;
@@ -330,6 +334,15 @@ class Company extends BaseModel
         }
 
         return asset_url_local_s3('favicon/' . $this->favicon);
+    }
+
+    public function getLoginFooterLogoUrlAttribute()
+    {
+        if (is_null($this->login_footer_logo)) {
+            return null;
+        }
+
+        return asset_url_local_s3('app-logo/' . $this->login_footer_logo);
     }
 
 

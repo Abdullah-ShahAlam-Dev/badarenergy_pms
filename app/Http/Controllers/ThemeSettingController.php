@@ -130,6 +130,19 @@ class ThemeSettingController extends AccountBaseController
 
         $setting->sidebar_logo_style = $request->sidebar_logo_style;
 
+        if ($request->login_footer_logo_delete == 'yes') {
+            Files::deleteFile($setting->login_footer_logo, 'app-logo');
+            $setting->login_footer_logo = null;
+        }
+
+        if ($request->hasFile('login_footer_logo')) {
+            Files::deleteFile($setting->login_footer_logo, 'app-logo');
+            $setting->login_footer_logo = Files::uploadLocalOrS3($request->login_footer_logo, 'app-logo');
+        }
+
+        $setting->login_footer_text = $request->login_footer_text;
+        $setting->login_footer_link = $request->login_footer_link;
+
         $setting->save();
         session()->forget(['admin_theme', 'employee_theme', 'client_theme', 'company', 'companyOrGlobalSetting', 'user.company']);
         cache()->forget('global_setting');

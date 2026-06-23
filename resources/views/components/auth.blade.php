@@ -93,6 +93,28 @@
                     </div>
                 @endif
 
+                @php
+                    $companySetting = \App\Models\Company::first();
+                @endphp
+                @if($companySetting && ($companySetting->login_footer_text || $companySetting->login_footer_logo))
+                    <div class="mt-4 d-flex justify-content-center align-items-center auth-footer">
+                        @if($companySetting->login_footer_link)
+                            <a href="{{ $companySetting->login_footer_link }}" target="_blank" class="d-flex align-items-center text-decoration-none">
+                        @endif
+
+                        @if($companySetting->login_footer_text)
+                            <span class="text-muted mr-2">{{ $companySetting->login_footer_text }}</span>
+                        @endif
+                        @if($companySetting->login_footer_logo)
+                            <img src="{{ $companySetting->login_footer_logo_url }}" style="max-height: 25px; width: auto;" alt="Powered By">
+                        @endif
+
+                        @if($companySetting->login_footer_link)
+                            </a>
+                        @endif
+                    </div>
+                @endif
+
 
             </div>
         </div>

@@ -590,7 +590,7 @@
     }
 
     // Force close mobile menu immediately when any link inside it is clicked
-    $('body').on('click', '.sidebar-menu a:not(.accordionItemHeading)', function() {
+    $(document).on('click', '.sidebar-menu a:not(.accordionItemHeading)', function() {
         if (typeof closeMobileMenu === 'function') {
             closeMobileMenu();
         }
@@ -622,7 +622,7 @@
         }
     );
 
-    $('body').on('click', '.view-notification', function (event) {
+    $(document).on('click', '.view-notification', function (event) {
         event.preventDefault();
         const id = $(this).data('notification-id');
         const href = $(this).attr('href');
@@ -642,7 +642,7 @@
         });
     });
 
-    $('body').on('click', '.img-lightbox', function () {
+    $(document).on('click', '.img-lightbox', function () {
         const imageUrl = $(this).data('image-url');
         const url = "{{ route('front.public.show_image').'?image_url=' }}" + encodeURIComponent(imageUrl);
         $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
@@ -700,31 +700,31 @@
         $('#reset-filters').removeClass('d-none');
     }
 
-    $('body').on('click', '.show-hide-purchase-code', function () {
+    $(document).on('click', '.show-hide-purchase-code', function () {
         $('> .icon', this).toggleClass('fa-eye-slash fa-eye');
         $(this).siblings('span').toggleClass('blur-code ');
     });
 
     /* --- GLOBAL TOPBAR & SIDEBAR DELEGATED LISTENERS --- */
-    $('body').on('click', '#show-active-timer', function () {
+    $(document).on('click', '#show-active-timer', function () {
         const url = "{{ route('timelogs.show_active_timer') }}";
         $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
         $.ajaxModal(MODAL_XL, url);
     });
 
-    $('body').on('click', '#start-timer-modal', function () {
+    $(document).on('click', '#start-timer-modal', function () {
         const url = "{{ route('timelogs.show_timer') }}";
         $(MODAL_XL + ' ' + MODAL_HEADING).html('...');
         $.ajaxModal(MODAL_XL, url);
     });
 
-    $('body').on('click', '.open-search', function () {
+    $(document).on('click', '.open-search', function () {
         const url = "{{ route('search.index') }}";
         $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
         $.ajaxModal(MODAL_LG, url);
     });
 
-    $('body').on('click', '.show-user-notifications', function () {
+    $(document).on('click', '.show-user-notifications', function () {
         const openStatus = $(this).attr('aria-expanded');
         if (typeof openStatus == "undefined" || openStatus == "false") {
             const token = '{{ csrf_token() }}';
@@ -743,7 +743,7 @@
         }
     });
 
-    $('body').on('click', '.mark-notification-read', function () {
+    $(document).on('click', '.mark-notification-read', function () {
         const token = '{{ csrf_token() }}';
         $.easyAjax({
             type: 'POST',
@@ -765,13 +765,13 @@
         });
     });
 
-    $('body').on('click', '.invite-member', function() {
+    $(document).on('click', '.invite-member', function() {
         const url = "{{ route('employees.invite_member') }}";
         $(MODAL_LG + ' ' + MODAL_HEADING).html('...');
         $.ajaxModal(MODAL_LG, url);
     });
 
-    $('body').on('change', '#dark-theme-toggle', function() {
+    $(document).on('change', '#dark-theme-toggle', function() {
         const darkTheme = ($(this).is(':checked')) ? '1' : '0';
         $.easyAjax({
             type: 'POST',

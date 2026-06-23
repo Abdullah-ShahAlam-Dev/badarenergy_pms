@@ -134,7 +134,7 @@ const resetActionButtons = () => {
 
 var el = document.getElementById("close-task-detail");
 
-$("body").on("click", ".openRightModal", openTaskDetail);
+$(document).on("click", ".openRightModal", openTaskDetail);
 
 var el = document.querySelector(".closeRightModal");
 if (el) {
@@ -142,14 +142,14 @@ if (el) {
 }
 
 //show hide secret values
-$("body").on("click", ".toggle-password", function () {
+$(document).on("click", ".toggle-password", function () {
     var $selector = $(this).closest(".input-group").find("input.form-control");
     $(this).find(".svg-inline--fa").toggleClass("fa-eye fa-eye-slash");
     var $type = $selector.attr("type") === "password" ? "text" : "password";
     $selector.attr("type", $type);
 });
 
-$("body").on("click", ".openRightModal", function (event) {
+$(document).on("click", ".openRightModal", function (event) {
     event.preventDefault();
 
     const requestUrl = this.href;
@@ -436,7 +436,7 @@ $(document).on("keypress", "input.form-control", function(e) {
     }
 });
 
-$("body").on("click", "#right-modal-content .btn-cancel", function (e) {
+$(document).on("click", "#right-modal-content .btn-cancel", function (e) {
     e.preventDefault();
     closeTaskDetail();
 });
@@ -458,6 +458,6 @@ $(document).ready(function () {
     }
 });
 
-$('#mobile_menu_collapse').on('click', '.dropdown-item', function() {
+$(document).on('click', '#mobile_menu_collapse .dropdown-item', function() {
     $("#dropdownMenuLink").dropdown("toggle");
 });

@@ -38,7 +38,9 @@
         .login_header {
             background-color: {{ $globalSetting->logo_background_color }}      !important;
         }
-
+        .auth-footer a:hover span {
+            text-decoration: underline !important;
+        }
     </style>
     @include('sections.theme_css')
     @if(file_exists(public_path().'/css/login-custom.css'))

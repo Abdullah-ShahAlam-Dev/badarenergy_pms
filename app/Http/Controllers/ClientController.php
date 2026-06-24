@@ -512,6 +512,8 @@ class ClientController extends AccountBaseController
         $tab = request('tab');
 
         switch ($tab) {
+        case 'ledger':
+            return $this->ledger();
         case 'projects':
             return $this->projects();
         case 'invoices':
@@ -705,6 +707,27 @@ class ClientController extends AccountBaseController
 
         return $dataTable->render('clients.show', $this->data);
 
+    }
+
+    public function ledger()
+    {
+        $id = $this->client->id;
+        $this->ledgerEntries = \DB::table('dealer_ledgers')
+            ->where('dealer_id', $id)
+            ->orderBy('date', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $tab = request('tab');
+        $this->activeTab = $tab ?: 'profile';
+        $this->view = 'clients.ajax.ledger';
+
+        if (request()->ajax()) {
+            $html = view($this->view, $this->data)->render();
+            return Reply::dataOnly(['status' => 'success', 'html' => $html, 'title' => $this->pageTitle]);
+        }
+
+        return view('clients.show', $this->data);
     }
 
     public function estimates()

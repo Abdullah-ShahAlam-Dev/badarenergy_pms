@@ -126,6 +126,7 @@ class InvoiceController extends AccountBaseController
         $this->products = Product::all();
         $this->clients = User::allClients();
         $this->companyAddresses = CompanyAddress::all();
+        $this->warehouses = \App\Models\Warehouse::all();
         $this->projects = Project::allProjectsHavingClient();
         $this->linkInvoicePermission = user()->permission('link_invoice_bank_account');
         $this->viewBankAccountPermission = user()->permission('view_bankaccount');
@@ -218,7 +219,47 @@ class InvoiceController extends AccountBaseController
             }
         }
 
+        $warehouseId = $request->warehouse_id;
+        $products = $request->product_id;
+        $quantities = $request->quantity;
+        $serialNumbersArr = $request->serial_numbers ?? [];
+
+        if (!empty($products)) {
+            foreach ($products as $key => $productId) {
+                if (is_null($productId) || $productId === '') {
+                    continue;
+                }
+                $product = Product::findOrFail($productId);
+                if ($product->is_serialized) {
+                    $rawSerials = $serialNumbersArr[$key] ?? '';
+                    $serials = array_filter(array_map('trim', explode("\n", str_replace("\r", "", $rawSerials))));
+                    $qty = (int)($quantities[$key] ?? 0);
+                    
+                    if (count($serials) !== $qty) {
+                        return Reply::error("The number of scanned serial numbers (" . count($serials) . ") must match the quantity ({$qty}) for product '{$product->name}'.");
+                    }
+                    
+                    foreach ($serials as $sn) {
+                        $serialRecord = \App\Models\ProductSerial::where('serial_number', $sn)
+                            ->where('product_id', $productId)
+                            ->first();
+                        
+                        if (!$serialRecord) {
+                            return Reply::error("Serial number '{$sn}' does not exist for product '{$product->name}'.");
+                        }
+                        
+                        $isValid = ($serialRecord->status === \App\Models\ProductSerial::STATUS_AVAILABLE && $serialRecord->warehouse_id == $warehouseId);
+                        
+                        if (!$isValid) {
+                            return Reply::error("Serial number '{$sn}' is not available in the selected warehouse.");
+                        }
+                    }
+                }
+            }
+        }
+
         $invoice = new Invoice();
+
         $invoice->project_id = $request->project_id ?? null;
         $invoice->client_id = ($request->client_id) ?: null;
         $invoice->issue_date = Carbon::createFromFormat($this->company->date_format, $request->issue_date)->format('Y-m-d');
@@ -239,6 +280,7 @@ class InvoiceController extends AccountBaseController
         $invoice->show_shipping_address = $request->show_shipping_address;
         $invoice->invoice_number = $request->invoice_number;
         $invoice->company_address_id = $request->company_address_id;
+        $invoice->warehouse_id = $request->warehouse_id;
         $invoice->estimate_id = $request->estimate_id ? $request->estimate_id : null;
         $invoice->bank_account_id = $request->bank_account_id;
         $invoice->payment_status = $request->payment_status == null ? '0' : $request->payment_status;
@@ -642,6 +684,7 @@ class InvoiceController extends AccountBaseController
         }
 
         $this->companyAddresses = CompanyAddress::all();
+        $this->warehouses = \App\Models\Warehouse::all();
 
         if (request()->ajax()) {
             $html = view('invoices.ajax.edit', $this->data)->render();
@@ -690,6 +733,46 @@ class InvoiceController extends AccountBaseController
             }
         }
 
+        $warehouseId = $request->warehouse_id;
+        $products = $request->product_id;
+        $quantities = $request->quantity;
+        $serialNumbersArr = $request->serial_numbers ?? [];
+
+        if (!empty($products)) {
+            foreach ($products as $key => $productId) {
+                if (is_null($productId) || $productId === '') {
+                    continue;
+                }
+                $product = Product::findOrFail($productId);
+                if ($product->is_serialized) {
+                    $rawSerials = $serialNumbersArr[$key] ?? '';
+                    $serials = array_filter(array_map('trim', explode("\n", str_replace("\r", "", $rawSerials))));
+                    $qty = (int)($quantities[$key] ?? 0);
+                    
+                    if (count($serials) !== $qty) {
+                        return Reply::error("The number of scanned serial numbers (" . count($serials) . ") must match the quantity ({$qty}) for product '{$product->name}'.");
+                    }
+                    
+                    foreach ($serials as $sn) {
+                        $serialRecord = \App\Models\ProductSerial::where('serial_number', $sn)
+                            ->where('product_id', $productId)
+                            ->first();
+                        
+                        if (!$serialRecord) {
+                            return Reply::error("Serial number '{$sn}' does not exist for product '{$product->name}'.");
+                        }
+                        
+                        $isValid = ($serialRecord->status === \App\Models\ProductSerial::STATUS_AVAILABLE && $serialRecord->warehouse_id == $warehouseId)
+                            || ($serialRecord->status === \App\Models\ProductSerial::STATUS_SOLD && $serialRecord->invoice_id == $id);
+                        
+                        if (!$isValid) {
+                            return Reply::error("Serial number '{$sn}' is not available in the selected warehouse.");
+                        }
+                    }
+                }
+            }
+        }
+
         $invoice = Invoice::findOrFail($id);
 
         $invoice->project_id = $request->project_id ?? null;
@@ -717,6 +800,7 @@ class InvoiceController extends AccountBaseController
         $invoice->show_shipping_address = $request->show_shipping_address;
         $invoice->invoice_number = $request->invoice_number;
         $invoice->company_address_id = $request->company_address_id;
+        $invoice->warehouse_id = $request->warehouse_id;
         $invoice->bank_account_id = $request->bank_account_id;
         $invoice->payment_status = $request->payment_status == null ? '0' : $request->payment_status;
         $invoice->save();

@@ -15,7 +15,7 @@
                                 fieldName="product_id" fieldRequired="true">
                                 <option value="">@lang('modules.inventory.selectProduct')</option>
                                 @foreach ($products as $product)
-                                    <option value="{{ $product->id }}" {{ $defaultProductId == $product->id ? 'selected' : '' }}>
+                                    <option value="{{ $product->id }}" data-serialized="{{ $product->is_serialized ? '1' : '0' }}" {{ $defaultProductId == $product->id ? 'selected' : '' }}>
                                         {{ $product->name }}
                                     </option>
                                 @endforeach
@@ -44,11 +44,29 @@
                             </x-forms.select>
                         </div>
 
+                        <!-- Category -->
+                        <div class="col-lg-6 col-md-6">
+                            <x-forms.select fieldId="category" :fieldLabel="__('Stock Category')"
+                                fieldName="category" fieldRequired="true">
+                                <option value="available">Available</option>
+                                <option value="faulty">Faulty/Damaged</option>
+                                <option value="in_transit">In-Transit</option>
+                            </x-forms.select>
+                        </div>
+
                         <!-- Quantity -->
                         <div class="col-lg-6 col-md-6">
                             <x-forms.number fieldId="quantity" :fieldLabel="__('modules.inventory.adjustmentQty')"
                                 fieldName="quantity" fieldRequired="true" :fieldValue="1" min="0.01" step="0.01">
                             </x-forms.number>
+                        </div>
+
+                        <!-- Serial Numbers -->
+                        <div class="col-lg-12 col-md-12 d-none" id="serial-numbers-field">
+                            <x-forms.textarea fieldId="serial_numbers" :fieldLabel="__('Serial Numbers (One per line)')"
+                                fieldName="serial_numbers"
+                                fieldPlaceholder="Scan or type serial numbers here (one per line)">
+                            </x-forms.textarea>
                         </div>
 
                         <!-- Remarks -->
@@ -79,6 +97,24 @@
 <script>
     $(document).ready(function() {
         init(RIGHT_MODAL);
+
+        function toggleSerialField() {
+            var selected = $('#product_id option:selected');
+            var isSerialized = selected.data('serialized') == '1';
+            if (isSerialized) {
+                $('#serial-numbers-field').removeClass('d-none');
+            } else {
+                $('#serial-numbers-field').addClass('d-none');
+                $('#serial_numbers').val('');
+            }
+        }
+
+        $('#product_id').change(function() {
+            toggleSerialField();
+        });
+
+        // Trigger on load
+        toggleSerialField();
     });
 
     $('#saveAdjustment').click(function() {

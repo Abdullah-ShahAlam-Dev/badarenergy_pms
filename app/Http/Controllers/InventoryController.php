@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\DataTables\InventoryDataTable;
+use App\DataTables\ProductSerialDataTable;
 use App\Helper\Reply;
 use App\Http\Requests\Inventory\StoreAdjustmentRequest;
 use App\Models\Product;
@@ -78,6 +79,7 @@ class InventoryController extends AccountBaseController
                 $request->warehouse_id,
                 (float) $request->quantity,
                 $request->type,
+                $request->category ?: 'available',
                 'manual',
                 null,
                 strip_tags($request->remarks)
@@ -89,5 +91,20 @@ class InventoryController extends AccountBaseController
         } catch (\Exception $e) {
             return Reply::error($e->getMessage());
         }
+    }
+
+    /**
+     * Display the serial numbers search and tracking list.
+     */
+    public function serials(ProductSerialDataTable $dataTable)
+    {
+        $this->viewPermission = user()->permission('view_inventory');
+        abort_403($this->viewPermission == 'none' && !in_array('admin', user_roles()));
+
+        $this->warehouses = Warehouse::active()->get();
+        $this->products = Product::where('is_serialized', true)->get();
+        $this->pageTitle = 'Serial Numbers Tracking';
+
+        return $dataTable->render('inventory.serials', $this->data);
     }
 }

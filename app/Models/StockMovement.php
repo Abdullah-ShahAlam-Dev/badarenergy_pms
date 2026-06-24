@@ -38,6 +38,7 @@ class StockMovement extends BaseModel
         'quantity',
         'balance_after',
         'type',
+        'stock_category',
         'reference_type',
         'reference_id',
         'remarks',

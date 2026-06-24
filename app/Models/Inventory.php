@@ -30,10 +30,14 @@ class Inventory extends BaseModel
         'product_id',
         'warehouse_id',
         'quantity',
+        'quantity_faulty',
+        'quantity_in_transit',
     ];
 
     protected $casts = [
         'quantity' => 'float',
+        'quantity_faulty' => 'float',
+        'quantity_in_transit' => 'float',
     ];
 
     /**

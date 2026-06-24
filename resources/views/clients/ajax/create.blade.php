@@ -206,6 +206,13 @@ $addPermission = user()->permission('add_clients');
                         </x-forms.text>
                     </div>
                     <div class="col-md-3">
+                        <x-forms.select fieldId="dealer_category" fieldLabel="Dealer Category" fieldName="dealer_category" fieldRequired="true">
+                            <option value="distributor" {{ (isset($lead) && $lead->dealer_category == 'distributor') ? 'selected' : '' }}>Distributor</option>
+                            <option value="dealer" {{ (!isset($lead) || $lead->dealer_category == 'dealer') ? 'selected' : '' }}>Dealer</option>
+                            <option value="end_customer" {{ (isset($lead) && $lead->dealer_category == 'end_customer') ? 'selected' : '' }}>End Customer</option>
+                        </x-forms.select>
+                    </div>
+                    <div class="col-md-3">
                         <x-forms.select fieldId="dealer_tier" fieldLabel="Dealer Tier" fieldName="dealer_tier" fieldRequired="true">
                             <option value="Tier A" {{ (isset($lead) && $lead->dealer_tier == 'Tier A') ? 'selected' : '' }}>Tier A</option>
                             <option value="Tier B" {{ (isset($lead) && $lead->dealer_tier == 'Tier B') ? 'selected' : '' }}>Tier B</option>
@@ -213,7 +220,19 @@ $addPermission = user()->permission('add_clients');
                         </x-forms.select>
                     </div>
                     <div class="col-md-3">
-                        <x-forms.number class="mb-3 mt-3 mt-lg-0 mt-md-0" fieldId="credit_limit" fieldLabel="Credit Limit" fieldName="credit_limit"
+                        <x-forms.select fieldId="salesperson_id" fieldLabel="Assigned Salesperson" fieldName="salesperson_id" fieldRequired="true">
+                            <option value="">--</option>
+                            @if(isset($employees))
+                                @foreach($employees as $emp)
+                                    <option value="{{ $emp->id }}">{{ $emp->name }}</option>
+                                @endforeach
+                            @endif
+                        </x-forms.select>
+                    </div>
+                </div>
+                <div class="row px-20 pb-20">
+                    <div class="col-md-3">
+                        <x-forms.number class="mb-3 mt-3 mt-lg-0 mt-md-0" fieldId="credit_limit" fieldLabel="Credit Limit (PKR)" fieldName="credit_limit"
                             fieldPlaceholder="e.g. 50000" :fieldValue="$lead->credit_limit ?? ''" min="0" step="0.01">
                         </x-forms.number>
                     </div>
@@ -221,6 +240,23 @@ $addPermission = user()->permission('add_clients');
                         <x-forms.number class="mb-3 mt-3 mt-lg-0 mt-md-0" fieldId="credit_days" fieldLabel="Credit Days" fieldName="credit_days"
                             fieldPlaceholder="e.g. 30" :fieldValue="$lead->credit_days ?? ''" min="0">
                         </x-forms.number>
+                    </div>
+                    <div class="col-md-3">
+                        <x-forms.text class="mb-3 mt-3 mt-lg-0 mt-md-0" fieldId="area" fieldName="area"
+                            fieldLabel="Area" fieldPlaceholder="e.g. Saddar, DHA, Orangi Town">
+                        </x-forms.text>
+                    </div>
+                    <div class="col-md-3">
+                        <x-forms.text class="mb-3 mt-3 mt-lg-0 mt-md-0" fieldId="ntn_number" fieldName="ntn_number"
+                            fieldLabel="NTN Number" fieldPlaceholder="Optional">
+                        </x-forms.text>
+                    </div>
+                </div>
+                <div class="row px-20 pb-20">
+                    <div class="col-md-3">
+                        <x-forms.text class="mb-3 mt-3 mt-lg-0 mt-md-0" fieldId="strn_number" fieldName="strn_number"
+                            fieldLabel="STRN Number" fieldPlaceholder="Optional">
+                        </x-forms.text>
                     </div>
                 </div>
 

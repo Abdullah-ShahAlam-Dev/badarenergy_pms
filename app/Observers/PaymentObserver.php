@@ -55,7 +55,11 @@ class PaymentObserver
                 }
             }
         }
+
+        $ledgerService = new \App\Services\DealerLedgerService();
+        $ledgerService->syncPaymentEntry($payment);
     }
+
 
     public function created(Payment $payment)
     {
@@ -125,9 +129,8 @@ class PaymentObserver
             $transaction->title = 'payment-credited';
             $transaction->save();
 
-        }
-
     }
+}
 
     public function updating(Payment $payment)
     {
@@ -163,6 +166,7 @@ class PaymentObserver
                         $bankAccount->bank_balance = round($bankBalance, 2);
                         $bankAccount->save();
                     }
+                    
 
                     $newBankAccount = BankAccount::find($payment->bank_account_id);
 
@@ -358,6 +362,9 @@ class PaymentObserver
         $notifyData = ['App\Notifications\NewPayment', 'App\Notifications\PaymentReminder'];
         \App\Models\Notification::deleteNotification($notifyData, $payment->id);
 
+        $ledgerService = new \App\Services\DealerLedgerService();
+        $ledgerService->deletePaymentEntry($payment->id);
     }
+
 
 }

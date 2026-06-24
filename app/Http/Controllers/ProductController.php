@@ -113,6 +113,12 @@ class ProductController extends AccountBaseController
         $product->downloadable = $request->downloadable == 'true';
         $product->category_id = ($request->category_id) ?: null;
         $product->sub_category_id = ($request->sub_category_id) ?: null;
+        $product->voltage = $request->voltage;
+        $product->capacity = $request->capacity;
+        $product->product_code = $request->product_code;
+        $product->barcode = $request->barcode;
+        $product->type = $request->type;
+        $product->is_serialized = $request->has('is_serialized') && $request->is_serialized == '1';
 
         if (request()->hasFile('downloadable_file') && request()->downloadable == 'true') {
             Files::deleteFile($product->downloadable_file, ProductFiles::FILE_PATH);
@@ -259,6 +265,12 @@ class ProductController extends AccountBaseController
         $product->downloadable = ($request->downloadable == 'true') ? true : false;
         $product->category_id = ($request->category_id) ? $request->category_id : null;
         $product->sub_category_id = ($request->sub_category_id) ? $request->sub_category_id : null;
+        $product->voltage = $request->voltage;
+        $product->capacity = $request->capacity;
+        $product->product_code = $request->product_code;
+        $product->barcode = $request->barcode;
+        $product->type = $request->type;
+        $product->is_serialized = $request->has('is_serialized') && $request->is_serialized == '1';
 
         if (request()->hasFile('downloadable_file') && request()->downloadable == 'true') {
             Files::deleteFile($product->downloadable_file, ProductFiles::FILE_PATH);

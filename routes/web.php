@@ -173,6 +173,7 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     Route::resource('warehouses', WarehouseController::class);
 
     // Inventory & Stock Movements (TSK-4.1)
+    Route::get('inventory/serials', [InventoryController::class, 'serials'])->name('inventory.serials');
     Route::resource('inventory', InventoryController::class)->only(['index', 'create', 'store']);
 
     // client category & subcategory

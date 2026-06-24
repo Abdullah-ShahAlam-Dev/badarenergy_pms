@@ -26,6 +26,7 @@ class StoreAdjustmentRequest extends FormRequest
             'warehouse_id' => 'required|integer|exists:warehouses,id',
             'quantity'     => 'required|numeric|min:0.01',
             'type'         => 'required|in:in,out',
+            'category'     => 'required|in:available,faulty,in_transit',
             'remarks'      => 'nullable|string|max:1000',
         ];
     }

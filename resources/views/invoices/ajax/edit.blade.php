@@ -231,6 +231,25 @@
                 </div>
             </div>
 
+            <!-- Warehouse Selection -->
+            <div class="col-md-4">
+                <div class="form-group c-inv-select mb-4">
+                    <x-forms.label fieldId="warehouse_id" :fieldLabel="__('modules.inventory.warehouse')" fieldRequired="true">
+                    </x-forms.label>
+                    <div class="select-others height-35 rounded">
+                        <select class="form-control select-picker" data-live-search="true" data-size="8"
+                            name="warehouse_id" id="warehouse_id">
+                            <option value="">--</option>
+                            @foreach ($warehouses as $warehouse)
+                                <option value="{{ $warehouse->id }}" @selected($warehouse->id == $invoice->warehouse_id)>
+                                    {{ $warehouse->name }} ({{ $warehouse->code }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+
         </div>
         <!-- CLIENT, PROJECT, GST, BILLING, SHIPPING ADDRESS END -->
         <x-forms.custom-field :fields="$fields" :model="$invoice"></x-forms.custom-field>
@@ -370,6 +389,27 @@
                                     class="dash-border-top bblr">
                                         <textarea class="f-14 border-0 w-100 desktop-description form-control" name="item_summary[]"
                                                   placeholder="@lang('placeholders.invoices.description')">{{ $item->item_summary }}</textarea>
+
+                                        @php
+                                            $isSerialized = $item->product?->is_serialized;
+                                            $soldSerialsStr = '';
+                                            if ($isSerialized) {
+                                                $soldSerials = \App\Models\ProductSerial::where('invoice_id', $invoice->id)
+                                                    ->where('product_id', $item->product_id)
+                                                    ->pluck('serial_number')
+                                                    ->toArray();
+                                                $soldSerialsStr = implode("\n", $soldSerials);
+                                            }
+                                        @endphp
+                                        
+                                        @if ($isSerialized)
+                                            <div class="mt-2 border-top pt-2">
+                                                <label class="f-12 text-dark-grey font-weight-bold">Serial Numbers (One per line) <span class="text-danger">*</span></label>
+                                                <textarea class="form-control f-12 p-2 border" name="serial_numbers[]" placeholder="Scan or type serial numbers here (one per line)" rows="3">{{ $soldSerialsStr }}</textarea>
+                                            </div>
+                                        @else
+                                            <input type="hidden" name="serial_numbers[]" value="">
+                                        @endif
                                 </td>
                                 <td class="border-left-0">
                                     <input type="file"
@@ -1020,6 +1060,38 @@
                         popup: 'swal2-noanimation',
                         backdrop: 'swal2-noanimation'
                     },
+                    buttonsStyling: false
+                });
+                return false;
+            }
+
+            // Validate serial number counts for serialized items
+            var serialValidationError = false;
+            var serialValidationMessage = "";
+            
+            $('#sortable .item-row').each(function() {
+                var $row = $(this);
+                var $serialsField = $row.find('textarea[name="serial_numbers[]"]');
+                if ($serialsField.length > 0) {
+                    var quantity = parseInt($row.find('.quantity').val()) || 0;
+                    var serialText = $serialsField.val().trim();
+                    var serials = serialText ? serialText.split('\n').map(s => s.trim()).filter(s => s.length > 0) : [];
+                    var itemName = $row.find('.item_name').val() || "Product";
+                    
+                    if (serials.length !== quantity) {
+                        serialValidationError = true;
+                        serialValidationMessage = "The number of scanned serial numbers (" + serials.length + ") must match the quantity (" + quantity + ") for product '" + itemName + "'.";
+                        return false; // Break loop
+                    }
+                }
+            });
+
+            if (serialValidationError) {
+                Swal.fire({
+                    icon: 'error',
+                    text: serialValidationMessage,
+                    customClass: { confirmButton: 'btn btn-primary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false
                 });
                 return false;

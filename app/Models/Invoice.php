@@ -226,6 +226,12 @@ class Invoice extends BaseModel
         return $this->belongsTo(BankAccount::class, 'bank_account_id');
     }
 
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class, 'warehouse_id');
+    }
+
+
     public function scopePending($query)
     {
         return $query->where(function ($q) {

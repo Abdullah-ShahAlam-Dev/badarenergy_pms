@@ -117,6 +117,51 @@
                             </div>
 
                             <div class="col-lg-4 col-md-6">
+                                <x-forms.text fieldId="product_code" :fieldLabel="__('Product Code')"
+                                              fieldName="product_code"
+                                              fieldPlaceholder="e.g. BAT-48-200">
+                                </x-forms.text>
+                            </div>
+
+                            <div class="col-lg-4 col-md-6">
+                                <x-forms.text fieldId="voltage" :fieldLabel="__('Voltage')"
+                                              fieldName="voltage"
+                                              fieldPlaceholder="e.g. 12.8V / 48V / 51.2V">
+                                </x-forms.text>
+                            </div>
+
+                            <div class="col-lg-4 col-md-6">
+                                <x-forms.text fieldId="capacity" :fieldLabel="__('Capacity')"
+                                              fieldName="capacity"
+                                              fieldPlaceholder="e.g. 100AH / 200AH / 280AH">
+                                </x-forms.text>
+                            </div>
+
+                            <div class="col-lg-4 col-md-6">
+                                <x-forms.text fieldId="barcode" :fieldLabel="__('Barcode')"
+                                              fieldName="barcode"
+                                              fieldPlaceholder="e.g. 1281000001">
+                                </x-forms.text>
+                            </div>
+
+                            <div class="col-lg-4 col-md-6">
+                                <x-forms.label class="my-3" fieldId="type" :fieldLabel="__('Category Type')">
+                                </x-forms.label>
+                                <div class="form-group">
+                                    <select class="form-control select-picker" name="type" id="type">
+                                        <option value="imported">Imported</option>
+                                        <option value="assembled">Assembled</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4 col-md-6 mt-5">
+                                <x-forms.checkbox class="mr-0 mr-lg-2 mr-md-2" fieldLabel="Is Serialized Product (Battery/Cabinet)"
+                                                  fieldName="is_serialized" fieldId="is_serialized" fieldValue="1"
+                                                  fieldRequired="true"/>
+                            </div>
+
+                            <div class="col-lg-4 col-md-6">
                                 <x-forms.label class="my-3" fieldId="" :fieldLabel="__('modules.unitType.unitType')">
                                 </x-forms.label>
                                 <x-forms.input-group>

@@ -113,8 +113,18 @@ class ClientsDataTable extends BaseDataTable
                 }
             }
         );
-        $datatables->addIndexColumn();
-        $datatables->smart(false);
+        $datatables->addColumn('dealer_category_label', function ($row) {
+            return $row->clientDetails ? ucfirst(str_replace('_', ' ', $row->clientDetails->dealer_category ?? '')) : '--';
+        });
+        $datatables->addColumn('dealer_code_col', function ($row) {
+            return $row->clientDetails->dealer_code ?? '--';
+        });
+        $datatables->addColumn('city_col', function ($row) {
+            return $row->clientDetails->city ?? '--';
+        });
+        $datatables->addColumn('area_col', function ($row) {
+            return $row->clientDetails->area ?? '--';
+        });
         $datatables->setRowId(function ($row) {
             return 'row-' . $row->id;
         });
@@ -202,8 +212,21 @@ class ClientsDataTable extends BaseDataTable
             $users = $users->where(function ($query) {
                 $query->where('users.name', 'like', '%' . request('searchText') . '%')
                     ->orWhere('users.email', 'like', '%' . request('searchText') . '%')
-                    ->orWhere('client_details.company_name', 'like', '%' . request('searchText') . '%');
+                    ->orWhere('client_details.company_name', 'like', '%' . request('searchText') . '%')
+                    ->orWhere('client_details.dealer_code', 'like', '%' . request('searchText') . '%');
             });
+        }
+
+        if (!is_null($request->dealer_category) && $request->dealer_category != 'all') {
+            $users = $users->where('client_details.dealer_category', $request->dealer_category);
+        }
+
+        if (!is_null($request->filter_city) && $request->filter_city != 'all' && $request->filter_city != '') {
+            $users = $users->where('client_details.city', $request->filter_city);
+        }
+
+        if (!is_null($request->filter_area) && $request->filter_area != 'all' && $request->filter_area != '') {
+            $users = $users->where('client_details.area', $request->filter_area);
         }
 
         return $users;
@@ -254,6 +277,10 @@ class ClientsDataTable extends BaseDataTable
             __('app.addedBy') => ['data' => 'added_by', 'name' => 'added_by', 'visible' => false, 'title' => __('app.addedBy')],
             __('app.mobile') => ['data' => 'mobile', 'name' => 'mobile', 'visible' => false, 'title' => __('app.mobile')],
             __('app.status') => ['data' => 'status', 'name' => 'status', 'title' => __('app.status')],
+            'Dealer Code' => ['data' => 'dealer_code_col', 'name' => 'client_details.dealer_code', 'title' => 'Dealer Code', 'visible' => true],
+            'Category' => ['data' => 'dealer_category_label', 'name' => 'client_details.dealer_category', 'title' => 'Category', 'visible' => true],
+            'City' => ['data' => 'city_col', 'name' => 'client_details.city', 'title' => 'City', 'visible' => true],
+            'Area' => ['data' => 'area_col', 'name' => 'client_details.area', 'title' => 'Area', 'visible' => false],
             __('app.createdAt') => ['data' => 'created_at', 'name' => 'created_at', 'title' => __('app.createdAt')]
         ];
 

@@ -50,6 +50,12 @@ class InventoryDataTable extends BaseDataTable
             ->editColumn('quantity', function ($row) {
                 return number_format($row->quantity, 2);
             })
+            ->editColumn('quantity_faulty', function ($row) {
+                return number_format($row->quantity_faulty, 2);
+            })
+            ->editColumn('quantity_in_transit', function ($row) {
+                return number_format($row->quantity_in_transit, 2);
+            })
             ->addIndexColumn()
             ->smart(false)
             ->setRowId(function ($row) {
@@ -126,7 +132,9 @@ class InventoryDataTable extends BaseDataTable
             __('app.id') => ['data' => 'id', 'name' => 'id', 'visible' => false, 'exportable' => false, 'title' => __('app.id')],
             __('modules.inventory.product') => ['data' => 'product_name', 'name' => 'product.name', 'title' => __('modules.inventory.product'), 'exportable' => true, 'orderable' => false],
             __('modules.inventory.warehouse') => ['data' => 'warehouse_name', 'name' => 'warehouse.name', 'title' => __('modules.inventory.warehouse'), 'exportable' => true, 'orderable' => false],
-            __('modules.inventory.quantity') => ['data' => 'quantity', 'name' => 'quantity', 'title' => __('modules.inventory.quantity')],
+            __('modules.inventory.quantity') => ['data' => 'quantity', 'name' => 'quantity', 'title' => 'Available'],
+            'quantity_faulty' => ['data' => 'quantity_faulty', 'name' => 'quantity_faulty', 'title' => 'Faulty/Damaged'],
+            'quantity_in_transit' => ['data' => 'quantity_in_transit', 'name' => 'quantity_in_transit', 'title' => 'In-Transit'],
             Column::computed('action', __('app.action'))
                 ->exportable(false)
                 ->printable(false)

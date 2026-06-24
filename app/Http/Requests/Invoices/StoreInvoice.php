@@ -32,6 +32,7 @@ class StoreInvoice extends CoreRequest
 
         $rules = [
             'invoice_number' => 'required|unique:invoices,invoice_number,null,id,company_id,' . company()->id,
+            'warehouse_id' => 'required|exists:warehouses,id',
             'issue_date' => 'required',
             'sub_total' => 'required',
             'total' => 'required',

@@ -272,6 +272,25 @@ $addProductPermission = user()->permission('add_product');
                     </div>
                 </div>
             </div>
+
+            <!-- Warehouse Selection -->
+            <div class="col-md-4">
+                <div class="form-group c-inv-select mb-4">
+                    <x-forms.label fieldId="warehouse_id" :fieldLabel="__('modules.inventory.warehouse')" fieldRequired="true">
+                    </x-forms.label>
+                    <div class="select-others height-35 rounded">
+                        <select class="form-control select-picker" data-live-search="true" data-size="8"
+                            name="warehouse_id" id="warehouse_id">
+                            <option value="">--</option>
+                            @foreach ($warehouses as $warehouse)
+                                <option value="{{ $warehouse->id }}">
+                                    {{ $warehouse->name }} ({{ $warehouse->code }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
         </div>
         <!-- CLIENT, PROJECT, GST, BILLING, SHIPPING ADDRESS END -->
 
@@ -649,6 +668,7 @@ $addProductPermission = user()->permission('add_product');
                                         class="dash-border-top bblr border-right-0">
                                         <textarea class="f-14 border p-3 rounded w-100 desktop-description form-control" name="item_summary[]"
                                             placeholder="@lang('placeholders.invoices.description')"></textarea>
+                                        <input type="hidden" name="serial_numbers[]" value="">
                                     </td>
                                     <td class="border-left-0">
                                         <input type="file" class="dropify" name="invoice_item_image[]" data-allowed-file-extensions="png jpg jpeg" data-messages-default="test" data-height="70" />
@@ -1194,6 +1214,7 @@ $addProductPermission = user()->permission('add_product');
                 <tr class="d-none d-md-table-row d-lg-table-row">
                     <td colspan="{{ $invoiceSetting->hsn_sac_code_show ? 4 : 3 }}" class="dash-border-top bblr">
                         <textarea class="f-14 border-0 w-100 desktop-description form-control" name="item_summary[]" placeholder="@lang("placeholders.invoices.description")"></textarea>
+                        <input type="hidden" name="serial_numbers[]" value="">
                     </td>
                     <td class="border-left-0">
                         <input type="file" class="dropify" id="dropify${i}" name="invoice_item_image[]" data-allowed-file-extensions="png jpg jpeg" data-messages-default="test" data-height="70" />
@@ -1241,6 +1262,38 @@ $addProductPermission = user()->permission('add_product');
                 Swal.fire({
                     icon: 'error',
                     text: "{{ __('messages.discountExceed') }}",
+                    customClass: { confirmButton: 'btn btn-primary' },
+                    showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
+                    buttonsStyling: false
+                });
+                return false;
+            }
+
+            // Validate serial number counts for serialized items
+            var serialValidationError = false;
+            var serialValidationMessage = "";
+            
+            $('#sortable .item-row').each(function() {
+                var $row = $(this);
+                var $serialsField = $row.find('textarea[name="serial_numbers[]"]');
+                if ($serialsField.length > 0) {
+                    var quantity = parseInt($row.find('.quantity').val()) || 0;
+                    var serialText = $serialsField.val().trim();
+                    var serials = serialText ? serialText.split('\n').map(s => s.trim()).filter(s => s.length > 0) : [];
+                    var itemName = $row.find('.item_name').val() || "Product";
+                    
+                    if (serials.length !== quantity) {
+                        serialValidationError = true;
+                        serialValidationMessage = "The number of scanned serial numbers (" + serials.length + ") must match the quantity (" + quantity + ") for product '" + itemName + "'.";
+                        return false; // Break loop
+                    }
+                }
+            });
+
+            if (serialValidationError) {
+                Swal.fire({
+                    icon: 'error',
+                    text: serialValidationMessage,
                     customClass: { confirmButton: 'btn btn-primary' },
                     showClass: { popup: 'swal2-noanimation', backdrop: 'swal2-noanimation' },
                     buttonsStyling: false

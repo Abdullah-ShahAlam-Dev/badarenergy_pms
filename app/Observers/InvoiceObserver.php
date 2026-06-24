@@ -223,7 +223,35 @@ class InvoiceObserver
             $clientPayment->paid_on = now();
             $clientPayment->save();
         }
+
+        if (!isRunningInConsoleOrSeeding()) {
+            $itemsData = [];
+            if (!empty(request()->product_id) && is_array(request()->product_id)) {
+                $quantities = request()->quantity;
+                $serialNumbersArr = request()->serial_numbers ?? [];
+                
+                foreach (request()->product_id as $key => $productId) {
+                    if (!is_null($productId)) {
+                        $rawSerials = $serialNumbersArr[$key] ?? '';
+                        $serials = array_filter(array_map('trim', explode("\n", str_replace("\r", "", $rawSerials))));
+                        
+                        $itemsData[] = [
+                            'product_id' => $productId,
+                            'quantity' => $quantities[$key],
+                            'serials' => $serials,
+                        ];
+                    }
+                }
+            }
+            
+            $inventoryService = new \App\Services\InvoiceInventoryService();
+            $inventoryService->syncInvoiceInventory($invoice, $itemsData);
+
+            $ledgerService = new \App\Services\DealerLedgerService();
+            $ledgerService->syncInvoiceEntry($invoice);
+        }
     }
+
 
     public function updating(Invoice $invoice)
     {
@@ -330,7 +358,7 @@ class InvoiceObserver
         }
 
         // Send notification
-        if (($invoice->isDirty('issue_date') || $invoice->isDirty('due_date') || $invoice->isDirty('sub_total') || $invoice->isDirty('discount') || $invoice->isDirty('discount_type') || $invoice->isDirty('total') || $invoice->isDirty('recurring') || $invoice->isDirty('note') || $invoice->isDirty('calculate_tax') || $invoice->isDirty('due_amount')) && (($invoice->project && $invoice->project->client_id != null) || $invoice->client_id != null)) {
+        if (!isRunningInConsoleOrSeeding() && ($invoice->isDirty('issue_date') || $invoice->isDirty('due_date') || $invoice->isDirty('sub_total') || $invoice->isDirty('discount') || $invoice->isDirty('discount_type') || $invoice->isDirty('total') || $invoice->isDirty('recurring') || $invoice->isDirty('note') || $invoice->isDirty('calculate_tax') || $invoice->isDirty('due_amount')) && (($invoice->project && $invoice->project->client_id != null) || $invoice->client_id != null)) {
             $clientId = ($invoice->project && $invoice->project->client_id != null) ? $invoice->project->client_id : $invoice->client_id;
 
             // Notify client
@@ -380,7 +408,34 @@ class InvoiceObserver
             }
         }
 
+        if (!isRunningInConsoleOrSeeding()) {
+            $itemsData = [];
+            if (!empty(request()->product_id) && is_array(request()->product_id)) {
+                $quantities = request()->quantity;
+                $serialNumbersArr = request()->serial_numbers ?? [];
+                
+                foreach (request()->product_id as $key => $productId) {
+                    if (!is_null($productId)) {
+                        $rawSerials = $serialNumbersArr[$key] ?? '';
+                        $serials = array_filter(array_map('trim', explode("\n", str_replace("\r", "", $rawSerials))));
+                        
+                        $itemsData[] = [
+                            'product_id' => $productId,
+                            'quantity' => $quantities[$key],
+                            'serials' => $serials,
+                        ];
+                    }
+                }
+            }
+            
+            $inventoryService = new \App\Services\InvoiceInventoryService();
+            $inventoryService->syncInvoiceInventory($invoice, $itemsData);
+
+            $ledgerService = new \App\Services\DealerLedgerService();
+            $ledgerService->syncInvoiceEntry($invoice);
+        }
     }
+
 
     public function deleting(Invoice $invoice)
     {
@@ -405,23 +460,25 @@ class InvoiceObserver
         }
 
         /* Start of deleting event from google calendar */
-        $google = new Google();
-        $googleAccount = $invoice->company;
+        if (!isRunningInConsoleOrSeeding()) {
+            $google = new Google();
+            $googleAccount = $invoice->company;
 
-        if (company()->google_calendar_status == 'active' && $googleAccount->google_calendar_verification_status == 'verified' && $googleAccount->token) {
-            $google->connectUsing($googleAccount->token);
-            try {
-                if ($invoice->event_id) {
-                    $google->service('Calendar')->events->delete('primary', $invoice->event_id);
-                }
-            } catch (\Google\Service\Exception $error) {
-                if (is_null($error->getErrors())) {
-                    // Delete google calendar connection data i.e. token, name, google_id
-                    $googleAccount->name = null;
-                    $googleAccount->token = null;
-                    $googleAccount->google_id = null;
-                    $googleAccount->google_calendar_verification_status = 'non_verified';
-                    $googleAccount->save();
+            if (company() && company()->google_calendar_status == 'active' && $googleAccount->google_calendar_verification_status == 'verified' && $googleAccount->token) {
+                $google->connectUsing($googleAccount->token);
+                try {
+                    if ($invoice->event_id) {
+                        $google->service('Calendar')->events->delete('primary', $invoice->event_id);
+                    }
+                } catch (\Google\Service\Exception $error) {
+                    if (is_null($error->getErrors())) {
+                        // Delete google calendar connection data i.e. token, name, google_id
+                        $googleAccount->name = null;
+                        $googleAccount->token = null;
+                        $googleAccount->google_id = null;
+                        $googleAccount->google_calendar_verification_status = 'non_verified';
+                        $googleAccount->save();
+                    }
                 }
             }
         }
@@ -434,7 +491,15 @@ class InvoiceObserver
                 $quickBooks->deleteInvoice($invoice);
             }
         }
+
+        // Revert inventory deductions and delete ledger entry
+        $inventoryService = new \App\Services\InvoiceInventoryService();
+        $inventoryService->revertInvoiceInventory($invoice);
+
+        $ledgerService = new \App\Services\DealerLedgerService();
+        $ledgerService->deleteInvoiceEntry($invoice->id);
     }
+
 
     protected function googleCalendarEvent($event)
     {

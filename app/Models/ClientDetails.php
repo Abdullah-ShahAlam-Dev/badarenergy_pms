@@ -77,7 +77,7 @@ class ClientDetails extends BaseModel
 
     use CustomFieldsTrait, HasCompany;
 
-    protected $fillable = ['company_name', 'user_id', 'address', 'postal_code', 'state', 'city', 'office', 'cell', 'website', 'note', 'skype', 'facebook', 'twitter', 'linkedin', 'gst_number', 'shipping_address', 'category_id', 'sub_category_id', 'company_logo', 'dealer_code', 'credit_limit', 'credit_days', 'dealer_tier'];
+    protected $fillable = ['company_name', 'user_id', 'address', 'postal_code', 'state', 'city', 'office', 'cell', 'website', 'note', 'skype', 'facebook', 'twitter', 'linkedin', 'gst_number', 'shipping_address', 'category_id', 'sub_category_id', 'company_logo', 'dealer_code', 'credit_limit', 'credit_days', 'dealer_tier', 'dealer_category', 'area', 'ntn_number', 'strn_number', 'salesperson_id'];
 
     protected $default = ['id', 'company_name', 'address', 'website', 'note', 'skype', 'facebook', 'twitter', 'linkedin', 'gst_number', 'name', 'email', 'company_logo'];
 
@@ -97,6 +97,11 @@ class ClientDetails extends BaseModel
     public function addedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'added_by', 'id');
+    }
+
+    public function salesperson(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'salesperson_id')->withoutGlobalScope(ActiveScope::class);
     }
 
     public function getImageUrlAttribute()

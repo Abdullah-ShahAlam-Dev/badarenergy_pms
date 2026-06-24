@@ -91,7 +91,27 @@ class Product extends BaseModel
     protected $table = 'products';
     const FILE_PATH = 'products';
 
-    protected $fillable = ['name', 'price', 'description', 'taxes'];
+    protected $fillable = [
+        'name',
+        'price',
+        'description',
+        'taxes',
+        'voltage',
+        'capacity',
+        'product_code',
+        'barcode',
+        'type',
+        'allow_purchase',
+        'unit_id',
+        'category_id',
+        'sub_category_id',
+        'added_by',
+        'last_updated_by',
+        'hsn_sac_code',
+        'downloadable',
+        'downloadable_file',
+        'default_image'
+    ];
 
     protected $appends = ['total_amount', 'image_url', 'download_file_url'];
 
@@ -182,7 +202,10 @@ class Product extends BaseModel
     public function orderItem(): HasMany
     {
         return $this->hasMany(OrderItems::class, 'product_id');
-
     }
-    
+
+    public function serials(): HasMany
+    {
+        return $this->hasMany(ProductSerial::class, 'product_id');
+    }
 }

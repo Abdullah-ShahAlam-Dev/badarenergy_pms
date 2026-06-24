@@ -48,6 +48,9 @@ $viewClientContact = user()->permission('view_client_contacts');
                     class="payments" />
             @endif
 
+            <x-tab :href="route('clients.show', $client->id).'?tab=ledger'" ajax="false" text="Ledger"
+                class="ledger" />
+
             @if ($viewClientContact == 'all' || $viewClientContact == 'added')
                 <x-tab :href="route('clients.show', $client->id).'?tab=contacts'" ajax="false" :text="__('app.menu.contacts')"
                     class="contacts" />

@@ -161,6 +161,29 @@
             <x-forms.custom-field-show :fields="$fields" :model="$clientDetail"></x-forms.custom-field-show>
 
         </x-cards.data>
+
+        <x-cards.data title="Dealer Information" class="mt-4">
+            <x-cards.data-row label="Dealer Code" :value="$client->clientDetails->dealer_code ?? '--'" />
+            <x-cards.data-row label="Dealer Category"
+                :value="ucfirst(str_replace('_', ' ', $client->clientDetails->dealer_category ?? '--'))" />
+            <x-cards.data-row label="Dealer Tier" :value="$client->clientDetails->dealer_tier ?? '--'" />
+            <x-cards.data-row label="Credit Limit (PKR)"
+                :value="number_format($client->clientDetails->credit_limit ?? 0, 2)" />
+            <x-cards.data-row label="Credit Days" :value="$client->clientDetails->credit_days ?? '0'" />
+            <x-cards.data-row label="Area" :value="$client->clientDetails->area ?? '--'" />
+            <x-cards.data-row label="NTN Number" :value="$client->clientDetails->ntn_number ?? '--'" />
+            <x-cards.data-row label="STRN Number" :value="$client->clientDetails->strn_number ?? '--'" />
+            <div class="col-12 px-0 pb-3 d-block d-lg-flex d-md-flex">
+                <p class="mb-0 text-lightest f-14 w-30 d-inline-block text-capitalize">Assigned Salesperson</p>
+                <p class="mb-0 text-dark-grey f-14 w-70">
+                    @if($client->clientDetails->salesperson)
+                        <x-employee :user="$client->clientDetails->salesperson" />
+                    @else
+                        --
+                    @endif
+                </p>
+            </div>
+        </x-cards.data>
     </div>
     <div class="col-xl-5 col-lg-12 col-md-12 ">
         <div class="row">

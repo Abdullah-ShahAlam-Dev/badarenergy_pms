@@ -163,6 +163,62 @@
                 </div>
             </div>
 
+            <div class="more-filter-items">
+                <label class="f-14 text-dark-grey mb-12 text-capitalize" for="usr">Dealer Category</label>
+                <div class="select-filter mb-4">
+                    <div class="select-others">
+                        <select class="form-control select-picker" id="dealer_category" data-container="body" data-size="8">
+                            <option value="all">@lang('app.all')</option>
+                            <option value="distributor">Distributor</option>
+                            <option value="dealer">Dealer</option>
+                            <option value="end_customer">End Customer</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="more-filter-items">
+                <label class="f-14 text-dark-grey mb-12 text-capitalize" for="usr">City</label>
+                <div class="select-filter mb-4">
+                    <div class="select-others">
+                        <select class="form-control select-picker" id="filter_city" data-live-search="true"
+                            data-container="body" data-size="8">
+                            <option value="all">@lang('app.all')</option>
+                            @php
+                                $cities = \App\Models\ClientDetails::whereNotNull('city')
+                                    ->where('city', '!=', '')
+                                    ->distinct()
+                                    ->pluck('city');
+                            @endphp
+                            @foreach ($cities as $city)
+                                <option value="{{ $city }}">{{ $city }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="more-filter-items">
+                <label class="f-14 text-dark-grey mb-12 text-capitalize" for="usr">Area</label>
+                <div class="select-filter mb-4">
+                    <div class="select-others">
+                        <select class="form-control select-picker" id="filter_area" data-live-search="true"
+                            data-container="body" data-size="8">
+                            <option value="all">@lang('app.all')</option>
+                            @php
+                                $areas = \App\Models\ClientDetails::whereNotNull('area')
+                                    ->where('area', '!=', '')
+                                    ->distinct()
+                                    ->pluck('area');
+                            @endphp
+                            @foreach ($areas as $area)
+                                <option value="{{ $area }}">{{ $area }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+
         </x-filters.more-filter-box>
         <!-- MORE FILTERS END -->
     </x-filters.filter-box>

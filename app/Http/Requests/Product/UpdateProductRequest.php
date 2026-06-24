@@ -35,6 +35,12 @@ class UpdateProductRequest extends CoreRequest
             ],
             'price' => 'required|numeric',
             'downloadable_file' => 'nullable|file',
+            'product_code' => 'nullable|string',
+            'voltage' => 'nullable|string',
+            'capacity' => 'nullable|string',
+            'barcode' => 'nullable|string',
+            'type' => 'nullable|in:imported,assembled',
+            'is_serialized' => 'nullable|boolean',
         ];
 
         $rules = $this->customFieldRules($rules);

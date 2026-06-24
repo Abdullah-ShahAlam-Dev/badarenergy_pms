@@ -36873,14 +36873,12 @@ const resetActionButtons = () => {
     $(".select-picker").selectpicker("refresh");
 };
 
-var el = document.getElementById("close-task-detail");
-
 $(document).on("click", ".openRightModal", openTaskDetail);
 
-var el = document.querySelector(".closeRightModal");
-if (el) {
-    el.addEventListener("click", closeTaskDetail);
-}
+$(document).on("click", "#close-task-detail, .close-task-detail, #close-task-detail-overlay, .closeRightModal", function (e) {
+    e.preventDefault();
+    closeTaskDetail();
+});
 
 //show hide secret values
 $(document).on("click", ".toggle-password", function () {

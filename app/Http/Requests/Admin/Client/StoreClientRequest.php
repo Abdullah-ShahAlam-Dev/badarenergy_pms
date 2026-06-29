@@ -37,7 +37,12 @@ class StoreClientRequest extends CoreRequest
             'dealer_code' => 'required|max:20|unique:client_details,dealer_code,null,id,company_id,' . company()->id,
             'credit_limit' => 'nullable|numeric|min:0',
             'credit_days' => 'nullable|integer|min:0',
-            'dealer_tier' => 'required|in:Tier A,Tier B,Tier C'
+            'dealer_tier' => 'required|in:Tier A,Tier B,Tier C',
+            'dealer_category' => 'required|in:distributor,dealer,end_customer',
+            'salesperson_id' => 'required|exists:users,id',
+            'city' => 'required|string|max:100',
+            'address' => 'required|string|max:500',
+            'area' => 'required|string|max:100'
         ];
 
         $rules = $this->customFieldRules($rules);

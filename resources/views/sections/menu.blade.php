@@ -204,7 +204,7 @@
 
     <!-- NAV ITEM - INVENTORY GROUP -->
     @if (!in_array('client', user_roles()))
-        <x-menu-item icon="box" :text="__('app.menu.inventory')" :active="request()->routeIs('warehouses.*') || request()->routeIs('inventory.*')">
+        <x-menu-item icon="box" :text="__('app.menu.inventory')" :active="request()->routeIs('warehouses.*') || request()->routeIs('inventory.*') || request()->routeIs('delivery-orders.*') || request()->routeIs('stock-transfers.*')">
             <x-slot name="iconPath">
                 <path fill-rule="evenodd" d="M12 1a1 1 0 0 1 .897.553l2.917 5.834A.5.5 0 0 1 15.5 8V14a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1V8a.5.5 0 0 1 .186-.38L3.103 1.553A1 1 0 0 1 4 1h8zM4.646 2.057l-2.613 5.225h11.934L11.354 2.057H4.646zM14 8.283H2V14h12V8.283z"/>
             </x-slot>
@@ -213,16 +213,32 @@
                 @if (\Route::has('inventory.index'))
                     <x-sub-menu-item :link="route('inventory.index')" :text="__('app.menu.stockMovements')" />
                 @endif
+                <x-sub-menu-item :link="route('delivery-orders.index')" text="Delivery Orders" />
+                @if (user()->permission('view_stock_transfer') != 'none')
+                    <x-sub-menu-item :link="route('stock-transfers.index')" text="Stock Transfers" />
+                @endif
             </div>
         </x-menu-item>
     @endif
 
-    <!-- NAV ITEM - LEDGERS -->
+    <!-- NAV ITEM - LEDGERS & AGING -->
     @if (!in_array('client', user_roles()) && \Route::has('ledgers.index'))
-        <x-menu-item icon="receipt" :text="__('app.menu.ledgers')" :link="route('ledgers.index')">
+        <x-menu-item icon="receipt" :text="__('app.menu.ledgers')" :active="request()->routeIs('ledgers.*') || request()->routeIs('aging.*')">
             <x-slot name="iconPath">
                 <path d="M1.5 2A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13zM1 3.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9zM3.5 4.5A.5.5 0 0 1 4 4h8a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5zm0 2A.5.5 0 0 1 4 6h8a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5zm0 2A.5.5 0 0 1 4 8h5a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5z"/>
             </x-slot>
+            <div class="accordionItemContent pb-2">
+                <x-sub-menu-item :link="route('ledgers.index')" text="Receivables Summary" />
+                @if(user()->permission('view_outstanding_dashboard') != 'none')
+                    <x-sub-menu-item :link="route('aging.dashboard')" text="Outstanding Dashboard" />
+                @endif
+                @if(user()->permission('view_aging_report') != 'none')
+                    <x-sub-menu-item :link="route('aging.index')" text="Aging Analysis" />
+                @endif
+                @if(user()->permission('view_salesperson_aging') != 'none')
+                    <x-sub-menu-item :link="route('aging.salesperson')" text="Salesperson Aging" />
+                @endif
+            </div>
         </x-menu-item>
     @endif
 
@@ -342,7 +358,7 @@
     @endphp
 
     @if (in_array('reports', user_modules()) && ($sidebarUserPermissions['view_task_report'] == 4 || $sidebarUserPermissions['view_time_log_report'] == 4 || (isset($sidebarUserPermissions['view_expense_report']) && $sidebarUserPermissions['view_expense_report'] == 4) || $sidebarUserPermissions['view_finance_report'] != 5 || $sidebarUserPermissions['view_income_expense_report'] == 4 || $sidebarUserPermissions['view_leave_report'] == 4 || $sidebarUserPermissions['view_attendance_report'] == 4 || $viewDailyAnalysisPerm) && ($sidebarUserPermissions['view_task_report'] != 'none' || $sidebarUserPermissions['view_time_log_report'] != 'none' || $sidebarUserPermissions['view_finance_report'] != 'none' || $sidebarUserPermissions['view_income_expense_report'] != 'none' || $sidebarUserPermissions['view_leave_report'] != 'none' || $sidebarUserPermissions['view_attendance_report'] != 'none' || (isset($sidebarUserPermissions['view_expense_report']) && $sidebarUserPermissions['view_expense_report'] != 'none') || $viewDailyAnalysisPerm))
-        <x-menu-item icon="graph-up" :text="__('app.menu.reports')" :active="request()->routeIs('task-report.*') || request()->routeIs('time-log-report.*') || request()->routeIs('finance-report.*') || request()->routeIs('income-expense-report.*') || request()->routeIs('leave-report.*') || request()->routeIs('attendance-report.*') || request()->routeIs('expense-report.*') || request()->routeIs('lead-report.*') || request()->routeIs('sales-report.*') || request()->routeIs('reports.daily-reports*') || request()->routeIs('daily-reports.missing')">
+        <x-menu-item icon="graph-up" :text="__('app.menu.reports')" :active="request()->routeIs('task-report.*') || request()->routeIs('time-log-report.*') || request()->routeIs('finance-report.*') || request()->routeIs('income-expense-report.*') || request()->routeIs('leave-report.*') || request()->routeIs('attendance-report.*') || request()->routeIs('expense-report.*') || request()->routeIs('lead-report.*') || request()->routeIs('sales-report.*') || request()->routeIs('reports.daily-reports*') || request()->routeIs('daily-reports.missing') || request()->routeIs('reports.sales.*')">
             <x-slot name="iconPath">
                 <path
                     d="M7.5 1.018a7 7 0 0 0-4.79 11.566L7.5 7.793V1.018zm1 0V7.5h6.482A7.001 7.001 0 0 0 8.5 1.018zM14.982 8.5H8.207l-4.79 4.79A7 7 0 0 0 14.982 8.5zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z" />
@@ -388,6 +404,44 @@
                 @if (isset($sidebarUserPermissions['view_sales_report']) && $sidebarUserPermissions['view_sales_report'] == 4 && $sidebarUserPermissions['view_sales_report'] != 'none' && in_array('invoices', user_modules()))
                     <x-sub-menu-item :link="route('sales-report.index')"
                                      :text="__('app.menu.salesReport')" />
+                @endif
+                @if (in_array('invoices', user_modules()))
+                    @if (user()->permission('view_daily_sales') != 'none')
+                        <x-sub-menu-item :link="route('reports.sales.daily')" text="Daily Sales" :active="request()->routeIs('reports.sales.daily')" />
+                    @endif
+                    @if (user()->permission('view_weekly_sales') != 'none')
+                        <x-sub-menu-item :link="route('reports.sales.weekly')" text="Weekly Sales" :active="request()->routeIs('reports.sales.weekly')" />
+                    @endif
+                    @if (user()->permission('view_monthly_sales') != 'none')
+                        <x-sub-menu-item :link="route('reports.sales.monthly')" text="Monthly Sales" :active="request()->routeIs('reports.sales.monthly')" />
+                    @endif
+                    @if (user()->permission('view_dealer_sales') != 'none')
+                        <x-sub-menu-item :link="route('reports.sales.dealer')" text="Dealer Wise Sales" :active="request()->routeIs('reports.sales.dealer')" />
+                    @endif
+                    @if (user()->permission('view_product_sales') != 'none')
+                        <x-sub-menu-item :link="route('reports.sales.product')" text="Product Wise Sales" :active="request()->routeIs('reports.sales.product')" />
+                    @endif
+                    @if (user()->permission('view_model_sales') != 'none')
+                        <x-sub-menu-item :link="route('reports.sales.model')" text="Model Wise Sales" :active="request()->routeIs('reports.sales.model')" />
+                    @endif
+                    @if (user()->permission('view_location_sales') != 'none')
+                        <x-sub-menu-item :link="route('reports.sales.location')" text="Location Wise Sales" :active="request()->routeIs('reports.sales.location')" />
+                    @endif
+                    @if (user()->permission('view_salesperson_sales') != 'none')
+                        <x-sub-menu-item :link="route('reports.sales.salesperson')" text="Salesperson Wise Sales" :active="request()->routeIs('reports.sales.salesperson')" />
+                    @endif
+                    @if (user()->permission('view_finance_collection') != 'none')
+                        <x-sub-menu-item :link="route('reports.sales.finance')" text="Finance Collection" :active="request()->routeIs('reports.sales.finance')" />
+                    @endif
+                    @if (user()->permission('view_recovery_report') != 'none')
+                        <x-sub-menu-item :link="route('reports.sales.recovery')" text="Recovery Report" :active="request()->routeIs('reports.sales.recovery')" />
+                    @endif
+                    @if (user()->permission('view_outstanding_report') != 'none')
+                        <x-sub-menu-item :link="route('reports.sales.outstanding')" text="Outstanding Report" :active="request()->routeIs('reports.sales.outstanding')" />
+                    @endif
+                    @if (user()->permission('view_cashflow_report') != 'none')
+                        <x-sub-menu-item :link="route('reports.sales.cashflow')" text="Cash Flow Report" :active="request()->routeIs('reports.sales.cashflow')" />
+                    @endif
                 @endif
                 @if (in_array('daily_reports', user_modules()) && $viewDailyAnalysisPerm && \Route::has('reports.daily-reports'))
                     <x-sub-menu-item :link="route('reports.daily-reports')"

@@ -25,8 +25,8 @@ class InvoiceInventoryService
             // 1. Revert previous stock deductions and serial sales for this invoice
             $this->revertInvoiceInventory($invoice);
 
-            // If the invoice status is draft or canceled, we stop here (revert is sufficient)
-            if (in_array($invoice->status, ['draft', 'canceled'])) {
+            // If the invoice status is draft, canceled, or pending_approval, we stop here (revert is sufficient)
+            if (in_array($invoice->status, ['draft', 'canceled', 'pending_approval'])) {
                 return;
             }
 
@@ -84,11 +84,45 @@ class InvoiceInventoryService
                 $inventory->quantity = $newQty;
                 $inventory->save();
 
-                // If serialized, mark serial numbers as sold and set warranty
-                if ($product->is_serialized && !empty($serials)) {
+                // If serialized, validate serial numbers and mark them as sold
+                if ($product->is_serialized) {
+                    if (empty($serials)) {
+                        throw new \Exception("At least one serial number is required for the serialized product '{$product->name}'.");
+                    }
+
                     $snCount = count($serials);
                     if ($snCount !== (int)$quantity) {
                         throw new \Exception("The number of scanned serial numbers ({$snCount}) does not match the quantity (" . (int)$quantity . ") for product '{$product->name}'.");
+                    }
+
+                    // Fetch serial records to validate existence, warehouse, and status
+                    $foundSerials = ProductSerial::whereIn('serial_number', $serials)
+                        ->where('product_id', $productId)
+                        ->get();
+
+                    // Check existence
+                    $foundNumbers = $foundSerials->pluck('serial_number')->toArray();
+                    $notFoundNumbers = array_diff($serials, $foundNumbers);
+                    if (!empty($notFoundNumbers)) {
+                        throw new \Exception("The following serial numbers do not exist in the system for product '{$product->name}': " . implode(', ', $notFoundNumbers));
+                    }
+
+                    // Check warehouse match
+                    $wrongWarehouseSerials = $foundSerials->filter(function ($item) use ($warehouseId) {
+                        return $item->warehouse_id != $warehouseId;
+                    });
+                    if ($wrongWarehouseSerials->isNotEmpty()) {
+                        $wrongNumbers = $wrongWarehouseSerials->pluck('serial_number')->toArray();
+                        throw new \Exception("The following serial numbers do not belong to the selected warehouse for product '{$product->name}': " . implode(', ', $wrongNumbers));
+                    }
+
+                    // Check status availability (prevent duplicate sale)
+                    $unavailableSerials = $foundSerials->filter(function ($item) {
+                        return $item->status !== ProductSerial::STATUS_AVAILABLE;
+                    });
+                    if ($unavailableSerials->isNotEmpty()) {
+                        $unavailableNumbers = $unavailableSerials->pluck('serial_number')->toArray();
+                        throw new \Exception("The following serial numbers are already sold or unavailable for product '{$product->name}': " . implode(', ', $unavailableNumbers));
                     }
 
                     // Update serials status to sold

@@ -46,6 +46,12 @@
     </x-alert>
 @endif
 
+@if ($invoice->status === 'pending_approval')
+    <x-alert icon="info-circle" type="info" class="mb-3">
+        <strong>Pending Approval:</strong> This invoice is awaiting review and approval by an authorized manager. Stock and ledger entries have not been finalized yet.
+    </x-alert>
+@endif
+
 <div class="card border-0 invoice">
     <!-- CARD BODY START -->
     <div class="card-body">
@@ -486,6 +492,42 @@
                 </button>
                 <!-- DROPDOWN - INFORMATION -->
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton" tabindex="0">
+                    @php
+                        $approveInvoicePermission = user()->permission('approve_invoices');
+                    @endphp
+
+                    @if ($invoice->status === 'pending_approval' && $approveInvoicePermission === 'all')
+                        <li>
+                            <a class="dropdown-item f-14 text-dark approve-invoice" href="javascript:;"
+                                data-invoice-id="{{ $invoice->id }}">
+                                <i class="fa fa-check f-w-500 mr-2 f-11 text-success"></i> Approve Invoice
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item f-14 text-dark reject-invoice" href="javascript:;"
+                                data-invoice-id="{{ $invoice->id }}">
+                                <i class="fa fa-times f-w-500 mr-2 f-11 text-danger"></i> Reject Invoice
+                            </a>
+                        </li>
+                    @endif
+
+                    @if (in_array($invoice->status, ['unpaid', 'paid', 'partial']) && !in_array('client', user_roles()))
+                        <li>
+                            <a class="dropdown-item f-14 text-dark cancel-invoice-custom" href="javascript:;"
+                                data-invoice-id="{{ $invoice->id }}">
+                                <i class="fa fa-ban f-w-500 mr-2 f-11 text-danger"></i> Cancel Invoice
+                            </a>
+                        </li>
+                    @endif
+
+                    @if ($invoice->deliveryOrder && !in_array('client', user_roles()))
+                        <li>
+                            <a class="dropdown-item f-14 text-dark" href="{{ route('delivery-orders.show', $invoice->deliveryOrder->id) }}" target="_blank">
+                                <i class="fa fa-truck f-w-500 mr-2 f-11 text-info"></i> View Delivery Order
+                            </a>
+                        </li>
+                    @endif
+
 
                     @if ($invoice->status == 'paid' && !in_array('client', user_roles()) && $invoice->amountPaid() == 0)
                         <li>
@@ -1137,6 +1179,104 @@
                     type: 'GET',
                     url: url,
                     container: '#invoices-table',
+                    blockUI: true,
+                    success: function(response) {
+                        if (response.status == "success") {
+                            window.location.reload();
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    $('body').on('click', '.approve-invoice', function() {
+        var id = $(this).data('invoice-id');
+        Swal.fire({
+            title: "Approve Invoice",
+            text: "Are you sure you want to approve this invoice? This will deduct warehouse stock and generate ledger entries.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: "Yes, Approve",
+            cancelButtonText: "Cancel",
+            customClass: {
+                confirmButton: 'btn btn-primary mr-3',
+                cancelButton: 'btn btn-secondary'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                var url = "{{ route('invoices.approve', ':id') }}";
+                url = url.replace(':id', id);
+                $.easyAjax({
+                    type: 'POST',
+                    url: url,
+                    data: { _token: "{{ csrf_token() }}" },
+                    blockUI: true,
+                    success: function(response) {
+                        if (response.status == "success") {
+                            window.location.reload();
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    $('body').on('click', '.reject-invoice', function() {
+        var id = $(this).data('invoice-id');
+        Swal.fire({
+            title: "Reject Invoice",
+            text: "Are you sure you want to reject this invoice? It will be marked as canceled.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: "Yes, Reject",
+            cancelButtonText: "Cancel",
+            customClass: {
+                confirmButton: 'btn btn-danger mr-3',
+                cancelButton: 'btn btn-secondary'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                var url = "{{ route('invoices.reject', ':id') }}";
+                url = url.replace(':id', id);
+                $.easyAjax({
+                    type: 'POST',
+                    url: url,
+                    data: { _token: "{{ csrf_token() }}" },
+                    blockUI: true,
+                    success: function(response) {
+                        if (response.status == "success") {
+                            window.location.reload();
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    $('body').on('click', '.cancel-invoice-custom', function() {
+        var id = $(this).data('invoice-id');
+        Swal.fire({
+            title: "Cancel Invoice",
+            text: "Are you sure you want to cancel this approved invoice? This will revert stock and ledger entries.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: "Yes, Cancel It",
+            cancelButtonText: "Cancel",
+            customClass: {
+                confirmButton: 'btn btn-danger mr-3',
+                cancelButton: 'btn btn-secondary'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                var url = "{{ route('invoices.update_status', ':id') }}";
+                url = url.replace(':id', id);
+                $.easyAjax({
+                    type: 'GET',
+                    url: url,
                     blockUI: true,
                     success: function(response) {
                         if (response.status == "success") {

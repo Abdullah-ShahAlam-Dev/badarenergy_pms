@@ -667,6 +667,8 @@ class EventServiceProvider extends ServiceProvider
         Warehouse::class => [WarehouseObserver::class],
         Inventory::class => [InventoryObserver::class],
         StockMovement::class => [StockMovementObserver::class],
+        \App\Models\DealerLedgerVoucher::class => [\App\Observers\DealerLedgerVoucherObserver::class],
+        \App\Models\DealerLedger::class => [\App\Observers\DealerLedgerObserver::class],
 
     ];
 

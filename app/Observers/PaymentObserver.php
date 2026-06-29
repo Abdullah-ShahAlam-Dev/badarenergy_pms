@@ -85,6 +85,16 @@ class PaymentObserver
 
             if (isset($invoice)) {
                 $invoice->due_amount = $dueAmount;
+
+                // Update invoice status based on remaining due
+                if ($dueAmount <= 0) {
+                    $invoice->status = 'paid';
+                } elseif ((float)$dueAmount >= (float)$invoice->total) {
+                    $invoice->status = 'unpaid';
+                } else {
+                    $invoice->status = 'partial';
+                }
+
                 $invoice->saveQuietly();
             }
 

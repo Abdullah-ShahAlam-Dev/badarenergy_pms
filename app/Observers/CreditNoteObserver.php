@@ -47,6 +47,8 @@ class CreditNoteObserver
         $notifyData = ['App\Notifications\NewCreditNote'];
         \App\Models\Notification::deleteNotification($notifyData, $creditNote->id);
 
+        // Sync Reversal Ledger Entry
+        resolve(\App\Services\DealerLedgerService::class)->deleteCreditNoteEntry($creditNote->id);
     }
 
     public function created(CreditNotes $creditNote)
@@ -92,4 +94,8 @@ class CreditNoteObserver
         }
     }
 
+    public function saved(CreditNotes $creditNote)
+    {
+        resolve(\App\Services\DealerLedgerService::class)->syncCreditNoteEntry($creditNote);
+    }
 }

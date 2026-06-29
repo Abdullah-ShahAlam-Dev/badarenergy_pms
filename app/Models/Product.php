@@ -110,7 +110,8 @@ class Product extends BaseModel
         'hsn_sac_code',
         'downloadable',
         'downloadable_file',
-        'default_image'
+        'default_image',
+        'is_serialized'
     ];
 
     protected $appends = ['total_amount', 'image_url', 'download_file_url'];

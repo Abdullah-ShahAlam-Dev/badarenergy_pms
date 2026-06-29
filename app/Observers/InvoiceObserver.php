@@ -29,6 +29,8 @@ class InvoiceObserver
 {
     use UnitTypeSaveTrait;
 
+    protected static $oldStatuses = [];
+
     public function saving(Invoice $invoice)
     {
         if (!isRunningInConsoleOrSeeding()) {
@@ -46,6 +48,10 @@ class InvoiceObserver
     {
 
         $invoice->hash = md5(microtime());
+
+        if (!$invoice->status) {
+            $invoice->status = 'pending_approval';
+        }
 
         if (!isRunningInConsoleOrSeeding()) {
 
@@ -202,7 +208,9 @@ class InvoiceObserver
             $invoice->gateway = request()->gateway;
             $invoice->transaction_id = request()->transaction_id;
             $invoice->offline_method_id = request()->offline_methods;
-            $invoice->status = 'paid';
+            if ($invoice->status !== 'pending_approval') {
+                $invoice->status = 'paid';
+            }
         }
 
         $invoice->saveQuietly();
@@ -249,12 +257,26 @@ class InvoiceObserver
 
             $ledgerService = new \App\Services\DealerLedgerService();
             $ledgerService->syncInvoiceEntry($invoice);
+
+            if (in_array($invoice->status, ['unpaid', 'paid', 'partial'])) {
+                \App\Models\DeliveryOrder::firstOrCreate([
+                    'invoice_id' => $invoice->id,
+                ], [
+                    'company_id' => $invoice->company_id,
+                    'issue_date' => now(),
+                    'status' => 'pending',
+                ]);
+            }
         }
     }
 
 
     public function updating(Invoice $invoice)
     {
+        if ($invoice->isDirty('status')) {
+            self::$oldStatuses[$invoice->id] = $invoice->getOriginal('status');
+        }
+
         if (!isRunningInConsoleOrSeeding()) {
             if (request()->type && request()->type == 'send' || request()->type == 'mark_as_send') {
                 $invoice->send_status = 1;
@@ -426,6 +448,21 @@ class InvoiceObserver
                         ];
                     }
                 }
+            } else {
+                // Fallback: build itemsData from invoice items if not in request
+                foreach ($invoice->items as $item) {
+                    if ($item->product_id) {
+                        $serials = \App\Models\ProductSerial::where('invoice_id', $invoice->id)
+                            ->where('product_id', $item->product_id)
+                            ->pluck('serial_number')
+                            ->toArray();
+                        $itemsData[] = [
+                            'product_id' => $item->product_id,
+                            'quantity' => $item->quantity,
+                            'serials' => $serials,
+                        ];
+                    }
+                }
             }
             
             $inventoryService = new \App\Services\InvoiceInventoryService();
@@ -433,6 +470,36 @@ class InvoiceObserver
 
             $ledgerService = new \App\Services\DealerLedgerService();
             $ledgerService->syncInvoiceEntry($invoice);
+
+            // Handle transition checks
+            if ($invoice->wasChanged('status') || isset(self::$oldStatuses[$invoice->id])) {
+                $oldStatus = self::$oldStatuses[$invoice->id] ?? $invoice->getOriginal('status');
+                $newStatus = $invoice->status;
+
+                // Approval transition: 'pending_approval' -> active
+                if ($oldStatus === 'pending_approval' && in_array($newStatus, ['unpaid', 'paid', 'partial'])) {
+                    // Generate Delivery Order automatically!
+                    \App\Models\DeliveryOrder::firstOrCreate([
+                        'invoice_id' => $invoice->id,
+                    ], [
+                        'company_id' => $invoice->company_id,
+                        'issue_date' => now(),
+                        'status' => 'pending',
+                    ]);
+
+                    // Sync complete payments for this invoice
+                    foreach ($invoice->payment as $payment) {
+                        $ledgerService->syncPaymentEntry($payment);
+                    }
+                }
+
+                // Cancellation transition
+                if ($newStatus === 'canceled') {
+                    if ($invoice->deliveryOrder) {
+                        $invoice->deliveryOrder->update(['status' => 'cancelled']);
+                    }
+                }
+            }
         }
     }
 

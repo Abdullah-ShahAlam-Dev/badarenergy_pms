@@ -258,6 +258,24 @@ class InvoiceController extends AccountBaseController
             }
         }
 
+        // Credit Validation check (skip if payment_status is '1' - Paid)
+        if ($request->client_id && $request->payment_status != '1') {
+            $clientUser = User::findOrFail($request->client_id);
+            $validationService = new \App\Services\DealerValidationService();
+
+            // Validate Credit Days
+            $daysResult = $validationService->validateCreditDays($clientUser);
+            if (!$daysResult['status']) {
+                return Reply::error($daysResult['message']);
+            }
+
+            // Validate Credit Limit
+            $limitResult = $validationService->validateCreditLimit($clientUser, (float) $request->total);
+            if (!$limitResult['status']) {
+                return Reply::error($limitResult['message']);
+            }
+        }
+
         $invoice = new Invoice();
 
         $invoice->project_id = $request->project_id ?? null;
@@ -773,6 +791,31 @@ class InvoiceController extends AccountBaseController
             }
         }
 
+        // Credit Validation check (skip if payment_status is '1' - Paid)
+        if ($request->client_id && $request->payment_status != '1') {
+            $clientUser = User::findOrFail($request->client_id);
+            $validationService = new \App\Services\DealerValidationService();
+
+            // Validate Credit Days
+            $daysResult = $validationService->validateCreditDays($clientUser);
+            if (!$daysResult['status']) {
+                return Reply::error($daysResult['message']);
+            }
+
+            // Calculate net change in invoice total to prevent double-counting this invoice's own balance
+            $invoiceObj = Invoice::find($id);
+            $netAmountChange = (float) $request->total;
+            if ($invoiceObj && in_array($invoiceObj->status, ['unpaid', 'partial'])) {
+                $netAmountChange -= (float) $invoiceObj->total;
+            }
+
+            // Validate Credit Limit
+            $limitResult = $validationService->validateCreditLimit($clientUser, $netAmountChange);
+            if (!$limitResult['status']) {
+                return Reply::error($limitResult['message']);
+            }
+        }
+
         $invoice = Invoice::findOrFail($id);
 
         $invoice->project_id = $request->project_id ?? null;
@@ -1281,6 +1324,41 @@ class InvoiceController extends AccountBaseController
         }
 
         return Reply::success(__('messages.updateSuccess'));
+    }
+
+    public function approve($id)
+    {
+        $approvePermission = user()->permission('approve_invoices');
+        abort_403($approvePermission !== 'all');
+
+        $invoice = Invoice::findOrFail($id);
+        
+        if ($invoice->status !== 'pending_approval') {
+            return Reply::error("Only pending approval invoices can be approved.");
+        }
+
+        // Set status: if payment_status == '1', it was created as a cash sale, so mark as paid.
+        $invoice->status = ($invoice->payment_status == '1') ? 'paid' : 'unpaid';
+        $invoice->save();
+
+        return Reply::success("Invoice approved successfully.");
+    }
+
+    public function reject($id)
+    {
+        $approvePermission = user()->permission('approve_invoices');
+        abort_403($approvePermission !== 'all');
+
+        $invoice = Invoice::findOrFail($id);
+        
+        if ($invoice->status !== 'pending_approval') {
+            return Reply::error("Only pending approval invoices can be rejected.");
+        }
+
+        $invoice->status = 'canceled';
+        $invoice->save();
+
+        return Reply::success("Invoice rejected successfully.");
     }
 
     public function getClientOrCompanyName($projectID = '')

@@ -192,4 +192,13 @@ class Payment extends BaseModel
         return $this->belongsTo(OfflinePaymentMethod::class, 'offline_method_id');
     }
 
+    public function salesperson(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'salesperson_id');
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'customer_id');
+    }
 }

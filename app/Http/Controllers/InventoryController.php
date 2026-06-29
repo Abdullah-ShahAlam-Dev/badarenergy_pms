@@ -74,6 +74,11 @@ class InventoryController extends AccountBaseController
         abort_403($this->adjustPermission != 'all' && !in_array('admin', user_roles()));
 
         try {
+            $serialNumbers = [];
+            if ($request->has('serial_numbers') && !is_null($request->serial_numbers)) {
+                $serialNumbers = array_filter(array_map('trim', explode("\n", str_replace("\r", "", $request->serial_numbers))));
+            }
+
             $adjustmentService->adjustStock(
                 $request->product_id,
                 $request->warehouse_id,
@@ -82,7 +87,8 @@ class InventoryController extends AccountBaseController
                 $request->category ?: 'available',
                 'manual',
                 null,
-                strip_tags($request->remarks)
+                strip_tags($request->remarks),
+                $serialNumbers
             );
 
             return Reply::successWithData(__('messages.recordSaved'), [

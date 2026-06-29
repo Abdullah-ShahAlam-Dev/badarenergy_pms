@@ -8,28 +8,41 @@
                 <div class="row p-20">
 
                     <div class="col-lg-3 col-md-6">
-                        <x-forms.select fieldId="payment_project_id" :fieldLabel="__('app.project')"
-                            fieldName="project_id" search="true">
+                        <x-forms.select fieldId="client_id" :fieldLabel="'Dealer / Client'"
+                            fieldName="client_id" search="true" fieldRequired="true">
                             <option value="">--</option>
-                            @foreach ($projects as $project)
-                                <option @if ($project->id == $payment->project_id) selected @endif value="{{ $project->id }}" data-currency-id="{{ $project->currency_id }}"
-                                    data-currency-code="{{ $project->currency->currency_code }}">
-                                    {{ $project->project_name }}</option>
+                            @foreach ($clients as $c)
+                                <option value="{{ $c->id }}" @if(($payment->customer_id ?? ($payment->invoice ? $payment->invoice->client_id : null)) == $c->id) selected @endif>
+                                    {{ $c->name }}
+                                </option>
+                            @endforeach
+                        </x-forms.select>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <x-forms.select fieldId="salesperson_id" :fieldLabel="'Salesperson'"
+                            fieldName="salesperson_id" search="true" fieldRequired="true">
+                            <option value="">--</option>
+                            @foreach ($salespersons as $s)
+                                <option value="{{ $s->id }}" @if($payment->salesperson_id == $s->id) selected @endif>
+                                    {{ $s->name }}
+                                </option>
                             @endforeach
                         </x-forms.select>
                     </div>
                     <div class="col-lg-3 col-md-6">
                         <x-forms.select fieldId="payment_invoice_id" :fieldLabel="__('app.invoice')"
                             fieldName="invoice_id" search="true">
-                            <option value="">--</option>
-                            @if ($payment->invoice_id)
-                                <option selected data-currency-code="{{$payment->currency->currency_code}}" data-currency-id="{{ $payment->currency_id }}" value="{{ $payment->invoice_id }}">
-                                    {{ $payment->invoice->invoice_number }}</option>
-                            @endif
-                            @foreach ($invoices as $item)
-                                @if ($payment->invoice_id != $item->id)
-                                    <option data-currency-id="{{ $item->currency->id }}" value="{{ $item->id }}">{{ $item->invoice_number }}</option>
-                                @endif
+                            <option value="">-- Overall Ledger Balance (Balance-wise) --</option>
+                            @foreach ($invoices as $inv)
+                                @php
+                                    $paidAmount = $inv->amountPaid();
+                                    $currentPaid = ($payment->invoice_id == $inv->id) ? $payment->amount : 0;
+                                    $due = max($inv->total - ($paidAmount - $currentPaid), 0);
+                                @endphp
+                                <option data-currency-code="{{$inv->currency->currency_code}}" data-currency-id="{{ $inv->currency_id }}"
+                                    @if ($payment->invoice_id == $inv->id) selected @endif
+                                    data-content="{{ $inv->invoice_number . ' - ' . __('app.total') . ': <span class=\'text-dark f-w-500 mr-2\'>' . currency_format($inv->total, $inv->currency->id) . ' </span>' . __('modules.invoices.due') . ': <span class=\'text-red\'>' . currency_format($due, $inv->currency->id) . '</span>' }}"
+                                    value="{{ $inv->id }}">{{ $inv->invoice_number }}</option>
                             @endforeach
                         </x-forms.select>
                     </div>
@@ -203,14 +216,9 @@
                 $('#currency').prop('disabled', true);
                 $('#currency').selectpicker('refresh');
             } else {
-                    if($('#payment_project_id').val() != ''){
-                        $('#currency').prop('disabled', true);
-                    } else {
-                        $('#currency').prop('disabled', false);
-                        $('#currency').selectpicker('refresh');
-                    }
-
-                    var currentCurrencyName = $('#currency option:selected').attr('data-currency-code');
+                $('#currency').prop('disabled', false);
+                $('#currency').selectpicker('refresh');
+                var currentCurrencyName = $('#currency option:selected').attr('data-currency-code');
             }
 
             $('#exchange_rateHelp').html('( '+companyCurrencyName+' @lang('app.to') '+currentCurrencyName+' )');
@@ -263,69 +271,25 @@
             });
         });
 
-        if ($('#payment_project_id').val() != '' && $('#payment_project_id').val() != 0){
-            $('#currency_id').prop('disabled', true);
-        }
-
-        $('#payment_project_id').change(function() {
-            var companyCurrency = '{{ $companyCurrency->id }}';
-            var companyCurrencyName = "{{$companyCurrency->currency_code}}";
-
+        $('#client_id').change(function() {
             var id = $(this).val();
             if (id == '') {
-                id = 0;
+                $('#payment_invoice_id').html('<option value="">-- Overall Ledger Balance (Balance-wise) --</option>');
+                $('#payment_invoice_id').selectpicker('refresh');
+                return;
             }
 
-            if ($('#payment_invoice_id').val() != '' || ($('#payment_project_id').val() != '' && $('#payment_project_id').val() != 0)) {
-                var invoiceId = $('#invoice_id').val();
-                var currentCurrencyName = $('#payment_project_id option:selected').attr('data-currency-code');
-
-                if(invoiceId){
-                    var curId = $('#invoice_currency_id').val();
-                } else {
-                    var curId = $('#payment_project_id option:selected').attr('data-currency-id');
-                }
-                $('#currency').removeAttr('disabled');
-                $('#currency').selectpicker('refresh');
-                $('#currency_id').val(curId);
-                $('#currency').val(curId);
-                $('#currency').prop('disabled', true);
-                $('#currency').selectpicker('refresh');
-            } else {
-                var currentCurrencyName = $('#currency option:selected').attr('data-currency-code');
-                $('#currency').prop('disabled', false);
-                $('#currency').selectpicker('refresh');
-            }
-
-            $('#exchange_rateHelp').html('( '+companyCurrencyName+' @lang('app.to') '+currentCurrencyName+' )');
-
-            var url = "{{ route('projects.invoice_list', ':id') }}";
+            var url = "{{ route('payments.client_invoices', ':id') }}";
             url = url.replace(':id', id);
-            var currencyId = $('#currency_id').val();
-            var token = "{{ csrf_token() }}";
 
             $.easyAjax({
                 url: url,
-                type: "POST",
+                type: "GET",
                 blockUI: true,
-                data: {
-                    _token: token,
-                    'currencyId' :currencyId
-                },
                 success: function(response) {
                     if (response.status == 'success') {
                         $('#payment_invoice_id').html(response.data);
                         $('#payment_invoice_id').selectpicker('refresh');
-                        $('#bank_account_id').html(response.account);
-                        $('#bank_account_id').selectpicker('refresh');
-                        if(id != 0) {
-                            $('#exchange_rate').val(response.exchangeRate);
-                        }
-                        if(curId != undefined && curId != companyCurrency){
-                            $('#exchange_rate').prop('readonly', false);
-                        } else {
-                            $('#exchange_rate').prop('readonly', true);
-                        }
                     }
                 }
             });

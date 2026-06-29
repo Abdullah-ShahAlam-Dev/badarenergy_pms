@@ -106,6 +106,9 @@ class PaymentController extends AccountBaseController
         $this->pageTitle = __('modules.payments.addPayment');
         $this->viewBankAccountPermission = user()->permission('view_bankaccount');
 
+        $this->clients = User::allClients();
+        $this->salespersons = User::allEmployees();
+
         if (request()->has('default_client') && request('default_client') != '') {
             $this->defaultClient = request('default_client');
             $this->projects = Project::with('currency')->where('client_id', request('default_client'))->get();
@@ -234,6 +237,8 @@ class PaymentController extends AccountBaseController
         $payment->paid_on = Carbon::createFromFormat($this->company->date_format, $request->paid_on)->format('Y-m-d');
 
         $payment->remarks = $request->remarks;
+        $payment->customer_id = $request->client_id;
+        $payment->salesperson_id = $request->salesperson_id;
 
         if ($request->hasFile('bill')) {
             $payment->bill = Files::uploadLocalOrS3($request->bill, Payment::FILE_PATH);
@@ -296,8 +301,8 @@ class PaymentController extends AccountBaseController
 
         $this->pageTitle = __('modules.payments.updatePayment');
         $this->projects = Project::with('currency')->whereNotNull('client_id')->get();
-        $this->currencies = Currency::all();
-        $this->paymentGateway = PaymentGatewayCredentials::first();
+        $this->clients = User::allClients();
+        $this->salespersons = User::allEmployees();
         $this->companyCurrency = Currency::where('id', company()->currency_id)->first();
 
         $this->viewBankAccountPermission = user()->permission('view_bankaccount');
@@ -311,15 +316,17 @@ class PaymentController extends AccountBaseController
         $bankAccounts = $bankAccounts->get();
         $this->bankDetails = $bankAccounts;
 
-        $this->invoices = Invoice::where(function ($query) {
-            if (in_array('client', user_roles())) {
-                $query->where('invoices.client_id', user()->id);
-            }
-            else {
-                $query->where('invoices.project_id', $this->payment->project_id)
-                    ->whereNotNull('invoices.project_id');
-            }
-        })->pending()->get();
+        $clientId = $this->payment->customer_id ?? ($this->payment->invoice ? $this->payment->invoice->client_id : null);
+        if ($clientId) {
+            $this->invoices = Invoice::where('client_id', $clientId)
+                ->where(function ($q) {
+                    $q->where('status', 'unpaid')
+                        ->orWhere('status', 'partial')
+                        ->orWhere('id', $this->payment->invoice_id);
+                })->get();
+        } else {
+            $this->invoices = [];
+        }
 
         $this->linkPaymentPermission = user()->permission('link_payment_bank_account');
 
@@ -363,6 +370,8 @@ class PaymentController extends AccountBaseController
 
         $payment->status = $request->status;
         $payment->remarks = $request->remarks;
+        $payment->customer_id = $request->client_id;
+        $payment->salesperson_id = $request->salesperson_id;
 
         if ($request->bill_delete == 'yes') {
             Files::deleteFile($payment->bill, Payment::FILE_PATH);
@@ -651,6 +660,26 @@ class PaymentController extends AccountBaseController
         }
 
         return Reply::successWithData(__('messages.recordSaved'), ['redirectUrl' => $redirectUrl]);
+    }
+
+    public function clientInvoiceList($clientId)
+    {
+        $invoices = Invoice::where('client_id', $clientId)
+            ->where(function ($q) {
+                $q->where('status', 'unpaid')
+                    ->orWhere('status', 'partial');
+            })
+            ->where('send_status', 1)
+            ->get();
+
+        $options = '<option value="">-- Overall Ledger Balance (Balance-wise) --</option>';
+        foreach ($invoices as $inv) {
+            $paidAmount = $inv->amountPaid();
+            $due = max($inv->total - $paidAmount, 0);
+            $options .= '<option data-currency-code="' . $inv->currency->currency_code . '" data-currency-id="' . $inv->currency_id . '" value="' . $inv->id . '">' . $inv->invoice_number . ' - Total: ' . currency_format($inv->total, $inv->currency_id) . ' Due: ' . currency_format($due, $inv->currency_id) . '</option>';
+        }
+
+        return Reply::dataOnly(['status' => 'success', 'data' => $options]);
     }
 
 }

@@ -369,6 +369,9 @@ if (!function_exists('isRunningInConsoleOrSeeding')) {
      */
     function isRunningInConsoleOrSeeding()
     {
+        if (config('app.bypass_running_in_console')) {
+            return false;
+        }
         // We set config(['app.seeding' => true]) at the beginning of each seeder. And check here
         return app()->runningInConsole() || isSeedingData();
     }

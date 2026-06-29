@@ -30,6 +30,8 @@ class StorePayment extends CoreRequest
         $rules = [
             'paid_on' => 'required',
             'offline_methods' => 'required_if:gateway,==,Offline',
+            'client_id' => 'required|exists:users,id',
+            'salesperson_id' => 'required|exists:users,id',
         ];
 
         if (request('invoice_id') != '') {

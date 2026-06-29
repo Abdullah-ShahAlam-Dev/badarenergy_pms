@@ -712,11 +712,56 @@ class ClientController extends AccountBaseController
     public function ledger()
     {
         $id = $this->client->id;
-        $this->ledgerEntries = \DB::table('dealer_ledgers')
-            ->where('dealer_id', $id)
-            ->orderBy('date', 'asc')
-            ->orderBy('id', 'asc')
-            ->get();
+
+        $startDate = request('startDate') ? Carbon::createFromFormat(company()->date_format, request('startDate'))->startOfDay() : null;
+        $endDate = request('endDate') ? Carbon::createFromFormat(company()->date_format, request('endDate'))->endOfDay() : null;
+
+        // Opening Balance calculation
+        $openingDebit = 0.00;
+        $openingCredit = 0.00;
+        if ($startDate) {
+            $openingDebit = (float)DealerLedger::where('dealer_id', $id)->where('date', '<', $startDate)->sum('debit');
+            $openingCredit = (float)DealerLedger::where('dealer_id', $id)->where('date', '<', $startDate)->sum('credit');
+        }
+        $this->openingBalance = $openingDebit - $openingCredit;
+
+        // Query detailed ledger
+        $query = DealerLedger::with(['invoice', 'payment', 'creditNote', 'voucher'])
+            ->where('dealer_id', $id);
+
+        if ($startDate) {
+            $query->where('date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->where('date', '<=', $endDate);
+        }
+
+        $this->ledgerEntries = $query->orderBy('date', 'asc')->orderBy('id', 'asc')->get();
+
+        // Totals
+        $this->totalDebit = (float)DealerLedger::where('dealer_id', $id);
+        $this->totalCredit = (float)DealerLedger::where('dealer_id', $id);
+        if ($startDate) {
+            $this->totalDebit->where('date', '>=', $startDate);
+            $this->totalCredit->where('date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $this->totalDebit->where('date', '<=', $endDate);
+            $this->totalCredit->where('date', '<=', $endDate);
+        }
+        $this->totalDebit = $this->totalDebit->sum('debit');
+        $this->totalCredit = $this->totalCredit->sum('credit');
+
+        // Net Outstanding
+        $ledgerService = new \App\Services\DealerLedgerService();
+        $this->currentBalance = $ledgerService->calculateOutstanding($id);
+
+        // Last Payment
+        $lastPayment = DealerLedger::where('dealer_id', $id)->where('credit', '>', 0)->orderBy('date', 'desc')->first();
+        $this->lastPaymentDate = $lastPayment ? $lastPayment->date : null;
+
+        $this->startDate = $startDate;
+        $this->endDate = $endDate;
 
         $tab = request('tab');
         $this->activeTab = $tab ?: 'profile';

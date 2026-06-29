@@ -1,6 +1,8 @@
 <!-- Datatables Libraries handled by app.blade.php -->
 
-{!! $dataTable->scripts() !!}
+@if(isset($dataTable))
+    {!! $dataTable->scripts() !!}
+@endif
 
 <script>
     // Suppress native DataTables alerts for aborted XHR requests on Turbo navigations

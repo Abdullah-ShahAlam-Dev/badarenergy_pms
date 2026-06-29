@@ -261,9 +261,13 @@ $addClientSubCategoryPermission = user()->permission('manage_client_subcategory'
                         </x-forms.number>
                     </div>
                     <div class="col-md-3">
-                        <x-forms.text class="mb-3 mt-3 mt-lg-0 mt-md-0" fieldId="area" fieldName="area"
-                            fieldLabel="Area" fieldPlaceholder="e.g. Saddar, DHA"
-                            :fieldValue="$client->clientDetails->area ?? ''">
+                        <x-forms.select fieldId="area" fieldLabel="Area" fieldName="area" fieldRequired="true" search="true">
+                            <option value="">-- Select City First --</option>
+                        </x-forms.select>
+                    </div>
+                    <div class="col-md-3 d-none" id="custom_area_container">
+                        <x-forms.text class="mb-3 mt-3 mt-lg-0 mt-md-0" fieldId="custom_area" fieldName="custom_area"
+                            fieldLabel="Custom Area Name" fieldPlaceholder="Enter area name">
                         </x-forms.text>
                     </div>
                     <div class="col-md-3">
@@ -310,9 +314,28 @@ $addClientSubCategoryPermission = user()->permission('manage_client_subcategory'
                             :fieldValue="$client->clientDetails->office"></x-forms.text>
                     </div>
                     <div class="col-lg-3 col-md-6">
-                        <x-forms.text fieldId="city" :fieldLabel="__('modules.stripeCustomerAddress.city')"
-                            fieldName="city" fieldPlaceholder="e.g. Hawthorne"
-                            :fieldValue="$client->clientDetails->city"></x-forms.text>
+                        <x-forms.select fieldId="city" fieldLabel="City" fieldName="city" fieldRequired="true" search="true">
+                            <option value="">--</option>
+                            <option value="Karachi">Karachi</option>
+                            <option value="Lahore">Lahore</option>
+                            <option value="Islamabad">Islamabad</option>
+                            <option value="Rawalpindi">Rawalpindi</option>
+                            <option value="Peshawar">Peshawar</option>
+                            <option value="Quetta">Quetta</option>
+                            <option value="Faisalabad">Faisalabad</option>
+                            <option value="Hyderabad">Hyderabad</option>
+                            <option value="Multan">Multan</option>
+                            <option value="Gujranwala">Gujranwala</option>
+                            <option value="Sialkot">Sialkot</option>
+                            <option value="Abbottabad">Abbottabad</option>
+                            <option value="Sukkur">Sukkur</option>
+                            <option value="Other">Other (Write In)</option>
+                        </x-forms.select>
+                    </div>
+                    <div class="col-lg-3 col-md-6 d-none" id="custom_city_container">
+                        <x-forms.text class="mb-3 mt-3 mt-lg-0 mt-md-0" fieldId="custom_city" fieldName="custom_city"
+                            fieldLabel="Custom City Name" fieldPlaceholder="Enter city name">
+                        </x-forms.text>
                     </div>
                     <div class="col-lg-3 col-md-6">
                         <x-forms.text fieldId="state" :fieldLabel="__('modules.stripeCustomerAddress.state')"
@@ -416,6 +439,104 @@ $addClientSubCategoryPermission = user()->permission('manage_client_subcategory'
         });
 
         init(RIGHT_MODAL);
+
+        var areaMap = {
+            'Karachi': ['Saddar', 'DHA', 'Orangi Town', 'Bismillah Market', 'Nagan Chorangi', 'Johar', 'Clifton', 'Gulshan-e-Iqbal', 'North Nazimabad', 'Federal B Area', 'Korangi', 'Malir', 'Other'],
+            'Lahore': ['Johar Town', 'DHA', 'Gulberg', 'Model Town', 'Cantt', 'Samanabad', 'Iqbal Town', 'Shadman', 'Other'],
+            'Islamabad': ['F-6', 'F-7', 'F-8', 'G-9', 'G-11', 'I-8', 'DHA', 'Bahria Town', 'Other'],
+            'Rawalpindi': ['Saddar', 'Satellite Town', 'DHA', 'Bahria Town', 'Other'],
+            'Peshawar': ['Hayatabad', 'University Road', 'Saddar', 'Warsak Road', 'Other'],
+            'Quetta': ['Cantt', 'Jinnah Road', 'Shahbaz Town', 'Satellite Town', 'Double Road', 'Other'],
+            'Faisalabad': ['Peoples Colony', 'Kohinoor City', 'Madina Town', 'D-Ground', 'Ghulam Muhammad Abad', 'Other'],
+            'Hyderabad': ['Latifabad', 'Qasimabad', 'Saddar', 'Gari Khata', 'Other'],
+            'Multan': ['Cantt', 'Gulgasht Colony', 'Bosan Road', 'Shah Rukn-e-Alam', 'Other'],
+            'Gujranwala': ['Satellite Town', 'People\'s Colony', 'Cantt', 'Other'],
+            'Sialkot': ['Cantt', 'Shahabpura', 'Model Town', 'Other'],
+            'Abbottabad': ['Cantt', 'Jinnahabad', 'Mandian', 'Other'],
+            'Sukkur': ['Military Road', 'Barrage Road', 'Shalimar', 'Other']
+        };
+
+        function populateAreas(city, selectedArea) {
+            var $areaSelect = $('#area');
+            $areaSelect.empty();
+
+            if (!city || city === '') {
+                $areaSelect.append('<option value="">-- Select City First --</option>');
+                $areaSelect.selectpicker('refresh');
+                $('#custom_area_container').addClass('d-none');
+                $('#custom_area').val('');
+                return;
+            }
+
+            var areas = areaMap[city];
+            if (areas) {
+                $.each(areas, function(index, val) {
+                    var selected = (val === selectedArea) ? 'selected' : '';
+                    $areaSelect.append('<option value="' + val + '" ' + selected + '>' + val + '</option>');
+                });
+                $('#custom_area_container').addClass('d-none');
+                $('#custom_area').removeAttr('required').val('');
+            } else {
+                $areaSelect.append('<option value="Other" selected>Other (Write In)</option>');
+                $('#custom_area_container').removeClass('d-none');
+                if (selectedArea) {
+                    $('#custom_area').val(selectedArea);
+                }
+                $('#custom_area').attr('required', true);
+            }
+            $areaSelect.selectpicker('refresh');
+        }
+
+        $body.on('change' + namespace, '#city', function() {
+            var city = $(this).val();
+            if (city === 'Other') {
+                $('#custom_city_container').removeClass('d-none');
+                $('#custom_city').attr('required', true).val('');
+                populateAreas('', '');
+            } else {
+                $('#custom_city_container').addClass('d-none');
+                $('#custom_city').removeAttr('required').val('');
+                populateAreas(city, '');
+            }
+        });
+
+        $body.on('change' + namespace, '#area', function() {
+            if ($(this).val() === 'Other') {
+                $('#custom_area_container').removeClass('d-none');
+                $('#custom_area').attr('required', true).val('');
+            } else {
+                $('#custom_area_container').addClass('d-none');
+                $('#custom_area').removeAttr('required').val('');
+            }
+        });
+
+        $body.on('input' + namespace, '#custom_city', function() {
+            var val = $(this).val();
+            $('#city option[value="Other"]').val(val);
+        });
+
+        $body.on('input' + namespace, '#custom_area', function() {
+            var val = $(this).val();
+            $('#area option[value="Other"]').val(val);
+        });
+
+        // Initialize loaded city/area
+        var predefinedCities = Object.keys(areaMap);
+        var initialCity = "{{ $client->clientDetails->city ?? '' }}";
+        var initialArea = "{{ $client->clientDetails->area ?? '' }}";
+
+        if (initialCity && initialCity !== '') {
+            if (predefinedCities.indexOf(initialCity) === -1) {
+                $('#city').append('<option value="' + initialCity + '" selected>' + initialCity + '</option>');
+                $('#city').val(initialCity).selectpicker('refresh');
+                $('#custom_city_container').removeClass('d-none');
+                $('#custom_city').val(initialCity);
+                populateAreas(initialCity, initialArea);
+            } else {
+                $('#city').val(initialCity).selectpicker('refresh');
+                populateAreas(initialCity, initialArea);
+            }
+        }
 
         $body.off(namespace);
 

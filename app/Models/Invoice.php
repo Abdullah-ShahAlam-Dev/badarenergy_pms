@@ -231,6 +231,11 @@ class Invoice extends BaseModel
         return $this->belongsTo(Warehouse::class, 'warehouse_id');
     }
 
+    public function deliveryOrder(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(DeliveryOrder::class, 'invoice_id');
+    }
+
 
     public function scopePending($query)
     {
@@ -278,7 +283,7 @@ class Invoice extends BaseModel
     public function getTotalAmountAttribute()
     {
 
-        if (!is_null($this->total) && !is_null($this->currency->currency_symbol)) {
+        if (!is_null($this->total) && $this->currency && !is_null($this->currency->currency_symbol)) {
             return $this->currency->currency_symbol . $this->total;
         }
 

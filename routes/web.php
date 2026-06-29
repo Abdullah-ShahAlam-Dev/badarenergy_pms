@@ -20,6 +20,7 @@ use App\Http\Controllers\TicketController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\DeliveryOrderController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MessageGroupController;
 use App\Http\Controllers\PaymentController;
@@ -171,6 +172,7 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     // Warehouse Management (TSK-3.1)
     Route::post('warehouses/toggle-status', [WarehouseController::class, 'toggleStatus'])->name('warehouses.toggle-status');
     Route::resource('warehouses', WarehouseController::class);
+    Route::resource('delivery-orders', DeliveryOrderController::class)->only(['index', 'edit', 'update', 'show']);
 
     // Inventory & Stock Movements (TSK-4.1)
     Route::get('inventory/serials', [InventoryController::class, 'serials'])->name('inventory.serials');
@@ -315,8 +317,43 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     Route::get('getProductSubCategories/{id}', [ProductSubCategoryController::class, 'getSubCategories'])->name('get_product_sub_categories');
     Route::resource('productSubCategory', ProductSubCategoryController::class);
 
-    /* INVENTORY & LEDGERS PLACEHOLDERS FOR TSK-1.1 */
-    Route::get('ledgers', function () { return 'Ledger Module (Under Construction)'; })->name('ledgers.index');
+    /* INVENTORY & LEDGERS */
+    Route::get('ledgers', [\App\Http\Controllers\DealerLedgerController::class, 'index'])->name('ledgers.index');
+    Route::get('ledgers/create-adjustment', [\App\Http\Controllers\DealerLedgerController::class, 'createAdjustment'])->name('ledgers.create_adjustment');
+    Route::post('ledgers/store-adjustment', [\App\Http\Controllers\DealerLedgerController::class, 'storeAdjustment'])->name('ledgers.store_adjustment');
+    Route::get('ledgers/{id}', [\App\Http\Controllers\DealerLedgerController::class, 'show'])->name('ledgers.show');
+    Route::get('ledgers/{id}/print', [\App\Http\Controllers\DealerLedgerController::class, 'print'])->name('ledgers.print');
+
+    /* DEALER LEDGER AGING & OUTSTANDING */
+    Route::get('aging-dashboard', [\App\Http\Controllers\AgingDashboardController::class, 'index'])->name('aging.dashboard');
+    Route::get('aging-report', [\App\Http\Controllers\AgingReportController::class, 'index'])->name('aging.index');
+    Route::get('aging-report/salesperson', [\App\Http\Controllers\AgingReportController::class, 'salespersonReport'])->name('aging.salesperson');
+    Route::post('aging-report/sync', [\App\Http\Controllers\AgingReportController::class, 'syncSnapshots'])->name('aging.sync');
+
+    /* ENTERPRISE SALES REPORTS (MODULE 3.8 PHASE 1) */
+    Route::get('reports/sales/daily', [\App\Http\Controllers\SalesReportController::class, 'daily'])->name('reports.sales.daily');
+    Route::get('reports/sales/weekly', [\App\Http\Controllers\SalesReportController::class, 'weekly'])->name('reports.sales.weekly');
+    Route::get('reports/sales/monthly', [\App\Http\Controllers\SalesReportController::class, 'monthly'])->name('reports.sales.monthly');
+    Route::get('reports/sales/dealer', [\App\Http\Controllers\SalesReportController::class, 'dealer'])->name('reports.sales.dealer');
+    Route::get('reports/sales/product', [\App\Http\Controllers\SalesReportController::class, 'product'])->name('reports.sales.product');
+    Route::get('reports/sales/model', [\App\Http\Controllers\SalesReportController::class, 'model'])->name('reports.sales.model');
+    Route::get('reports/sales/location', [\App\Http\Controllers\SalesReportController::class, 'location'])->name('reports.sales.location');
+    Route::get('reports/sales/salesperson', [\App\Http\Controllers\SalesReportController::class, 'salesperson'])->name('reports.sales.salesperson');
+    Route::get('reports/sales/finance', [\App\Http\Controllers\SalesReportController::class, 'finance'])->name('reports.sales.finance');
+    Route::get('reports/sales/recovery', [\App\Http\Controllers\SalesReportController::class, 'recovery'])->name('reports.sales.recovery');
+    Route::get('reports/sales/outstanding', [\App\Http\Controllers\SalesReportController::class, 'outstanding'])->name('reports.sales.outstanding');
+    Route::get('reports/sales/cashflow', [\App\Http\Controllers\SalesReportController::class, 'cashflow'])->name('reports.sales.cashflow');
+
+    /* WMS STOCK TRANSFERS (MODULE 3.9 PHASE 1) */
+    Route::post('stock-transfers/{id}/cancel', [\App\Http\Controllers\StockTransferController::class, 'cancel'])->name('stock-transfers.cancel');
+    Route::post('stock-transfers/{id}/approve', [\App\Http\Controllers\TransferApprovalController::class, 'approve'])->name('stock-transfers.approve');
+    Route::post('stock-transfers/{id}/reject', [\App\Http\Controllers\TransferApprovalController::class, 'reject'])->name('stock-transfers.reject');
+    Route::post('stock-transfers/{id}/dispatch', [\App\Http\Controllers\TransferDispatchController::class, 'dispatch'])->name('stock-transfers.dispatch');
+    Route::post('stock-transfers/{id}/receive', [\App\Http\Controllers\TransferReceiptController::class, 'receive'])->name('stock-transfers.receive');
+    Route::get('stock-transfers/{id}/print-challan', [\App\Http\Controllers\TransferPrintController::class, 'printChallan'])->name('stock-transfers.print_challan');
+    Route::get('stock-transfers/{id}/print-grn', [\App\Http\Controllers\TransferPrintController::class, 'printGRN'])->name('stock-transfers.print_grn');
+    Route::get('stock-transfers/{id}/timeline', [\App\Http\Controllers\TransferHistoryController::class, 'timeline'])->name('stock-transfers.timeline');
+    Route::resource('stock-transfers', \App\Http\Controllers\StockTransferController::class);
 
     /* PRODUCT FILES */
     Route::get('product-files/download/{id}', [ProductFileController::class, 'download'])->name('product-files.download');
@@ -533,6 +570,8 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     Route::get('invoices/download/{id}', [InvoiceController::class, 'download'])->name('invoices.download');
     Route::get('invoices/add-item', [InvoiceController::class, 'addItem'])->name('invoices.add_item');
     Route::get('invoices/update-status/{invoiceID}', [InvoiceController::class, 'cancelStatus'])->name('invoices.update_status');
+    Route::post('invoices/approve/{id}', [InvoiceController::class, 'approve'])->name('invoices.approve');
+    Route::post('invoices/reject/{id}', [InvoiceController::class, 'reject'])->name('invoices.reject');
     Route::get('invoices/get-client-company/{projectID?}', [InvoiceController::class, 'getClientOrCompanyName'])->name('invoices.get_client_company');
     Route::post('invoices/fetchTimelogs', [InvoiceController::class, 'fetchTimelogs'])->name('invoices.fetch_timelogs');
     Route::get('invoices/check-shipping-address', [InvoiceController::class, 'checkShippingAddress'])->name('invoices.check_shipping_address');
@@ -581,6 +620,7 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     Route::post('payments/apply-quick-action', [PaymentController::class, 'applyQuickAction'])->name('payments.apply_quick_action');
     Route::get('payments/download/{id}', [PaymentController::class, 'download'])->name('payments.download');
     Route::get('payments/account-list', [PaymentController::class, 'accountList'])->name('payments.account_list');
+    Route::get('payments/client-invoices/{clientId}', [PaymentController::class, 'clientInvoiceList'])->name('payments.client_invoices');
     Route::get('payments/offline-payments', [PaymentController::class, 'offlineMethods'])->name('offline.methods');
     Route::get('payments/add-bulk-payments', [PaymentController::class, 'addBulkPayments'])->name('payments.add_bulk_payments');
     Route::post('payments/save-bulk-payments', [PaymentController::class, 'saveBulkPayments'])->name('payments.save_bulk_payments');

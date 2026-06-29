@@ -557,12 +557,11 @@
 
         <div class="d-flex px-lg-4 px-md-4 px-3 py-2 bg-light-grey">
             <div class="col-md-3">
-                <div class="form-group">
-                    <label class="f-14 text-dark-grey mb-12 w-100" for="payment_status"></label>
-                    <div class="d-flex">
-                        <x-forms.checkbox fieldId="payment_status" :fieldLabel="__('modules.invoices.receivedPayment')" :fieldValue="$invoice->payment_status" fieldName="payment_status" :checked="$invoice->payment_status == '1'"></x-forms.checkbox>
-                    </div>
-                </div>
+                <x-forms.select fieldId="sale_type" fieldLabel="Sale Type" fieldName="sale_type" search="false" fieldRequired="true">
+                    <option value="0" @if($invoice->payment_status == '0') selected @endif>Credit Sale (Unpaid)</option>
+                    <option value="1" @if($invoice->payment_status == '1') selected @endif>Cash Sale (Paid)</option>
+                </x-forms.select>
+                <input type="hidden" name="payment_status" id="payment_status" value="{{ $invoice->payment_status }}">
             </div>
 
             <div class="col-md-3 payment-types @if($invoice->payment_status != 1) d-none @endif">
@@ -1203,13 +1202,13 @@
         });
     });
 
-    $('input[type=checkbox][name=payment_status]').change(function() {
-        if ($(this).is(":checked")) {
-            $(this).val(1);
-            $('#add_offline').addClass('d-none');
+    $('#sale_type').change(function() {
+        var val = $(this).val();
+        $('#payment_status').val(val);
+        if (val == '1') {
             $('.payment-types').removeClass('d-none');
+            $('#payment_gateway_id').val('Offline').trigger('change').selectpicker('refresh');
         } else {
-            $(this).val(0);
             $('#add_offline').addClass('d-none');
             $('#transaction_id').val('');
             $('.payment-types').addClass('d-none');

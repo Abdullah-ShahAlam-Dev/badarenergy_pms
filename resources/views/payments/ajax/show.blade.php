@@ -9,6 +9,12 @@
             <x-cards.data-row :label="__('app.invoice')"
                 :value="(!is_null($payment->invoice_id)) ? $payment->invoice->invoice_number : '--'" />
 
+            <x-cards.data-row :label="'Dealer / Client'"
+                :value="($payment->customer) ? $payment->customer->name : ($payment->client() ? $payment->client()->name : '--')" />
+
+            <x-cards.data-row :label="'Salesperson'"
+                :value="($payment->salesperson) ? $payment->salesperson->name : '--'" />
+
             @if ($payment->order_id)
                 <x-cards.data-row :label="__('app.order')"
                 :value="$payment->order->order_number" />

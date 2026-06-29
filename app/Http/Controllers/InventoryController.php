@@ -37,6 +37,7 @@ class InventoryController extends AccountBaseController
 
         $this->warehouses = Warehouse::active()->get();
         $this->products = Product::all();
+        $this->categories = \App\Models\ProductCategory::all();
 
         return $dataTable->render('inventory.index', $this->data);
     }
@@ -56,6 +57,7 @@ class InventoryController extends AccountBaseController
 
         $this->warehouses = Warehouse::active()->get();
         $this->products = Product::all();
+        $this->categories = \App\Models\ProductCategory::all();
         $this->pageTitle = __('modules.inventory.manualAdjustment');
 
         $this->defaultProductId = request()->product_id;
@@ -109,6 +111,7 @@ class InventoryController extends AccountBaseController
 
         $this->warehouses = Warehouse::active()->get();
         $this->products = Product::where('is_serialized', true)->get();
+        $this->categories = \App\Models\ProductCategory::all();
         $this->pageTitle = 'Serial Numbers Tracking';
 
         return $dataTable->render('inventory.serials', $this->data);

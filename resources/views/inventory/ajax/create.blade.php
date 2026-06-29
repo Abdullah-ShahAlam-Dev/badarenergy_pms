@@ -9,13 +9,24 @@
                 <div class="form-body">
                     <div class="row p-20">
 
+                        <!-- Category -->
+                        <div class="col-lg-6 col-md-6">
+                            <x-forms.select fieldId="adj_category_id" :fieldLabel="'Filter by Category'"
+                                fieldName="adj_category_id">
+                                <option value="">-- All Categories --</option>
+                                @foreach ($categories as $category)
+                                    <option value="{{ $category->id }}">{{ $category->category_name }}</option>
+                                @endforeach
+                            </x-forms.select>
+                        </div>
+
                         <!-- Product -->
                         <div class="col-lg-6 col-md-6">
                             <x-forms.select fieldId="product_id" :fieldLabel="__('modules.inventory.product')"
                                 fieldName="product_id" fieldRequired="true">
                                 <option value="">@lang('modules.inventory.selectProduct')</option>
                                 @foreach ($products as $product)
-                                    <option value="{{ $product->id }}" data-serialized="{{ $product->is_serialized ? '1' : '0' }}" {{ $defaultProductId == $product->id ? 'selected' : '' }}>
+                                    <option value="{{ $product->id }}" data-category-id="{{ $product->category_id }}" data-serialized="{{ $product->is_serialized ? '1' : '0' }}" {{ $defaultProductId == $product->id ? 'selected' : '' }}>
                                         {{ $product->name }}
                                     </option>
                                 @endforeach
@@ -110,6 +121,21 @@
         }
 
         $('#product_id').change(function() {
+            toggleSerialField();
+        });
+
+        $('#adj_category_id').change(function() {
+            var catId = $(this).val();
+            $('#product_id option').each(function() {
+                var optionCatId = $(this).data('category-id');
+                if (catId === "" || !optionCatId || optionCatId == catId) {
+                    $(this).prop('disabled', false).show();
+                } else {
+                    $(this).prop('disabled', true).hide();
+                }
+            });
+            $('#product_id').val('');
+            $('#product_id').selectpicker('refresh');
             toggleSerialField();
         });
 

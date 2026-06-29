@@ -107,7 +107,8 @@ class DealerLedgerSummaryDataTable extends BaseDataTable
             $query->where('users.company_id', $companyId);
         }
 
-        if (!in_array('admin', user_roles())) {
+        $viewPermission = user()->permission('view_invoices');
+        if ($viewPermission != 'all' && !in_array('admin', user_roles())) {
             $query->where('client_details.salesperson_id', user()->id);
         }
 

@@ -23,6 +23,20 @@
         </div>
         <!-- SEARCH END -->
 
+        <!-- CATEGORY FILTER START -->
+        <div class="select-box d-flex py-2 px-lg-2 px-md-2 px-0 border-right-grey border-right-grey-sm-0">
+            <p class="mb-0 pr-2 f-14 text-dark-grey d-flex align-items-center">Category</p>
+            <div class="select-status">
+                <select class="form-control select-picker" name="category_id" id="filter_category_id" data-live-search="true">
+                    <option value="all">@lang('app.all')</option>
+                    @foreach ($categories as $category)
+                        <option value="{{ $category->id }}">{{ $category->category_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+        <!-- CATEGORY FILTER END -->
+
         <!-- PRODUCT FILTER START -->
         <div class="select-box d-flex py-2 px-lg-2 px-md-2 px-0 border-right-grey border-right-grey-sm-0">
             <p class="mb-0 pr-2 f-14 text-dark-grey d-flex align-items-center">@lang('modules.inventory.product')</p>
@@ -101,6 +115,7 @@
                 data['searchText']   = $('#search-text-field').val();
                 data['product_id']   = $('#filter_product_id').val()   || 'all';
                 data['warehouse_id'] = $('#filter_warehouse_id').val() || 'all';
+                data['category_id']  = $('#filter_category_id').val()  || 'all';
             });
 
             var showTable = function() {
@@ -111,8 +126,8 @@
 
             $body.off(namespace);
 
-            $body.on('change' + namespace + ' keyup' + namespace, '#filter_product_id, #filter_warehouse_id', function() {
-                var hasFilters = ($('#filter_product_id').val() !== 'all') || ($('#filter_warehouse_id').val() !== 'all');
+            $body.on('change' + namespace + ' keyup' + namespace, '#filter_product_id, #filter_warehouse_id, #filter_category_id', function() {
+                var hasFilters = ($('#filter_product_id').val() !== 'all') || ($('#filter_warehouse_id').val() !== 'all') || ($('#filter_category_id').val() !== 'all');
                 hasFilters ? $('#reset-filters').removeClass('d-none') : $('#reset-filters').addClass('d-none');
                 showTable();
             });
@@ -125,6 +140,7 @@
             $body.on('click' + namespace, '#reset-filters', function() {
                 $('#filter_product_id').val('all');
                 $('#filter_warehouse_id').val('all');
+                $('#filter_category_id').val('all');
                 $('.filter-box .select-picker').selectpicker('refresh');
                 $('#reset-filters').addClass('d-none');
                 showTable();

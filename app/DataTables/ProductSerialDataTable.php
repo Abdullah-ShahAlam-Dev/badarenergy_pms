@@ -80,6 +80,12 @@ class ProductSerialDataTable extends BaseDataTable
             $query->where('product_serials.status', $request->status);
         }
 
+        if ($request->category_id != 'all' && !is_null($request->category_id)) {
+            $query->whereHas('product', function ($q) use ($request) {
+                $q->where('category_id', $request->category_id);
+            });
+        }
+
         return $query;
     }
 

@@ -46,7 +46,12 @@ class DealerLedgerController extends AccountBaseController
     {
         $this->dealer = User::with(['clientDetails', 'clientDetails.salesperson'])->findOrFail($id);
         
-        if (!in_array('admin', user_roles())) {
+        $viewPermission = user()->permission('view_invoices');
+        if ($viewPermission == 'none') {
+            abort(403);
+        }
+        
+        if ($viewPermission != 'all' && !in_array('admin', user_roles())) {
             abort_403(!$this->dealer->clientDetails || $this->dealer->clientDetails->salesperson_id !== user()->id);
         }
         

@@ -392,4 +392,21 @@ return array (
     // Inventory permissions (TSK-4.1)
     'view_inventory'    => 'View Inventory',
     'adjust_inventory'  => 'Adjust Inventory',
+    // Custom Reports and Aging Dashboard permissions
+    'view_aging_report' => 'View Aging Report',
+    'view_salesperson_aging' => 'View Salesperson Aging',
+    'view_outstanding_dashboard' => 'View Outstanding Dashboard',
+    'export_aging_reports' => 'Export Aging Reports',
+    'view_daily_sales' => 'View Daily Sales Report',
+    'view_weekly_sales' => 'View Weekly Sales Report',
+    'view_monthly_sales' => 'View Monthly Sales Report',
+    'view_dealer_sales' => 'View Dealer-wise Sales Report',
+    'view_product_sales' => 'View Product-wise Sales Report',
+    'view_model_sales' => 'View Model-wise Sales Report',
+    'view_location_sales' => 'View Location-wise Sales Report',
+    'view_salesperson_sales' => 'View Salesperson-wise Sales Report',
+    'view_finance_collection' => 'View Finance Collection Report',
+    'view_recovery_report' => 'View Recovery Report',
+    'view_outstanding_report' => 'View Outstanding Report',
+    'view_cashflow_report' => 'View Cash Flow Report',
 );

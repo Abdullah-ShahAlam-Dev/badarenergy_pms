@@ -44,7 +44,7 @@
                             fieldName="" fieldId="timelog_report" fieldValue="true"
                             :checked="$logTime->timelog_report" />
                     </div>
-                    <div class="col-lg-12 @if ($logTime->timelog_report == 0) d-none @endif " id="daily-report-roles">
+                    <div class="col-lg-12 @if ($logTime->timelog_report == 0) d-none @endif " id="daily-report-roles-container">
                         <x-forms.select :fieldLabel="__('modules.attendance.chooseRoleReport')" fieldName="daily_report_roles[]" fieldId="daily_report_roles"
                         fieldRequired="true" multiple="true">
                             @foreach ($roles as $item)
@@ -96,7 +96,7 @@
             if ($('#timelog_report').prop("checked") == true) {
                 timelog_report = 1;
             }
-            var dailyReport = $('#daily-report-roles option:selected').map(function(){
+            var dailyReport = $('#daily_report_roles option:selected').map(function(){
             return this.value;
             }).get();
             
@@ -131,7 +131,7 @@
         });
 
         $('#timelog_report').click(function() {
-            $('#daily-report-roles').toggleClass('d-none');
+            $('#daily-report-roles-container').toggleClass('d-none');
         });
     </script>
 @endpush

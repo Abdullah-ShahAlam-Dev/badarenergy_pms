@@ -81,6 +81,9 @@ use App\Http\Controllers\TaskCategoryController;
 use App\Http\Controllers\InvoiceFilesController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\ErpWorkflowSettingController;
+use App\Http\Controllers\ShipmentController;
+use App\Http\Controllers\StockIntakeVoucherController;
 use App\Http\Controllers\ClientContactController;
 use App\Http\Controllers\ContractRenewController;
 use App\Http\Controllers\EventCalendarController;
@@ -177,6 +180,18 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     // Inventory & Stock Movements (TSK-4.1)
     Route::get('inventory/serials', [InventoryController::class, 'serials'])->name('inventory.serials');
     Route::resource('inventory', InventoryController::class)->only(['index', 'create', 'store']);
+
+    // ERP Workflow Settings (Sprint 1)
+    Route::resource('erp-workflow-settings', ErpWorkflowSettingController::class)->only(['index', 'update']);
+
+    // Shipments (Sprint 2)
+    Route::resource('shipments', ShipmentController::class);
+
+    // Stock Intakes (Sprint 3)
+    Route::post('stock-intakes/approve/{id}', [StockIntakeVoucherController::class, 'approve'])->name('stock-intakes.approve');
+    Route::get('stock-intakes/{id}/barcodes', [StockIntakeVoucherController::class, 'printBarcodes'])->name('stock-intakes.print-barcodes');
+    Route::get('stock-intakes/{id}/barcodes/{serial_id}', [StockIntakeVoucherController::class, 'printSingleBarcode'])->name('stock-intakes.print-single-barcode');
+    Route::resource('stock-intakes', StockIntakeVoucherController::class);
 
     // client category & subcategory
     Route::resource('clientCategory', ClientCategoryController::class);

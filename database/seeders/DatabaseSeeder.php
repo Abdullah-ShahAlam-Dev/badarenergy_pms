@@ -66,6 +66,8 @@ class DatabaseSeeder extends Seeder
             Artisan::call('sync-user-permissions all fresh');
         }
 
+        $this->call(ErpWorkflowSettingsSeeder::class);
+
         config(['app.seeding' => false]);
 
         cache()->flush();

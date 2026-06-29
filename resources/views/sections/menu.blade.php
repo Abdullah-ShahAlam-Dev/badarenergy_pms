@@ -204,7 +204,7 @@
 
     <!-- NAV ITEM - INVENTORY GROUP -->
     @if (!in_array('client', user_roles()))
-        <x-menu-item icon="box" :text="__('app.menu.inventory')" :active="request()->routeIs('warehouses.*') || request()->routeIs('inventory.*') || request()->routeIs('delivery-orders.*') || request()->routeIs('stock-transfers.*')">
+        <x-menu-item icon="box" :text="__('app.menu.inventory')" :active="request()->routeIs('warehouses.*') || request()->routeIs('inventory.*') || request()->routeIs('delivery-orders.*') || request()->routeIs('stock-transfers.*') || request()->routeIs('shipments.*') || request()->routeIs('stock-intakes.*')">
             <x-slot name="iconPath">
                 <path fill-rule="evenodd" d="M12 1a1 1 0 0 1 .897.553l2.917 5.834A.5.5 0 0 1 15.5 8V14a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1V8a.5.5 0 0 1 .186-.38L3.103 1.553A1 1 0 0 1 4 1h8zM4.646 2.057l-2.613 5.225h11.934L11.354 2.057H4.646zM14 8.283H2V14h12V8.283z"/>
             </x-slot>
@@ -212,6 +212,12 @@
                 <x-sub-menu-item :link="route('warehouses.index')" :text="__('modules.warehouse.warehouses')" />
                 @if (\Route::has('inventory.index'))
                     <x-sub-menu-item :link="route('inventory.index')" :text="__('app.menu.stockMovements')" />
+                @endif
+                @if (user()->permission('view_shipments') != 'none' || in_array('admin', user_roles()))
+                    <x-sub-menu-item :link="route('shipments.index')" text="Shipments" />
+                @endif
+                @if (user()->permission('view_stock_intake') != 'none' || in_array('admin', user_roles()))
+                    <x-sub-menu-item :link="route('stock-intakes.index')" text="Stock Intakes" />
                 @endif
                 <x-sub-menu-item :link="route('delivery-orders.index')" text="Delivery Orders" />
                 @if (user()->permission('view_stock_transfer') != 'none')

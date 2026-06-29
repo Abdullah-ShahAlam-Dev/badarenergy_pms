@@ -258,14 +258,24 @@ class InvoiceObserver
             $ledgerService = new \App\Services\DealerLedgerService();
             $ledgerService->syncInvoiceEntry($invoice);
 
-            if (in_array($invoice->status, ['unpaid', 'paid', 'partial'])) {
-                \App\Models\DeliveryOrder::firstOrCreate([
-                    'invoice_id' => $invoice->id,
-                ], [
-                    'company_id' => $invoice->company_id,
-                    'issue_date' => now(),
-                    'status' => 'pending',
-                ]);
+            $stockOutTrigger = \App\Facades\WorkflowConfig::get('inventory', 'stock_out_trigger', 'invoice_approval', $invoice->company_id);
+            if ($stockOutTrigger === 'invoice_approval') {
+                if (in_array($invoice->status, ['unpaid', 'paid', 'partial'])) {
+                    \App\Models\DeliveryOrder::firstOrCreate([
+                        'invoice_id' => $invoice->id,
+                    ], [
+                        'company_id' => $invoice->company_id,
+                        'issue_date' => now(),
+                        'status' => 'pending',
+                    ]);
+                }
+            } else {
+                if (request()->has('delivery_order_id')) {
+                    $do = \App\Models\DeliveryOrder::find(request()->delivery_order_id);
+                    if ($do) {
+                        $do->update(['invoice_id' => $invoice->id]);
+                    }
+                }
             }
         }
     }
@@ -478,14 +488,24 @@ class InvoiceObserver
 
                 // Approval transition: 'pending_approval' -> active
                 if ($oldStatus === 'pending_approval' && in_array($newStatus, ['unpaid', 'paid', 'partial'])) {
-                    // Generate Delivery Order automatically!
-                    \App\Models\DeliveryOrder::firstOrCreate([
-                        'invoice_id' => $invoice->id,
-                    ], [
-                        'company_id' => $invoice->company_id,
-                        'issue_date' => now(),
-                        'status' => 'pending',
-                    ]);
+                    $stockOutTrigger = \App\Facades\WorkflowConfig::get('inventory', 'stock_out_trigger', 'invoice_approval', $invoice->company_id);
+                    if ($stockOutTrigger === 'invoice_approval') {
+                        // Generate Delivery Order automatically!
+                        \App\Models\DeliveryOrder::firstOrCreate([
+                            'invoice_id' => $invoice->id,
+                        ], [
+                            'company_id' => $invoice->company_id,
+                            'issue_date' => now(),
+                            'status' => 'pending',
+                        ]);
+                    } else {
+                        if (request()->has('delivery_order_id')) {
+                            $do = \App\Models\DeliveryOrder::find(request()->delivery_order_id);
+                            if ($do) {
+                                $do->update(['invoice_id' => $invoice->id]);
+                            }
+                        }
+                    }
 
                     // Sync complete payments for this invoice
                     foreach ($invoice->payment as $payment) {

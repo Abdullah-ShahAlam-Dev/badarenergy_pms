@@ -34,6 +34,7 @@ class DeliveryOrder extends BaseModel
         'source_type',
         'invoice_id',
         'transfer_id',
+        'stock_issue_voucher_id',
         'issue_date',
         'dispatcher_id',
         'status',
@@ -55,8 +56,18 @@ class DeliveryOrder extends BaseModel
         return $this->belongsTo(StockTransfer::class, 'transfer_id');
     }
 
+    public function stockIssueVoucher(): BelongsTo
+    {
+        return $this->belongsTo(StockIssueVoucher::class, 'stock_issue_voucher_id');
+    }
+
     public function dispatcher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'dispatcher_id');
+    }
+
+    public function lines(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(DeliveryOrderLine::class, 'delivery_order_id');
     }
 }

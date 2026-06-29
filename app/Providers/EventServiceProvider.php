@@ -514,8 +514,24 @@ class EventServiceProvider extends ServiceProvider
         HolidayEvent::class => [HolidayListener::class],
         EstimateAcceptedEvent::class => [EstimateAcceptedListener::class],
         EventInviteMentionEvent::class => [EventInviteMentionListener::class],
-
-
+        \App\Events\StockIntakeApproved::class => [
+            \App\Listeners\Intake\UpdateInventory::class,
+            \App\Listeners\Intake\GenerateSerials::class,
+            \App\Listeners\Intake\LogStockMovement::class,
+            \App\Listeners\Intake\LogSerialTransaction::class,
+        ],
+        \App\Events\DeliveryOrderDispatched::class => [
+            \App\Listeners\UpdateInventoryQuantities::class,
+            \App\Listeners\UpdateSerialStatus::class,
+            \App\Listeners\LogStockMovement::class,
+            \App\Listeners\LogSerialTransaction::class,
+        ],
+        \App\Events\DeliveryOrderCancelled::class => [
+            \App\Listeners\UpdateInventoryQuantities::class,
+            \App\Listeners\UpdateSerialStatus::class,
+            \App\Listeners\LogStockMovement::class,
+            \App\Listeners\LogSerialTransaction::class,
+        ],
     ];
 
     protected $observers = [

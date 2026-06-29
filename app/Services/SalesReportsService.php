@@ -11,6 +11,16 @@ use Illuminate\Support\Facades\DB;
 
 class SalesReportsService
 {
+    protected function hasJoin($query, string $tableName)
+    {
+        $joins = $query->getQuery()->joins ?? [];
+        foreach ($joins as $join) {
+            if (is_string($join->table) && strpos($join->table, $tableName) !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
     /**
      * Apply default database query parameters to filter invoices.
      */
@@ -39,7 +49,7 @@ class SalesReportsService
         }
 
         if (!empty($filters['city']) && $filters['city'] !== 'all') {
-            if (strpos(implode(',', $query->getQuery()->joins ?? []), 'client_details') === false) {
+            if (!$this->hasJoin($query, 'client_details')) {
                 $query->join('client_details as cd_inv', 'cd_inv.user_id', '=', 'invoices.client_id');
             }
             $query->where('cd_inv.city', $filters['city']);
@@ -72,11 +82,11 @@ class SalesReportsService
 
         // Salesperson user restriction constraint
         if (!in_array('admin', user_roles())) {
-            if (strpos(implode(',', $query->getQuery()->joins ?? []), 'client_details') === false) {
+            if (!$this->hasJoin($query, 'client_details')) {
                 $query->join('client_details as cd_inv_restrict', 'cd_inv_restrict.user_id', '=', 'invoices.client_id');
             }
             // Bind parameter dynamically
-            $alias = strpos(implode(',', $query->getQuery()->joins ?? []), 'cd_inv_restrict') !== false ? 'cd_inv_restrict' : 'cd_inv';
+            $alias = $this->hasJoin($query, 'cd_inv_restrict') ? 'cd_inv_restrict' : 'cd_inv';
             $query->where($alias . '.salesperson_id', user()->id);
         }
 
@@ -107,7 +117,7 @@ class SalesReportsService
         }
 
         if (!empty($filters['city']) && $filters['city'] !== 'all') {
-            if (strpos(implode(',', $query->getQuery()->joins ?? []), 'client_details') === false) {
+            if (!$this->hasJoin($query, 'client_details')) {
                 $query->join('client_details as cd_pay', 'cd_pay.user_id', '=', 'payments.customer_id');
             }
             $query->where('cd_pay.city', $filters['city']);
@@ -121,10 +131,10 @@ class SalesReportsService
 
         // Salesperson user restriction constraint
         if (!in_array('admin', user_roles())) {
-            if (strpos(implode(',', $query->getQuery()->joins ?? []), 'client_details') === false) {
+            if (!$this->hasJoin($query, 'client_details')) {
                 $query->join('client_details as cd_pay_restrict', 'cd_pay_restrict.user_id', '=', 'payments.customer_id');
             }
-            $alias = strpos(implode(',', $query->getQuery()->joins ?? []), 'cd_pay_restrict') !== false ? 'cd_pay_restrict' : 'cd_pay';
+            $alias = $this->hasJoin($query, 'cd_pay_restrict') ? 'cd_pay_restrict' : 'cd_pay';
             $query->where($alias . '.salesperson_id', user()->id);
         }
 
@@ -169,16 +179,16 @@ class SalesReportsService
             $returnsQuery->where('invoices.warehouse_id', $filters['warehouseId']);
         }
         if (!empty($filters['city']) && $filters['city'] !== 'all') {
-            if (strpos(implode(',', $returnsQuery->getQuery()->joins ?? []), 'client_details') === false) {
+            if (!$this->hasJoin($returnsQuery, 'client_details')) {
                 $returnsQuery->join('client_details as cd_cn', 'cd_cn.user_id', '=', 'invoices.client_id');
             }
             $returnsQuery->where('cd_cn.city', $filters['city']);
         }
         if (!in_array('admin', user_roles())) {
-            if (strpos(implode(',', $returnsQuery->getQuery()->joins ?? []), 'client_details') === false) {
+            if (!$this->hasJoin($returnsQuery, 'client_details')) {
                 $returnsQuery->join('client_details as cd_cn_restrict', 'cd_cn_restrict.user_id', '=', 'invoices.client_id');
             }
-            $alias = strpos(implode(',', $returnsQuery->getQuery()->joins ?? []), 'cd_cn_restrict') !== false ? 'cd_cn_restrict' : 'cd_cn';
+            $alias = $this->hasJoin($returnsQuery, 'cd_cn_restrict') ? 'cd_cn_restrict' : 'cd_cn';
             $returnsQuery->where($alias . '.salesperson_id', user()->id);
         }
         $totalReturns = (float)$returnsQuery->sum('credit_notes.total');
@@ -220,7 +230,7 @@ class SalesReportsService
             $qtyQuery->where('invoices.warehouse_id', $filters['warehouseId']);
         }
         if (!empty($filters['city']) && $filters['city'] !== 'all') {
-            if (strpos(implode(',', $qtyQuery->getQuery()->joins ?? []), 'client_details') === false) {
+            if (!$this->hasJoin($qtyQuery, 'client_details')) {
                 $qtyQuery->join('client_details as cd_qty', 'cd_qty.user_id', '=', 'invoices.client_id');
             }
             $qtyQuery->where('cd_qty.city', $filters['city']);
@@ -233,10 +243,10 @@ class SalesReportsService
                 ->where('p_qty.sub_category_id', $filters['modelId']);
         }
         if (!in_array('admin', user_roles())) {
-            if (strpos(implode(',', $qtyQuery->getQuery()->joins ?? []), 'client_details') === false) {
+            if (!$this->hasJoin($qtyQuery, 'client_details')) {
                 $qtyQuery->join('client_details as cd_qty_restrict', 'cd_qty_restrict.user_id', '=', 'invoices.client_id');
             }
-            $alias = strpos(implode(',', $qtyQuery->getQuery()->joins ?? []), 'cd_qty_restrict') !== false ? 'cd_qty_restrict' : 'cd_qty';
+            $alias = $this->hasJoin($qtyQuery, 'cd_qty_restrict') ? 'cd_qty_restrict' : 'cd_qty';
             $qtyQuery->where($alias . '.salesperson_id', user()->id);
         }
         $quantitySold = (float)$qtyQuery->sum('invoice_items.quantity');

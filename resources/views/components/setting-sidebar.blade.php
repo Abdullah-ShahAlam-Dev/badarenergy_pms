@@ -26,6 +26,9 @@
 
             <x-setting-menu-item :active="$activeMenu" menu="business_address" :href="route('business-address.index')"
                                  :text="__('app.menu.businessAddresses')"/>
+
+            <x-setting-menu-item :active="$activeMenu" menu="erp_workflow_settings" :href="route('erp-workflow-settings.index')"
+                                 text="ERP Workflow Settings"/>
         @endif
 
         @if (user()->permission('manage_app_setting') == 'all')

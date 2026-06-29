@@ -26,6 +26,11 @@ class AppServiceProvider extends ServiceProvider
         Cashier::ignoreMigrations();
         Sanctum::ignoreMigrations();
 
+        $this->app->singleton('workflow_config', \App\Repositories\WorkflowConfigRepository::class);
+        $this->app->singleton(\App\Services\ShipmentGeneratorService::class);
+        $this->app->singleton(\App\Services\IntakeNumberGeneratorService::class);
+        $this->app->singleton(\App\Services\StockIntakeService::class);
+
         if (config('app.redirect_https')) {
             $this->app['request']->server->set('HTTPS', true);
         }

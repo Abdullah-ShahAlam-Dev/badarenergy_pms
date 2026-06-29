@@ -81,8 +81,8 @@ class DealerLedgerController extends AccountBaseController
         $this->ledgerEntries = $query->orderBy('date', 'asc')->orderBy('id', 'asc')->get();
 
         // Totals within range
-        $this->totalDebit = (float)DealerLedger::where('dealer_id', $id);
-        $this->totalCredit = (float)DealerLedger::where('dealer_id', $id);
+        $this->totalDebit = DealerLedger::where('dealer_id', $id);
+        $this->totalCredit = DealerLedger::where('dealer_id', $id);
         if ($startDate) {
             $this->totalDebit->where('date', '>=', $startDate);
             $this->totalCredit->where('date', '>=', $startDate);
@@ -91,8 +91,8 @@ class DealerLedgerController extends AccountBaseController
             $this->totalDebit->where('date', '<=', $endDate);
             $this->totalCredit->where('date', '<=', $endDate);
         }
-        $this->totalDebit = $this->totalDebit->sum('debit');
-        $this->totalCredit = $this->totalCredit->sum('credit');
+        $this->totalDebit = (float)$this->totalDebit->sum('debit');
+        $this->totalCredit = (float)$this->totalCredit->sum('credit');
 
         // Net Outstanding
         $ledgerService = new DealerLedgerService();
@@ -116,12 +116,17 @@ class DealerLedgerController extends AccountBaseController
     {
         $this->dealer = User::with(['clientDetails', 'clientDetails.salesperson'])->findOrFail($id);
 
-        if (!in_array('admin', user_roles())) {
+        $viewPermission = user()->permission('view_invoices');
+        if ($viewPermission == 'none') {
+            abort(403);
+        }
+
+        if ($viewPermission != 'all' && !in_array('admin', user_roles())) {
             abort_403(!$this->dealer->clientDetails || $this->dealer->clientDetails->salesperson_id !== user()->id);
         }
 
-        $startDate = $request->startDate ? Carbon::parse($request->startDate)->startOfDay() : null;
-        $endDate = $request->endDate ? Carbon::parse($request->endDate)->endOfDay() : null;
+        $startDate = $request->startDate ? Carbon::createFromFormat(company()->date_format, $request->startDate)->startOfDay() : null;
+        $endDate = $request->endDate ? Carbon::createFromFormat(company()->date_format, $request->endDate)->endOfDay() : null;
 
         $openingDebit = 0.00;
         $openingCredit = 0.00;
@@ -143,8 +148,8 @@ class DealerLedgerController extends AccountBaseController
 
         $this->ledgerEntries = $query->orderBy('date', 'asc')->orderBy('id', 'asc')->get();
 
-        $this->totalDebit = (float)DealerLedger::where('dealer_id', $id);
-        $this->totalCredit = (float)DealerLedger::where('dealer_id', $id);
+        $this->totalDebit = DealerLedger::where('dealer_id', $id);
+        $this->totalCredit = DealerLedger::where('dealer_id', $id);
         if ($startDate) {
             $this->totalDebit->where('date', '>=', $startDate);
             $this->totalCredit->where('date', '>=', $startDate);
@@ -153,8 +158,8 @@ class DealerLedgerController extends AccountBaseController
             $this->totalDebit->where('date', '<=', $endDate);
             $this->totalCredit->where('date', '<=', $endDate);
         }
-        $this->totalDebit = $this->totalDebit->sum('debit');
-        $this->totalCredit = $this->totalCredit->sum('credit');
+        $this->totalDebit = (float)$this->totalDebit->sum('debit');
+        $this->totalCredit = (float)$this->totalCredit->sum('credit');
 
         $ledgerService = new DealerLedgerService();
         $this->currentBalance = $ledgerService->calculateOutstanding($id);

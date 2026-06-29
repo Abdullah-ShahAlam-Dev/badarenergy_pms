@@ -67,6 +67,11 @@ class InvoiceItems extends BaseModel
     {
         return $this->belongsTo(UnitType::class, 'unit_id');
     }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
     
     public function getTaxListAttribute()
     {

@@ -32,12 +32,14 @@ class Inventory extends BaseModel
         'quantity',
         'quantity_faulty',
         'quantity_in_transit',
+        'average_cost',
     ];
 
     protected $casts = [
         'quantity' => 'float',
         'quantity_faulty' => 'float',
         'quantity_in_transit' => 'float',
+        'average_cost' => 'float',
     ];
 
     /**

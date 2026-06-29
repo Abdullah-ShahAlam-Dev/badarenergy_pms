@@ -26,14 +26,14 @@ class DailyReportSettingController extends AccountBaseController
         $this->setting = DailyReportSetting::where('company_id', company()->id)->first();
         $this->selectedReporters = $this->setting ? ($this->setting->reporter_ids ?? []) : [];
 
-        $this->view = 'dailyreports::settings.index';
+        $this->view = 'dailyreports::settings.ajax.index';
 
         if (request()->ajax()) {
             $html = view($this->view, $this->data)->render();
             return Reply::dataOnly(['status' => 'success', 'html' => $html, 'title' => $this->pageTitle]);
         }
 
-        return view($this->view, $this->data);
+        return view('dailyreports::settings.index', $this->data);
     }
 
     public function store(Request $request)

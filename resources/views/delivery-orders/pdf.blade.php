@@ -133,7 +133,11 @@
 
     <div class="header">
         <div class="logo-section">
-            <h1>{{ company()->company_name }}</h1>
+            @if(company()->logo)
+                <img src="{{ company()->logo_url }}" alt="Logo" style="max-height: 60px; max-width: 250px; margin-bottom: 10px;" />
+            @else
+                <h1>{{ company()->company_name }}</h1>
+            @endif
             <p>{{ company()->address }}</p>
         </div>
         <div class="do-details">

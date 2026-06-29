@@ -98,8 +98,11 @@
 
     <div class="header">
         <div class="company-logo">
-            <!-- Render company name if logo url fails -->
-            <span style="font-size: 24px; font-weight: bold; color: #007bff;">{{ company()->company_name }}</span>
+            @if(company()->logo)
+                <img src="{{ company()->logo_url }}" alt="Logo" style="max-height: 50px; max-width: 200px;" />
+            @else
+                <span style="font-size: 24px; font-weight: bold; color: #007bff;">{{ company()->company_name }}</span>
+            @endif
         </div>
         <div class="title">
             <h2>ACCOUNT STATEMENT</h2>

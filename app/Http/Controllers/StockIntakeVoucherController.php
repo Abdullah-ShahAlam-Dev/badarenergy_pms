@@ -162,14 +162,19 @@ class StockIntakeVoucherController extends AccountBaseController
             ->with(['serials.product'])
             ->findOrFail($id);
 
-        $barcodeGenerator = resolve(\App\Services\BarcodeGeneratorService::class);
+        $factory = resolve(\App\Services\Barcode\BarcodeDriverFactory::class);
+        $code128Driver = $factory->make('code128');
+        $qrCodeDriver = $factory->make('qrcode');
+
+        $termsUrl = \App\Facades\WorkflowConfig::get('barcode', 'terms_url', 'https://badarenergy.com/terms', $companyId);
         $barcodes = [];
 
         foreach ($voucher->serials as $serial) {
             $barcodes[] = [
                 'serial_number' => $serial->serial_number,
                 'product_name' => $serial->product ? $serial->product->name : 'N/A',
-                'svg' => $barcodeGenerator->generate($serial->serial_number, $companyId),
+                'barcode_svg' => $code128Driver->generate($serial->serial_number),
+                'qrcode_svg' => $qrCodeDriver->generate($termsUrl),
             ];
         }
 
@@ -193,11 +198,17 @@ class StockIntakeVoucherController extends AccountBaseController
             ->with(['product'])
             ->findOrFail($serialId);
 
-        $barcodeGenerator = resolve(\App\Services\BarcodeGeneratorService::class);
+        $factory = resolve(\App\Services\Barcode\BarcodeDriverFactory::class);
+        $code128Driver = $factory->make('code128');
+        $qrCodeDriver = $factory->make('qrcode');
+
+        $termsUrl = \App\Facades\WorkflowConfig::get('barcode', 'terms_url', 'https://badarenergy.com/terms', $companyId);
+
         $barcode = [
             'serial_number' => $serial->serial_number,
             'product_name' => $serial->product ? $serial->product->name : 'N/A',
-            'svg' => $barcodeGenerator->generate($serial->serial_number, $companyId),
+            'barcode_svg' => $code128Driver->generate($serial->serial_number),
+            'qrcode_svg' => $qrCodeDriver->generate($termsUrl),
         ];
 
         return view('stock-intakes.barcodes', [

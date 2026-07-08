@@ -26,6 +26,7 @@ class UpdateErpWorkflowSettingRequest extends FormRequest
             'serial_include_year' => 'required|boolean',
             'approvals_delivery_order' => 'required|boolean',
             'barcode_type' => 'required|in:code128,qrcode,pdf417',
+            'barcode_terms_url' => 'required|url|max:255',
             'shipment_prefix' => 'required|string|max:10',
             'shipment_digit_length' => 'required|integer|min:3|max:15',
             'shipment_include_year' => 'required|boolean',

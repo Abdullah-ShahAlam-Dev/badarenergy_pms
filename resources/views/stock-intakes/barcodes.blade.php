@@ -13,58 +13,108 @@
             color: #000;
         }
 
-        /* Container for each label */
+        /* Container for each label - standard 100mm x 35mm layout */
         .barcode-label {
-            width: 50mm;
-            height: 30mm;
-            padding: 2mm;
+            width: 100mm;
+            height: 35mm;
+            padding: 2mm 3mm;
             box-sizing: border-box;
-            text-align: center;
+            background: #fff;
+            border: 1px dashed #ccc;
+            margin: 5px auto;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            page-break-after: always; /* Force print split per label */
+        }
+
+        /* QR Code container on the left */
+        .qr-section {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            width: 28%;
+            border-right: 1px dashed #ddd;
+            padding-right: 2mm;
+        }
+
+        .qr-code-svg {
+            width: 22mm;
+            height: 22mm;
+        }
+
+        .qr-code-svg svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .qr-label-text {
+            font-size: 8px;
+            font-weight: bold;
+            color: #333;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+            margin-left: 1mm;
+            letter-spacing: 0.5px;
+        }
+
+        /* Linear Barcode and details section on the right */
+        .barcode-section {
+            width: 70%;
+            height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            page-break-after: always; /* Force print split per label */
+            padding-left: 2mm;
         }
 
-        /* SVG / Image barcode container */
+        .serial-text {
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin: 0 0 1mm 0;
+        }
+
         .barcode-svg {
             width: 100%;
-            max-height: 14mm;
+            height: 12mm;
             display: flex;
             justify-content: center;
-            margin-bottom: 1.5mm;
+            align-items: center;
         }
 
         .barcode-svg svg {
-            width: auto;
+            width: 100%;
             height: 100%;
             max-width: 100%;
         }
 
-        /* Content text styling */
-        .serial-text {
-            font-size: 11px;
+        .model-text {
+            font-size: 9px;
             font-weight: bold;
-            letter-spacing: 0.5px;
-            margin: 0;
+            color: #000;
+            margin: 1.5mm 0 0 0;
             text-transform: uppercase;
-        }
-
-        .product-name {
-            font-size: 8px;
-            color: #555;
-            margin: 0.5mm 0 0 0;
+            letter-spacing: 0.5px;
+            text-align: center;
+            width: 100%;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            width: 100%;
         }
 
         /* Print Specific CSS Rules */
         @media print {
             body {
                 background-color: #fff;
+            }
+            .barcode-label {
+                border: none;
+                margin: 0;
+                page-break-after: always;
             }
             .barcode-label:last-child {
                 page-break-after: avoid; /* Don't add blank page at end */
@@ -76,14 +126,32 @@
 
     @foreach ($barcodes as $barcode)
         <div class="barcode-label">
-            <div class="barcode-svg">
-                {!! $barcode['svg'] !!}
+            <!-- Left side: T&C QR Code and Vertical Text label -->
+            <div class="qr-section">
+                <div class="qr-code-svg">
+                    {!! $barcode['qrcode_svg'] !!}
+                </div>
+                <div class="qr-label-text">
+                    Terms & Conditions
+                </div>
             </div>
-            <div class="serial-text">
-                {{ $barcode['serial_number'] }}
-            </div>
-            <div class="product-name">
-                {{ $barcode['product_name'] }}
+
+            <!-- Right side: Serial and Linear Barcode -->
+            <div class="barcode-section">
+                <!-- Serial Text above Barcode -->
+                <div class="serial-text">
+                    {{ $barcode['serial_number'] }}
+                </div>
+                
+                <!-- Linear Barcode SVG -->
+                <div class="barcode-svg">
+                    {!! $barcode['barcode_svg'] !!}
+                </div>
+
+                <!-- Product Name/Model below Barcode -->
+                <div class="model-text">
+                    Model: {{ $barcode['product_name'] }}
+                </div>
             </div>
         </div>
     @endforeach

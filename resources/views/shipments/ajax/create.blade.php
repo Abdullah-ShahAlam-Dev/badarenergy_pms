@@ -19,7 +19,7 @@
                             @else
                                 <x-forms.text fieldId="shipment_number" fieldLabel="Shipment Number (Auto Generated)"
                                     fieldName="shipment_number"
-                                    fieldValue="SHP-[Auto Generated]"
+                                    :fieldValue="$autoShipmentNumber"
                                     readOnly="true">
                                 </x-forms.text>
                             @endif

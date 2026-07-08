@@ -48,6 +48,9 @@ class ErpWorkflowSettingController extends AccountBaseController
         $this->intakeIncludeYear = WorkflowConfig::get('intake', 'include_year', true, $companyId);
         $this->approvalsStockIntake = WorkflowConfig::get('approvals', 'stock_intake', false, $companyId);
 
+        // Barcode settings
+        $this->barcodeTermsUrl = WorkflowConfig::get('barcode', 'terms_url', 'https://badarenergy.com/terms', $companyId);
+
         return view('erp-workflow-settings.index', $this->data);
     }
 
@@ -65,6 +68,7 @@ class ErpWorkflowSettingController extends AccountBaseController
             WorkflowConfig::set('serial', 'include_year', (bool)$request->serial_include_year, $companyId);
             WorkflowConfig::set('approvals', 'delivery_order', (bool)$request->approvals_delivery_order, $companyId);
             WorkflowConfig::set('barcode', 'type', $request->barcode_type, $companyId);
+            WorkflowConfig::set('barcode', 'terms_url', $request->barcode_terms_url, $companyId);
 
             // Shipment settings (Sprint 2 Amendments)
             WorkflowConfig::set('shipment', 'prefix', $request->shipment_prefix, $companyId);

@@ -53,6 +53,10 @@ class ShipmentController extends AccountBaseController
 
         $companyId = company() ? company()->id : 1;
         $this->allowManualShipmentNumber = WorkflowConfig::get('inventory', 'allow_manual_shipment_number', false, $companyId);
+        
+        $generator = app(\App\Services\ShipmentGeneratorService::class);
+        $this->autoShipmentNumber = $generator->generate($companyId);
+        
         $this->pageTitle = 'Add Shipment';
 
         if (request()->ajax()) {

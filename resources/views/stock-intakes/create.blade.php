@@ -179,6 +179,89 @@
                     messagePosition: 'inline',
                     disableButton: true,
                     buttonSelector: '#saveStockIntake',
+                    error: function(jqXHR) {
+                        // Reset buttons and unblock UI (standard easyAjax behavior)
+                        $.easyUnblockUI('#saveStockIntakeForm');
+                        var btn = $('#saveStockIntake');
+                        btn.html(btn.attr('data-prev-text'));
+                        btn.prop("disabled", false);
+                        
+                        try {
+                            var response = JSON.parse(jqXHR.responseText);
+                            if (response && response.errors) {
+                                // Clear previous errors
+                                $('.invalid-feedback').remove();
+                                $('.is-invalid').removeClass('is-invalid');
+                                $('.form-group').removeClass('has-error');
+                                $('.item-row').removeClass('table-danger');
+                                
+                                // Loop through errors
+                                var errorMessages = [];
+                                $.each(response.errors, function(key, messages) {
+                                    var cleanMessage = messages[0];
+                                    // Remove Laravel internal dot-notation fields to show friendly text
+                                    cleanMessage = cleanMessage.replace(/items\.\d+\.quantity_declared/gi, 'quantity declared')
+                                                               .replace(/items\.\d+\.quantity_received/gi, 'received quantity')
+                                                               .replace(/items\.\d+\.product_id/gi, 'product')
+                                                               .replace(/items\.\d+\.unit_cost/gi, 'unit cost')
+                                                               .replace(/quantity_declared/gi, 'quantity declared')
+                                                               .replace(/quantity_received/gi, 'received quantity')
+                                                               .replace(/product_id/gi, 'product')
+                                                               .replace(/unit_cost/gi, 'unit cost');
+                                    
+                                    errorMessages.push(cleanMessage);
+                                    
+                                    // Map items.0.quantity_received -> name="items[0][quantity_received]"
+                                    var inputName = key;
+                                    if (key.indexOf('.') !== -1) {
+                                        var parts = key.split('.');
+                                        if (parts.length >= 3) {
+                                            inputName = parts[0] + '[' + parts[1] + ']';
+                                            for (var i = 2; i < parts.length; i++) {
+                                                inputName += '[' + parts[i] + ']';
+                                            }
+                                        }
+                                    }
+                                    
+                                    var inputElement = $('[name="' + inputName + '"]');
+                                    if (inputElement.length > 0) {
+                                        inputElement.addClass('is-invalid');
+                                        
+                                        var errorPlacementElement = inputElement;
+                                        if (inputElement.closest('.bootstrap-select').length > 0) {
+                                            errorPlacementElement = inputElement.closest('.bootstrap-select');
+                                        }
+                                        
+                                        // Append validation error next to the input
+                                        if (errorPlacementElement.next('.invalid-feedback').length === 0) {
+                                            errorPlacementElement.after('<div class="invalid-feedback d-block f-12 mt-1">' + cleanMessage + '</div>');
+                                        }
+                                    }
+                                    
+                                    // Fallback for general fields (like warehouse_id)
+                                    if (inputElement.length === 0) {
+                                        var fallbackEl = $('#' + key);
+                                        if (fallbackEl.length > 0) {
+                                            fallbackEl.addClass('is-invalid');
+                                            var grp = fallbackEl.closest('.form-group');
+                                            grp.addClass('has-error');
+                                            
+                                            var errorPlacementElement = fallbackEl;
+                                            if (fallbackEl.closest('.bootstrap-select').length > 0) {
+                                                errorPlacementElement = fallbackEl.closest('.bootstrap-select');
+                                            }
+                                            
+                                            if (errorPlacementElement.next('.invalid-feedback').length === 0) {
+                                                errorPlacementElement.after('<div class="invalid-feedback d-block f-12 mt-1">' + cleanMessage + '</div>');
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    },
                     success: function(response) {
                         if (response.status === 'success') {
                             window.location.href = response.redirectUrl;

@@ -99,8 +99,6 @@
                                 <th>Product</th>
                                 <th class="text-right">Qty Declared</th>
                                 <th class="text-right">Qty Received</th>
-                                <th class="text-right">Unit Cost</th>
-                                <th>Batch Assignment</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -108,22 +106,11 @@
                                 <tr>
                                     <td>
                                         {{ $item->product ? $item->product->name : '-' }}
-                                        @if ($item->product && $item->product->is_serialized)
-                                            <span class="badge badge-light border text-primary ml-1">Serialized</span>
-                                        @endif
                                     </td>
                                     <td class="text-right">{{ number_format($item->quantity_declared, 2) }}</td>
                                     <td class="text-right font-weight-bold">{{ number_format($item->quantity_received, 2) }}</td>
-                                    <td class="text-right">{{ company()->currency->currency_symbol }}{{ number_format($item->unit_cost, 2) }}</td>
-                                    <td>
-                                        @if ($item->batch)
-                                            <span class="badge badge-light border text-success font-weight-bold">
-                                                {{ $item->batch->batch_number }}
-                                            </span>
-                                        @else
-                                            <span class="text-muted">N/A</span>
-                                        @endif
-                                    </td>
+
+
                                 </tr>
                             @endforeach
                         </tbody>

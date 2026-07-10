@@ -31,12 +31,7 @@
                                 </x-forms.text>
                             </div>
 
-                            <div class="col-lg-4 col-md-6">
-                                <x-forms.number class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="__('app.price')"
-                                                fieldName="price" fieldId="price" fieldRequired="true"
-                                                :fieldPlaceholder="__('placeholders.price')"
-                                                fieldValue="0"/>
-                            </div>
+                            <input type="hidden" name="price" value="0">
 
                             <div class="col-lg-4 col-md-6">
                                 <x-forms.label class="my-3" fieldId=""
@@ -117,13 +112,6 @@
                             </div>
 
                             <div class="col-lg-4 col-md-6">
-                                <x-forms.text fieldId="product_code" :fieldLabel="__('Product Code')"
-                                              fieldName="product_code"
-                                              fieldPlaceholder="e.g. BAT-48-200">
-                                </x-forms.text>
-                            </div>
-
-                            <div class="col-lg-4 col-md-6">
                                 <x-forms.text fieldId="voltage" :fieldLabel="__('Voltage')"
                                               fieldName="voltage"
                                               fieldPlaceholder="e.g. 12.8V / 48V / 51.2V">
@@ -138,13 +126,6 @@
                             </div>
 
                             <div class="col-lg-4 col-md-6">
-                                <x-forms.text fieldId="barcode" :fieldLabel="__('Barcode')"
-                                              fieldName="barcode"
-                                              fieldPlaceholder="e.g. 1281000001">
-                                </x-forms.text>
-                            </div>
-
-                            <div class="col-lg-4 col-md-6">
                                 <x-forms.label class="my-3" fieldId="type" :fieldLabel="__('Category Type')">
                                 </x-forms.label>
                                 <div class="form-group">
@@ -155,11 +136,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-lg-4 col-md-6 mt-5">
-                                <x-forms.checkbox class="mr-0 mr-lg-2 mr-md-2" fieldLabel="Is Serialized Product (Battery/Cabinet)"
-                                                  fieldName="is_serialized" fieldId="is_serialized" fieldValue="1"
-                                                  fieldRequired="true"/>
-                            </div>
+                            <input type="hidden" name="is_serialized" value="1">
 
                             <div class="col-lg-4 col-md-6">
                                 <x-forms.label class="my-3" fieldId="" :fieldLabel="__('modules.unitType.unitType')">
@@ -178,7 +155,7 @@
                             <div class="col-lg-4 col-md-6 mt-5">
                                 <x-forms.checkbox class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="__('app.purchaseAllow')"
                                                   fieldName="purchase_allow" fieldId="purchase_allow" fieldValue="no"
-                                                  fieldRequired="true"/>
+                                                  fieldRequired="true" :checked="true"/>
                             </div>
                             <div class="col-lg-4 col-md-6 mt-5">
                                 <x-forms.checkbox class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="__('app.downloadable')"

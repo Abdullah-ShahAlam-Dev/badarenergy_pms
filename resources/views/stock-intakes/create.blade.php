@@ -62,11 +62,9 @@
                                     <table class="table table-bordered" id="intake-items-table">
                                         <thead class="thead-light">
                                             <tr>
-                                                <th width="30%">Product</th>
-                                                <th width="15%">Qty Declared</th>
-                                                <th width="15%">Qty Received</th>
-                                                <th width="15%">Unit Cost</th>
-                                                <th width="20%">Batch Assignment</th>
+                                                <th width="50%">Product</th>
+                                                <th width="22%">Qty Declared</th>
+                                                <th width="23%">Qty Received</th>
                                                 <th width="5%" class="text-center">Action</th>
                                             </tr>
                                         </thead>
@@ -106,9 +104,8 @@
                     <option value="">-- Choose Product --</option>
                     @foreach ($products as $prod)
                         <option value="{{ $prod->id }}" 
-                                data-batch-tracking="{{ $prod->batch_tracking ? 1 : 0 }}"
                                 data-is-serialized="{{ $prod->is_serialized ? 1 : 0 }}">
-                            {{ $prod->name }} @if($prod->is_serialized) (Serialized) @endif
+                            {{ $prod->name }}
                         </option>
                     @endforeach
                 </select>
@@ -119,21 +116,8 @@
             <td>
                 <input type="number" class="form-control quantity-received" name="items[__INDEX__][quantity_received]" min="0" step="any" required>
             </td>
-            <td>
-                <input type="number" class="form-control unit-cost" name="items[__INDEX__][unit_cost]" min="0" step="any" value="0.00" required>
-            </td>
-            <td>
-                <!-- Batch drop-down: shown dynamically based on product.batch_tracking value -->
-                <div class="batch-wrapper">
-                    <select class="form-control batch-select" name="items[__INDEX__][batch_id]">
-                        <option value="">-- No Batch --</option>
-                        @foreach ($batches as $bat)
-                            <option value="{{ $bat->id }}">{{ $bat->batch_number }}</option>
-                        @endforeach
-                    </select>
-                    <span class="text-muted batch-na d-none">No Batch Tracking Required</span>
-                </div>
-            </td>
+            <input type="hidden" name="items[__INDEX__][unit_cost]" value="0.00">
+
             <td class="text-center">
                 <button type="button" class="btn btn-danger btn-sm delete-row-btn" title="Delete Row">
                     <i class="fa fa-times"></i>
@@ -180,23 +164,7 @@
                 }
             });
 
-            // Dynamically show or hide Batch Assignment selector based on product selection
-            $('body').on('change', '.product-select', function() {
-                var selectedOption = $(this).find('option:selected');
-                var batchTracking = selectedOption.data('batch-tracking');
-                var parentRow = $(this).closest('tr');
 
-                var batchSelect = parentRow.find('.batch-select');
-                var batchNa = parentRow.find('.batch-na');
-
-                if (batchTracking === 1) {
-                    batchSelect.removeClass('d-none').prop('required', true);
-                    batchNa.addClass('d-none');
-                } else {
-                    batchSelect.addClass('d-none').val('').prop('required', false);
-                    batchNa.removeClass('d-none');
-                }
-            });
 
             // Save Stock Intake action handler
             $('#saveStockIntake').click(function() {

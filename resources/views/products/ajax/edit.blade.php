@@ -25,11 +25,7 @@ $addProductSubCategoryPermission = user()->permission('manage_product_sub_catego
                                 </x-forms.text>
                             </div>
 
-                            <div class="col-md-4">
-                                <x-forms.number class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="__('app.price')"
-                                    fieldName="price" fieldId="price" :fieldPlaceholder="__('placeholders.price')"
-                                    :fieldValue="$product->price" />
-                            </div>
+                            <input type="hidden" name="price" value="{{ $product->price ?? 0 }}">
 
                             <div class="col-md-4">
                                 <x-forms.label class="mt-3" fieldId="category_id"
@@ -111,14 +107,6 @@ $addProductSubCategoryPermission = user()->permission('manage_product_sub_catego
                             </div>
 
                             <div class="col-lg-4 col-md-6">
-                                <x-forms.text fieldId="product_code" :fieldLabel="__('Product Code')"
-                                              fieldName="product_code"
-                                              fieldPlaceholder="e.g. BAT-48-200"
-                                              :fieldValue="$product->product_code">
-                                </x-forms.text>
-                            </div>
-
-                            <div class="col-lg-4 col-md-6">
                                 <x-forms.text fieldId="voltage" :fieldLabel="__('Voltage')"
                                               fieldName="voltage"
                                               fieldPlaceholder="e.g. 12.8V / 48V / 51.2V"
@@ -135,14 +123,6 @@ $addProductSubCategoryPermission = user()->permission('manage_product_sub_catego
                             </div>
 
                             <div class="col-lg-4 col-md-6">
-                                <x-forms.text fieldId="barcode" :fieldLabel="__('Barcode')"
-                                              fieldName="barcode"
-                                              fieldPlaceholder="e.g. 1281000001"
-                                              :fieldValue="$product->barcode">
-                                </x-forms.text>
-                            </div>
-
-                            <div class="col-lg-4 col-md-6">
                                 <x-forms.label class="my-3" fieldId="type" :fieldLabel="__('Category Type')">
                                 </x-forms.label>
                                 <div class="form-group">
@@ -153,11 +133,7 @@ $addProductSubCategoryPermission = user()->permission('manage_product_sub_catego
                                 </div>
                             </div>
 
-                            <div class="col-lg-4 col-md-6 mt-5">
-                                <x-forms.checkbox class="mr-0 mr-lg-2 mr-md-2" fieldLabel="Is Serialized Product (Battery/Cabinet)"
-                                                  fieldName="is_serialized" fieldId="is_serialized" fieldValue="1"
-                                                  fieldRequired="true" :checked="$product->is_serialized == 1"/>
-                            </div>
+                            <input type="hidden" name="is_serialized" value="1">
 
                             <div class="col-lg-4 col-md-6">
                                 <x-forms.label class="my-3" fieldId="" :fieldLabel="__('modules.unitType.unitType')">

@@ -28,6 +28,9 @@ $addProductPermission = user()->permission('add_product');
         @if (isset($type) && $type == 'estimate')
             <input type="hidden" name="estimate_id" value="{{ $estimateId }}">
         @endif
+        @if (isset($type) && $type == 'order')
+            <input type="hidden" name="order_id" value="{{ $orderId }}">
+        @endif
 
         <!-- INVOICE NUMBER, DATE, DUE DATE, FREQUENCY START -->
         <div class="row px-lg-4 px-md-4 px-3 py-3">
@@ -162,6 +165,11 @@ $addProductPermission = user()->permission('add_product');
                                             <option @if ($estimate->project_id == $item->id) selected @endif value="{{ $item->id }}">
                                                 {{ $item->project_name }}</option>
                                     @endforeach
+                                @elseif (isset($order) && $order->client)
+                                    @foreach ($order->client->projects as $item)
+                                            <option @if ($order->project_id == $item->id) selected @endif value="{{ $item->id }}">
+                                                {{ $item->project_name }}</option>
+                                    @endforeach
                                 @endif
                             </select>
                         </div>
@@ -226,6 +234,8 @@ $addProductPermission = user()->permission('add_product');
                             {!! nl2br($client->clientDetails->address) !!}
                         @elseif (isset($estimate) && $estimate->client)
                             {!! nl2br($estimate->client->clientDetails->address) !!}
+                        @elseif (isset($order) && $order->client)
+                            {!! nl2br($order->client->clientDetails->address) !!}
                         @else
                             <span class="text-lightest">@lang('messages.selectCustomerForBillingAddress')</span>
                         @endif
@@ -244,6 +254,8 @@ $addProductPermission = user()->permission('add_product');
                         @elseif(isset($client) && $client->clientDetails &&
                             $client->clientDetails->shipping_address)
                             {!! nl2br($client->clientDetails->shipping_address) !!}
+                        @elseif(isset($order) && $order->client && $order->client->clientDetails->shipping_address)
+                            {!! nl2br($order->client->clientDetails->shipping_address) !!}
                         @else
                             <a href="javascript:;" class="text-capitalize" id="show-shipping-field"><i
                                     class="f-12 mr-2 fa fa-plus"></i>@lang('app.addShippingAddress')</a>
@@ -251,7 +263,7 @@ $addProductPermission = user()->permission('add_product');
                     </p>
                     <p class="d-none" id="add-shipping-field">
                         <textarea class="form-control f-14 pt-2" rows="3" placeholder="@lang('placeholders.address')"
-                            name="shipping_address" id="shipping_address">@if (isset($invoice) && $invoice->client) {!! nl2br($invoice->client->clientDetails->shipping_address) !!} @endif</textarea>
+                            name="shipping_address" id="shipping_address">@if (isset($invoice) && $invoice->client) {!! nl2br($invoice->client->clientDetails->shipping_address) !!} @elseif(isset($order) && $order->client) {!! nl2br($order->client->clientDetails->shipping_address) !!} @endif</textarea>
                     </p>
                 </div>
             </div>
@@ -283,7 +295,7 @@ $addProductPermission = user()->permission('add_product');
                             name="warehouse_id" id="warehouse_id">
                             <option value="">--</option>
                             @foreach ($warehouses as $warehouse)
-                                <option value="{{ $warehouse->id }}">
+                                <option @if (isset($order) && $order->warehouse_id == $warehouse->id) selected @endif value="{{ $warehouse->id }}">
                                     {{ $warehouse->name }} ({{ $warehouse->code }})
                                 </option>
                             @endforeach
@@ -575,6 +587,126 @@ $addProductPermission = user()->permission('add_product');
                                                     data-height="70" multiple />
                                                 <input type="hidden" name="invoice_item_image_url[]">
                                             @endif
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <a href="javascript:;"
+                                class="d-flex align-items-center justify-content-center ml-3 remove-item"><i
+                                    class="fa fa-times-circle f-20 text-lightest"></i></a>
+                        </div>
+                    </div>
+                    <!-- DESKTOP DESCRIPTION TABLE END -->
+                @endforeach
+                @elseif (isset($order))
+                @foreach ($order->items as $key => $item)
+                    <!-- DESKTOP DESCRIPTION TABLE START -->
+                    <div class="d-flex px-4 py-3 c-inv-desc item-row">
+
+                        <div class="c-inv-desc-table w-100 d-lg-flex d-md-flex d-block">
+                            <table width="100%">
+                                <tbody>
+                                    <tr class="text-dark-grey font-weight-bold f-14">
+                                        <td width="{{ $invoiceSetting->hsn_sac_code_show ? '40%' : '50%' }}"
+                                            class="border-0 inv-desc-mbl btlr">@lang('app.description')</td>
+                                        @if ($invoiceSetting->hsn_sac_code_show)
+                                            <td width="10%" class="border-0" align="right">@lang("app.hsnSac")
+                                            </td>
+                                        @endif
+                                        <td width="10%" class="border-0" align="right">
+                                            @lang('modules.invoices.qty')
+                                        </td>
+                                        <td width="10%" class="border-0" align="right">
+                                            @lang("modules.invoices.unitPrice")</td>
+                                        <td width="13%" class="border-0" align="right">
+                                            @lang('modules.invoices.tax')
+                                        </td>
+                                        <td width="17%" class="border-0 bblr-mbl" align="right">
+                                            @lang('modules.invoices.amount')</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border-bottom-0 btrr-mbl btlr">
+                                            <input type="text" class="form-control f-14 border-0 w-100 item_name"
+                                                name="item_name[]" placeholder="@lang('modules.expenses.itemName')"
+                                                value="{{ $item->item_name }}">
+                                        </td>
+                                        <td class="border-bottom-0 d-block d-lg-none d-md-none">
+                                            <textarea class="f-14 border-0 w-100 mobile-description form-control"
+                                                placeholder="@lang('placeholders.invoices.description')"
+                                                name="item_summary[]">{{ $item->item_summary }}</textarea>
+                                        </td>
+                                        @if ($invoiceSetting->hsn_sac_code_show)
+                                            <td class="border-bottom-0">
+                                                <input type="text"
+                                                    class="form-control f-14 border-0 w-100 text-right hsn_sac_code"
+                                                    value="{{ $item->hsn_sac_code }}" name="hsn_sac_code[]">
+                                            </td>
+                                        @endif
+                                        <td class="border-bottom-0">
+                                            <input type="number" min="1"
+                                                class="form-control f-14 border-0 w-100 text-right quantity mt-3"
+                                                value="{{ $item->quantity }}" name="quantity[]">
+                                                @if (!is_null($item->product_id) && $item->product_id != 0)
+                                                    <span class="text-dark-grey float-right border-0 f-12">{{ $item->unit->unit_type }}</span>
+                                                    <input type="hidden" name="product_id[]" value="{{ $item->product_id }}">
+                                                    <input type="hidden" name="unit_id[]" value="{{ $item->unit_id }}">
+                                                @else
+                                                    <select class="text-dark-grey float-right border-0 f-12" name="unit_id[]">
+                                                        @foreach ($units as $unit)
+                                                            <option
+                                                            @if ($item->unit_id == $unit->id) selected @endif
+                                                            value="{{ $unit->id }}">{{ $unit->unit_type }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <input type="hidden" name="product_id[]" value="">
+                                                @endif
+                                        </td>
+                                        <td class="border-bottom-0">
+                                            <input type="number" class="f-14 border-0 w-100 text-right cost_per_item form-control"
+                                                placeholder="0.00" value="{{ $item->unit_price }}"
+                                                name="cost_per_item[]" min="1">
+                                        </td>
+                                        <td class="border-bottom-0">
+                                            <div class="select-others height-35 rounded border-0">
+                                                <select id="multiselect" name="taxes[{{ $key }}][]"
+                                                    multiple="multiple"
+                                                    class="select-picker type customSequence border-0" data-size="3">
+                                                    @foreach ($taxes as $tax)
+                                                        <option data-rate="{{ $tax->rate_percent }}" data-tax-text="{{ strtoupper($tax->tax_name) .':'. $tax->rate_percent }}%"
+                                                            @selected (isset($item->taxes) && array_search($tax->id, json_decode($item->taxes)) !== false) value="{{ $tax->id }}">
+                                                            {{ strtoupper($tax->tax_name) }}:
+                                                            {{ $tax->rate_percent }}%</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </td>
+                                        <td rowspan="2" align="right" valign="top" class="bg-amt-grey btrr-bbrr">
+                                            <span
+                                                class="amount-html">{{ number_format((float) $item->amount, 2, '.', '') }}</span>
+                                            <input type="hidden" class="amount" name="amount[]"
+                                                value="{{ $item->amount }}">
+                                        </td>
+                                    </tr>
+                                    <tr class="d-none d-md-block d-lg-table-row">
+                                        <td colspan="{{ $invoiceSetting->hsn_sac_code_show ? '4' : '3' }}"
+                                            class="dash-border-top bblr">
+                                            <textarea class="f-14 border-0 w-100 desktop-description form-control"
+                                                name="item_summary[]"
+                                                placeholder="@lang('placeholders.invoices.description')">{{ $item->item_summary }}</textarea>
+                                        </td>
+                                        <td class="border-left-0">
+                                            <input type="hidden" id="imageId_{{ $item->id }}"
+                                                class="itemOldImage" name="image_id[]"
+                                                value="" />
+                                            <input type="file" class="dropify itemImage"
+                                                name="invoice_item_image[]" id="image{{ $item->id }}"
+                                                data-index="{{ $loop->index }}"
+                                                data-allowed-file-extensions="png jpg jpeg"
+                                                data-item-id="{{ $item->id }}"
+                                                data-default-file=""
+                                                data-height="70" multiple />
+                                            <input type="hidden" name="invoice_item_image_url[]">
                                         </td>
                                     </tr>
                                 </tbody>

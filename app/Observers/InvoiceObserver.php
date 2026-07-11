@@ -260,7 +260,7 @@ class InvoiceObserver
 
             $stockOutTrigger = \App\Facades\WorkflowConfig::get('inventory', 'stock_out_trigger', 'invoice_approval', $invoice->company_id);
             if ($stockOutTrigger === 'invoice_approval') {
-                if (in_array($invoice->status, ['unpaid', 'paid', 'partial'])) {
+                if (in_array($invoice->status, ['unpaid', 'paid', 'partial']) && !is_null($invoice->order_id)) {
                     \App\Models\DeliveryOrder::firstOrCreate([
                         'invoice_id' => $invoice->id,
                     ], [
@@ -491,13 +491,15 @@ class InvoiceObserver
                     $stockOutTrigger = \App\Facades\WorkflowConfig::get('inventory', 'stock_out_trigger', 'invoice_approval', $invoice->company_id);
                     if ($stockOutTrigger === 'invoice_approval') {
                         // Generate Delivery Order automatically!
-                        \App\Models\DeliveryOrder::firstOrCreate([
-                            'invoice_id' => $invoice->id,
-                        ], [
-                            'company_id' => $invoice->company_id,
-                            'issue_date' => now(),
-                            'status' => 'pending',
-                        ]);
+                        if (!is_null($invoice->order_id)) {
+                            \App\Models\DeliveryOrder::firstOrCreate([
+                                'invoice_id' => $invoice->id,
+                            ], [
+                                'company_id' => $invoice->company_id,
+                                'issue_date' => now(),
+                                'status' => 'pending',
+                            ]);
+                        }
                     } else {
                         if (request()->has('delivery_order_id')) {
                             $do = \App\Models\DeliveryOrder::find(request()->delivery_order_id);

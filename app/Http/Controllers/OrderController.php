@@ -84,6 +84,11 @@ class OrderController extends AccountBaseController
         $this->categories = ProductCategory::all();
         $this->unit_types = UnitType::all();
         $this->companyAddresses = CompanyAddress::all();
+        $this->warehouses = \App\Models\Warehouse::all();
+        $this->offlineMethods = \App\Models\OfflinePaymentMethod::activeMethod();
+        $this->paymentGateway = \App\Models\PaymentGatewayCredentials::first();
+        $this->currencies = Currency::all();
+        $this->companyCurrency = Currency::where('id', company()->currency_id)->first();
 
         $this->lastOrder = Order::lastOrderNumber() + 1;
         $this->orderSetting = invoice_setting();
@@ -201,9 +206,14 @@ class OrderController extends AccountBaseController
             $customOrderNumber = $this->orderSetting->order_prefix.''.$this->orderSetting->order_number_separator.''. $zero .''.$request->order_number;
         }
 
+        $orderDate = $request->order_date ? \Carbon\Carbon::createFromFormat(company()->date_format, $request->order_date)->format('Y-m-d') : now()->format('Y-m-d');
+        $dueDate = $request->due_date ? \Carbon\Carbon::createFromFormat(company()->date_format, $request->due_date)->format('Y-m-d') : null;
+
         $order = new Order();
         $order->client_id = $request->client_id ?: user()->id;
-        $order->order_date = now()->format('Y-m-d');
+        $order->project_id = $request->project_id ?: null;
+        $order->order_date = $orderDate;
+        $order->due_date = $dueDate;
         $order->sub_total = round($request->sub_total, 2);
         $order->total = round($request->total, 2);
         $order->discount = is_null($request->discount_value) ? 0 : $request->discount_value;
@@ -214,7 +224,18 @@ class OrderController extends AccountBaseController
         $order->show_shipping_address = (($request->has('shipping_address') && $request->shipping_address != '') ? 'yes' : 'no');
         $order->company_address_id = $request->company_address_id ?: null;
         $order->order_number = $request->order_number;
-        $order->custom_order_number = $customOrderNumber;
+        $order->sale_type = $request->sale_type ?: 0;
+        $order->warehouse_id = $request->warehouse_id ?: null;
+        $order->offline_method_id = $request->offline_methods ?: null;
+        $order->transaction_id = $request->transaction_id ?: null;
+        $order->gateway = $request->gateway ?: null;
+        if ($request->hasFile('payment_slip')) {
+            $file = $request->file('payment_slip');
+            $newName = $file->hashName();
+            $file->move(storage_path('app/public/order-files'), $newName);
+            $order->file = $newName;
+            $order->file_original_name = $file->getClientOriginalName();
+        }
         $order->save();
 
         if ($order->show_shipping_address == 'yes') {
@@ -295,6 +316,10 @@ class OrderController extends AccountBaseController
         $this->categories = ProductCategory::all();
         $this->clients = User::allClients();
         $this->companyAddresses = CompanyAddress::all();
+        $this->warehouses = \App\Models\Warehouse::all();
+        $this->offlineMethods = \App\Models\OfflinePaymentMethod::activeMethod();
+        $this->paymentGateway = \App\Models\PaymentGatewayCredentials::first();
+        $this->companyCurrency = Currency::where('id', company()->currency_id)->first();
 
         if (request()->ajax()) {
             $html = view('orders.ajax.edit', $this->data)->render();
@@ -353,6 +378,7 @@ class OrderController extends AccountBaseController
             return Reply::error(__('messages.invalidRequest'));
         }
 
+        $order->project_id = $request->project_id ?: null;
         $order->sub_total = round($request->sub_total, 2);
         $order->total = round($request->total, 2);
         $order->note = trim_editor($request->note);
@@ -360,8 +386,31 @@ class OrderController extends AccountBaseController
         $order->discount = is_null($request->discount_value) ? 0 : $request->discount_value;
         $order->discount_type = $request->discount_type;
         $order->status = $request->has('status') ? $request->status : $order->status;
+        $orderDate = $request->order_date ? \Carbon\Carbon::createFromFormat(company()->date_format, $request->order_date)->format('Y-m-d') : $order->order_date;
+        $dueDate = $request->due_date ? \Carbon\Carbon::createFromFormat(company()->date_format, $request->due_date)->format('Y-m-d') : null;
+        $order->order_date = $orderDate;
+        $order->due_date = $dueDate;
         $order->company_address_id = $request->company_address_id ?: null;
-        $order->custom_order_number = $order->order_number;
+        $order->sale_type = $request->sale_type ?: 0;
+        $order->warehouse_id = $request->warehouse_id ?: null;
+        $order->offline_method_id = $request->offline_methods ?: null;
+        $order->transaction_id = $request->transaction_id ?: null;
+        $order->gateway = $request->gateway ?: null;
+        if ($request->hasFile('payment_slip')) {
+            if ($order->file != null) {
+                @unlink(storage_path('app/public/order-files') . '/' . $order->file);
+            }
+            $file = $request->file('payment_slip');
+            $newName = $file->hashName();
+            $file->move(storage_path('app/public/order-files'), $newName);
+            $order->file = $newName;
+            $order->file_original_name = $file->getClientOriginalName();
+        }
+
+        if (in_array('admin', user_roles()) || user()->permission('edit_order') == 'all') {
+            $order->remarks = $request->remarks ?: null;
+        }
+
         $order->save();
 
         // delete old data
@@ -678,6 +727,9 @@ class OrderController extends AccountBaseController
 
     public function changeStatus(Request $request)
     {
+        $editPermission = user()->permission('edit_order');
+        abort_403(!(in_array('admin', user_roles()) || $editPermission == 'all'));
+
         $order = Order::findOrFail($request->orderId);
 
         if ($request->status == 'completed') {
@@ -900,7 +952,8 @@ class OrderController extends AccountBaseController
     public function domPdfObjectForDownload($id)
     {
         $this->invoiceSetting = invoice_setting();
-        $this->order = Order::with('client', 'unit')->findOrFail($id);
+        $this->order = Order::with('client', 'unit', 'clientdetails')->findOrFail($id);
+        $this->client = $this->order->client;
         App::setLocale($this->invoiceSetting->locale);
         Carbon::setLocale($this->invoiceSetting->locale);
         // Ensure the PDF view template exists, fallback to a default if not

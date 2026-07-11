@@ -110,6 +110,21 @@ class InvoiceSetting extends BaseModel
 
     public function getLogoUrlAttribute()
     {
+        $logo = $this->logo;
+        if (is_null($logo)) {
+            $logoPath = public_path('img/worksuite-logo.png');
+        } else {
+            $logoPath = public_path('user-uploads/app-logo/' . $logo);
+        }
+
+        if (file_exists($logoPath) && is_file($logoPath)) {
+            $type = pathinfo($logoPath, PATHINFO_EXTENSION);
+            $data = @file_get_contents($logoPath);
+            if ($data !== false) {
+                return 'data:image/' . $type . ';base64,' . base64_encode($data);
+            }
+        }
+
         return (is_null($this->logo)) ? $this->company->logo_url : asset_url_local_s3('app-logo/' . $this->logo);
     }
 

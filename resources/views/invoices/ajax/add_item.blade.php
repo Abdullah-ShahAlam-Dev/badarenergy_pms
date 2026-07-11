@@ -70,14 +70,7 @@
                         <textarea class="form-control f-14 border-0 w-100 desktop-description" name="item_summary[]"
                             placeholder="@lang('placeholders.invoices.description')">{{ strip_tags($items->description) }}</textarea>
 
-                        @if ($items->is_serialized)
-                            <div class="mt-2 border-top pt-2">
-                                <label class="f-12 text-dark-grey font-weight-bold">Serial Numbers (One per line) <span class="text-danger">*</span></label>
-                                <textarea class="form-control f-12 p-2 border" name="serial_numbers[]" placeholder="Scan or type serial numbers here (one per line)" rows="3"></textarea>
-                            </div>
-                        @else
-                            <input type="hidden" name="serial_numbers[]" value="">
-                        @endif
+                        <input type="hidden" name="serial_numbers[]" value="">
                     </td>
 
                     <td class="border-left-0">

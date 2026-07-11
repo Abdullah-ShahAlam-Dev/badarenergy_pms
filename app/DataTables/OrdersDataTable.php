@@ -110,48 +110,19 @@ class OrdersDataTable extends BaseDataTable
             })
             ->editColumn('status', function ($row) {
 
-                if ((in_array('admin', user_roles()) || in_array('employee', user_roles())) && ($this->editOrderPermission == 'all' || ($this->editOrderPermission == 'both' && ($row->added_by == user()->id || $row->client_id == user()->id)) || ($this->editOrderPermission == 'added' && $row->added_by == user()->id) || ($this->editOrderPermission == 'owned' && $row->client_id == user()->id))) {
-                    $status = '<select class="form-control select-picker order-status" data-order-id="' . $row->id . '" ' . (in_array($row->status, ['refunded', 'canceled']) ? 'disabled' : '') . '>';
-
-                    if (in_array($row->status, ['pending', 'failed', 'on-hold', 'processing'])) {
-                        $status .= '<option value="pending" ' . ($row->status == 'pending' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-warning\'></i> ' . __('app.pending') . '">' . __('app.pending') . '</option>';
-                    }
-
-                    if (in_array($row->status, ['on-hold', 'pending', 'processing', 'failed'])) {
-                        $status .= '<option value="on-hold" ' . ($row->status == 'on-hold' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-info\'></i> ' . __('app.on-hold') . '">' . __('app.on-hold') . '</option>';
-                    }
-
-                    if (in_array($row->status, ['failed', 'pending',])) {
-                        $status .= '<option value="failed" ' . ($row->status == 'failed' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-dark\'></i> ' . __('app.failed') . '">' . __('app.failed') . '</option>';
-                    }
-
-                    if (in_array($row->status, ['processing', 'pending', 'on-hold', 'failed'])) {
-                        $status .= '<option value="processing" ' . ($row->status == 'processing' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-primary\'></i> ' . __('app.processing') . '">' . __('app.processing') . '</option>';
-                    }
-
-                    if (in_array($row->status, ['completed', 'pending', 'on-hold', 'failed', 'processing'])) {
-                        $status .= '<option value="completed" ' . ($row->status == 'completed' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-success\'></i> ' . __('app.completed') . '">' . __('app.completed') . '</option>';
-                    }
-
-                    if (in_array($row->status, ['canceled', 'on-hold', 'pending', 'failed', 'processing'])) {
-                        $status .= '<option value="canceled" ' . ($row->status == 'canceled' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-red\'></i> ' . __('app.canceled') . '">' . __('app.canceled') . '</option>';
-                    }
-
-                    if (in_array($row->status, ['refunded', 'completed'])) {
-                        $status .= '<option value="refunded" ' . ($row->status == 'refunded' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 \'></i> ' . __('app.refunded') . '">' . __('app.refunded') . '</option>';
-                    }
-
+                if (in_array('admin', user_roles()) || user()->permission('edit_order') == 'all') {
+                    $status = '<select class="form-control select-picker order-status" data-order-id="' . $row->id . '" ' . ($row->status == 'canceled' ? 'disabled' : '') . '>';
+                    $status .= '<option value="pending" ' . ($row->status == 'pending' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-warning\'></i> Pending">Pending</option>';
+                    $status .= '<option value="completed" ' . ($row->status == 'completed' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-success\'></i> Approved">Approved</option>';
+                    $status .= '<option value="canceled" ' . ($row->status == 'canceled' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-red\'></i> Rejected">Rejected</option>';
                     $status .= '</select>';
                 }
                 else {
                     $status = match ($row->status) {
-                        'pending' => ' <i class="fa fa-circle mr-1 text-warning f-10"></i>' . __('app.' . $row->status),
-                        'on-hold' => ' <i class="fa fa-circle mr-1 text-info f-10"></i>' . __('app.' . $row->status),
-                        'failed' => ' <i class="fa fa-circle mr-1 text-dark f-10"></i>' . __('app.' . $row->status),
-                        'processing' => ' <i class="fa fa-circle mr-1 text-primary f-10"></i>' . __('app.' . $row->status),
-                        'completed' => ' <i class="fa fa-circle mr-1 text-success f-10"></i>' . __('app.' . $row->status),
-                        'canceled' => ' <i class="fa fa-circle mr-1 text-red f-10"></i>' . __('app.' . $row->status),
-                        default => ' <i class="fa fa-circle mr-1 f-10"></i>' . __('app.' . $row->status),
+                        'pending' => ' <i class="fa fa-circle mr-1 text-warning f-10"></i> Pending',
+                        'completed' => ' <i class="fa fa-circle mr-1 text-success f-10"></i> Approved',
+                        'canceled' => ' <i class="fa fa-circle mr-1 text-red f-10"></i> Rejected',
+                        default => ' <i class="fa fa-circle mr-1 text-muted f-10"></i> ' . ucfirst($row->status),
                     };
                 }
 

@@ -107,6 +107,14 @@ class InvoiceController extends AccountBaseController
             $this->client = $this->estimate->lead->client;
         }
 
+        if (request('order') != '') {
+            $this->orderId = request('order');
+            $this->type = 'order';
+            $this->order = Order::with('items', 'client', 'client.clientDetails', 'client.projects')->findOrFail($this->orderId);
+            $this->client = $this->order->client;
+            $this->project = $this->order->project;
+        }
+
         $this->currencies = Currency::all();
         $this->categories = ProductCategory::all();
         $this->lastInvoice = Invoice::lastInvoiceNumber() + 1;
@@ -222,41 +230,6 @@ class InvoiceController extends AccountBaseController
         $warehouseId = $request->warehouse_id;
         $products = $request->product_id;
         $quantities = $request->quantity;
-        $serialNumbersArr = $request->serial_numbers ?? [];
-
-        if (!empty($products)) {
-            foreach ($products as $key => $productId) {
-                if (is_null($productId) || $productId === '') {
-                    continue;
-                }
-                $product = Product::findOrFail($productId);
-                if ($product->is_serialized) {
-                    $rawSerials = $serialNumbersArr[$key] ?? '';
-                    $serials = array_filter(array_map('trim', explode("\n", str_replace("\r", "", $rawSerials))));
-                    $qty = (int)($quantities[$key] ?? 0);
-                    
-                    if (count($serials) !== $qty) {
-                        return Reply::error("The number of scanned serial numbers (" . count($serials) . ") must match the quantity ({$qty}) for product '{$product->name}'.");
-                    }
-                    
-                    foreach ($serials as $sn) {
-                        $serialRecord = \App\Models\ProductSerial::where('serial_number', $sn)
-                            ->where('product_id', $productId)
-                            ->first();
-                        
-                        if (!$serialRecord) {
-                            return Reply::error("Serial number '{$sn}' does not exist for product '{$product->name}'.");
-                        }
-                        
-                        $isValid = ($serialRecord->status === \App\Models\ProductSerial::STATUS_AVAILABLE && $serialRecord->warehouse_id == $warehouseId);
-                        
-                        if (!$isValid) {
-                            return Reply::error("Serial number '{$sn}' is not available in the selected warehouse.");
-                        }
-                    }
-                }
-            }
-        }
 
         // Credit Validation check (skip if payment_status is '1' - Paid)
         if ($request->client_id && $request->payment_status != '1') {
@@ -302,7 +275,49 @@ class InvoiceController extends AccountBaseController
         $invoice->estimate_id = $request->estimate_id ? $request->estimate_id : null;
         $invoice->bank_account_id = $request->bank_account_id;
         $invoice->payment_status = $request->payment_status == null ? '0' : $request->payment_status;
+        if ($request->order_id) {
+            $invoice->order_id = $request->order_id;
+        }
         $invoice->save();
+
+        if ($request->order_id) {
+            $order = Order::findOrFail($request->order_id);
+            $order->status = 'completed';
+            $order->save();
+
+            // Automatically record payment if it was a Cash Sale
+            if ($order->sale_type == 1) {
+                $payment = new \App\Models\Payment();
+                $payment->invoice_id = $invoice->id;
+                $payment->company_id = $invoice->company_id;
+                $payment->currency_id = $invoice->currency_id;
+                $payment->default_currency_id = company()->currency_id;
+                $payment->exchange_rate = $invoice->exchange_rate;
+                $payment->amount = $invoice->total;
+                $payment->gateway = $order->gateway ?: 'Offline';
+                $payment->offline_method_id = $order->offline_method_id;
+                $payment->transaction_id = $order->transaction_id;
+                $payment->paid_on = now();
+                $payment->status = 'complete';
+                $payment->bank_account_id = $invoice->bank_account_id;
+
+                if ($order->file) {
+                    $payment->file = $order->file;
+                    $payment->file_original_name = $order->file_original_name;
+                    $source = storage_path('app/public/order-files/' . $order->file);
+                    $dest = storage_path('app/public/invoice-files/' . $order->file);
+                    if (file_exists($source)) {
+                        @copy($source, $dest);
+                        $invoice->file = $order->file;
+                        $invoice->file_original_name = $order->file_original_name;
+                    }
+                }
+                $payment->save();
+
+                $invoice->status = 'paid';
+                $invoice->save();
+            }
+        }
 
         // To add custom fields data
         if ($request->custom_fields_data) {
@@ -754,42 +769,6 @@ class InvoiceController extends AccountBaseController
         $warehouseId = $request->warehouse_id;
         $products = $request->product_id;
         $quantities = $request->quantity;
-        $serialNumbersArr = $request->serial_numbers ?? [];
-
-        if (!empty($products)) {
-            foreach ($products as $key => $productId) {
-                if (is_null($productId) || $productId === '') {
-                    continue;
-                }
-                $product = Product::findOrFail($productId);
-                if ($product->is_serialized) {
-                    $rawSerials = $serialNumbersArr[$key] ?? '';
-                    $serials = array_filter(array_map('trim', explode("\n", str_replace("\r", "", $rawSerials))));
-                    $qty = (int)($quantities[$key] ?? 0);
-                    
-                    if (count($serials) !== $qty) {
-                        return Reply::error("The number of scanned serial numbers (" . count($serials) . ") must match the quantity ({$qty}) for product '{$product->name}'.");
-                    }
-                    
-                    foreach ($serials as $sn) {
-                        $serialRecord = \App\Models\ProductSerial::where('serial_number', $sn)
-                            ->where('product_id', $productId)
-                            ->first();
-                        
-                        if (!$serialRecord) {
-                            return Reply::error("Serial number '{$sn}' does not exist for product '{$product->name}'.");
-                        }
-                        
-                        $isValid = ($serialRecord->status === \App\Models\ProductSerial::STATUS_AVAILABLE && $serialRecord->warehouse_id == $warehouseId)
-                            || ($serialRecord->status === \App\Models\ProductSerial::STATUS_SOLD && $serialRecord->invoice_id == $id);
-                        
-                        if (!$isValid) {
-                            return Reply::error("Serial number '{$sn}' is not available in the selected warehouse.");
-                        }
-                    }
-                }
-            }
-        }
 
         // Credit Validation check (skip if payment_status is '1' - Paid)
         if ($request->client_id && $request->payment_status != '1') {

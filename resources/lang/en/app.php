@@ -147,7 +147,7 @@ return array (
         'customFields' => 'Custom Fields',
         'Events' => 'Events',
         'products' => 'Products',
-        'orders' => 'Orders',
+        'orders' => 'Sales Orders',
         'inventory' => 'Inventory',
         'ledgers' => 'Ledgers',
         'stockMovements' => 'Stock Movements',

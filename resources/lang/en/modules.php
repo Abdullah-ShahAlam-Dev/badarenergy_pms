@@ -1642,7 +1642,7 @@ return array (
     ),
     'timelogAlreadyExist' => 'Time-log already exist for this user.',
     'module' => array (
-        'clients' => 'Clients',
+        'clients' => 'Dealers',
         'employees' => 'Employees',
         'projects' => 'Projects',
         'proposals' => 'Proposals',
@@ -1676,7 +1676,7 @@ return array (
         'reports' => 'Reports',
         'settings' => 'Settings',
         'dashboards' => 'Dashboards',
-        'orders' => 'Orders',
+        'orders' => 'Sales Orders',
         'sms' => 'SMS',
         'knowledgebase' => 'Knowledge Base',
         'addknowledgebaseCategory' => 'Manage Article Category',

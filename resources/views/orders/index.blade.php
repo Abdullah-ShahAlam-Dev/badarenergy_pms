@@ -67,20 +67,9 @@
                         <select class="form-control select-picker" name="status" id="status" data-live-search="true"
                             data-size="8">
                             <option value="all" data-content="@lang('app.all')">@lang('app.all')</option>
-
-                            <option value="pending" {{ request('status') == 'pending' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-yellow'></i> @lang('app.pending') ">@lang('app.pending')</option>
-
-                            <option value="on-hold" {{ request('status') == 'on-hold' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-info'></i> @lang('app.on-hold') ">@lang('app.on-hold')</option>
-
-                            <option value="failed" {{ request('status') == 'failed' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-muted'></i> @lang('app.failed') ">@lang('app.failed')</option>
-
-                            <option value="processing" {{ request('status') == 'processing' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-blue'></i> @lang('app.processing') ">@lang('app.processing')</option>
-
-                            <option value="completed" {{ request('status') == 'completed' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-dark-green'></i> @lang('app.completed') ">@lang('app.completed')</option>
-
-                            <option value="canceled" {{ request('status') == 'canceled' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-red'></i> @lang('app.canceled') ">@lang('app.canceled')</option>
-
-                            <option value="refunded" {{ request('status') == 'refunded' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2'></i> @lang('app.refunded') ">@lang('app.refunded')</option>
+                            <option value="pending" {{ request('status') == 'pending' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-warning'></i> Pending">Pending</option>
+                            <option value="completed" {{ request('status') == 'completed' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-success'></i> Approved">Approved</option>
+                            <option value="canceled" {{ request('status') == 'canceled' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-danger'></i> Rejected">Rejected</option>
                         </select>
                     </div>
                 </div>

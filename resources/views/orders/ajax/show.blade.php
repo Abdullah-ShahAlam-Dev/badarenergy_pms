@@ -338,6 +338,21 @@ $deleteOrderPermission = user()->permission('delete_order');
                         </table>
                     </td>
                 </tr>
+                @if ($order->remarks)
+                <tr>
+                    <td height="20"></td>
+                </tr>
+                <tr>
+                    <td>
+                        <table>
+                            <tr>HOD Remarks / Admin Note</tr>
+                            <tr>
+                                <p class="text-dark-grey">{!! nl2br(e($order->remarks)) !!}</p>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                @endif
             </table>
         </div>
     </div>

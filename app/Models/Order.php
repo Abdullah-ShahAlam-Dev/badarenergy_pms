@@ -87,6 +87,21 @@ class Order extends BaseModel
         return $this->belongsTo(User::class, 'client_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class, 'warehouse_id');
+    }
+
+    public function offlineMethod(): BelongsTo
+    {
+        return $this->belongsTo(OfflinePaymentMethod::class, 'offline_method_id');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class, 'project_id');
+    }
+
     public function clientdetails(): BelongsTo
     {
         return $this->belongsTo(ClientDetails::class, 'client_id', 'user_id');

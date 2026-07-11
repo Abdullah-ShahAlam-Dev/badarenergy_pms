@@ -93,71 +93,7 @@ class InvoiceInventoryService
                     $inventory->quantity = $newQty;
                     $inventory->save();
 
-                    // If serialized, validate serial numbers and mark them as sold
-                    if ($product->is_serialized) {
-                        if (empty($serials)) {
-                            throw new \Exception("At least one serial number is required for the serialized product '{$product->name}'.");
-                        }
 
-                        $snCount = count($serials);
-                        if ($snCount !== (int)$quantity) {
-                            throw new \Exception("The number of scanned serial numbers ({$snCount}) does not match the quantity (" . (int)$quantity . ") for product '{$product->name}'.");
-                        }
-
-                        // Fetch and lock serials for update
-                        $foundSerials = ProductSerial::whereIn('serial_number', $serials)
-                            ->where('product_id', $productId)
-                            ->lockForUpdate()
-                            ->get();
-
-                        // Check existence
-                        $foundNumbers = $foundSerials->pluck('serial_number')->toArray();
-                        $notFoundNumbers = array_diff($serials, $foundNumbers);
-                        if (!empty($notFoundNumbers)) {
-                            throw new \Exception("The following serial numbers do not exist in the system for product '{$product->name}': " . implode(', ', $notFoundNumbers));
-                        }
-
-                        // Check warehouse match
-                        $wrongWarehouseSerials = $foundSerials->filter(function ($item) use ($warehouseId) {
-                            return $item->warehouse_id != $warehouseId;
-                        });
-                        if ($wrongWarehouseSerials->isNotEmpty()) {
-                            $wrongNumbers = $wrongWarehouseSerials->pluck('serial_number')->toArray();
-                            throw new \Exception("The following serial numbers do not belong to the selected warehouse for product '{$product->name}': " . implode(', ', $wrongNumbers));
-                        }
-
-                        // Check status availability (prevent duplicate sale)
-                        $unavailableSerials = $foundSerials->filter(function ($item) {
-                            return $item->status !== SerialStatus::AVAILABLE->value;
-                        });
-                        if ($unavailableSerials->isNotEmpty()) {
-                            $wrongNumbers = $unavailableSerials->pluck('serial_number')->toArray();
-                            throw new \Exception("The following serial numbers are already sold or unavailable for product '{$product->name}': " . implode(', ', $wrongNumbers));
-                        }
-
-                        // Update serials status to sold and record serial transactions
-                        foreach ($foundSerials as $serial) {
-                            $previousStatus = $serial->status;
-                            $serial->update([
-                                'status' => SerialStatus::SOLD->value,
-                                'invoice_id' => $invoice->id,
-                                'warranty_expires_at' => now()->addYear(),
-                            ]);
-
-                            SerialTransaction::create([
-                                'product_serial_id' => $serial->id,
-                                'serial_number' => $serial->serial_number,
-                                'event_type' => 'sale',
-                                'source_document_type' => 'invoice',
-                                'source_document_id' => $invoice->id,
-                                'warehouse_id' => $warehouseId,
-                                'user_id' => auth()->id(),
-                                'previous_status' => $previousStatus,
-                                'new_status' => SerialStatus::SOLD->value,
-                                'remarks' => "Sold via Invoice #{$invoice->invoice_number}",
-                            ]);
-                        }
-                    }
 
                     // Record stock movement (out)
                     $movement = new StockMovement();

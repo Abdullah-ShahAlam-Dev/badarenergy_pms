@@ -49,9 +49,9 @@
                         <input type="hidden" name="unit_id[]" value="{{ $item->unit_id }}">
                     </td>
                     <td class="border-bottom-0">
-                        <input type="number" min="1"
-                            class="f-14 border-0 w-100 text-right cost_per_item bg-additional-grey" placeholder="0.00"
-                            value="{{ $item->price }}" name="cost_per_item[]" readonly>
+                        <input type="number" min="0" step="0.01"
+                            class="f-14 border-0 w-100 text-right cost_per_item" placeholder="0.00"
+                            value="{{ $item->price }}" name="cost_per_item[]">
                     </td>
                     <td class="border-bottom-0">
                         <input class="form-control height-35 f-14 border-0 w-100 text-right bg-additional-grey"

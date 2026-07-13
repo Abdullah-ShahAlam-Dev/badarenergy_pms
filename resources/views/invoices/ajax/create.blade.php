@@ -11,6 +11,64 @@ $addProductPermission = user()->permission('add_product');
 @else
 
 <!-- CREATE INVOICE START -->
+@if (isset($order))
+    <style>
+        /* Hide remove-item cross buttons, add-item buttons, category search, and other add-product controls */
+        #saveInvoiceForm .remove-item,
+        #saveInvoiceForm #add-item,
+        #saveInvoiceForm .toggle-product-category,
+        #saveInvoiceForm .openRightModal,
+        #saveInvoiceForm .input-group-append {
+            display: none !important;
+        }
+
+        /* 1. Make all inputs, selects, textareas, and buttons read-only and unclickable by default */
+        #saveInvoiceForm input,
+        #saveInvoiceForm select,
+        #saveInvoiceForm textarea:not(#note),
+        #saveInvoiceForm button,
+        #saveInvoiceForm a {
+            pointer-events: none !important;
+            opacity: 0.95;
+        }
+
+        /* Apply gray read-only background ONLY to inputs and textareas (not buttons) */
+        #saveInvoiceForm input,
+        #saveInvoiceForm textarea:not(#note) {
+            background-color: #f8f9fa !important;
+        }
+
+        /* 2. EXCEPT for the Warehouse select button and warehouse dropdown elements! */
+        #saveInvoiceForm #warehouse_id,
+        #saveInvoiceForm select[name="warehouse_id"],
+        #saveInvoiceForm button[data-id="warehouse_id"],
+        #saveInvoiceForm .bootstrap-select:has(button[data-id="warehouse_id"]),
+        #saveInvoiceForm .bootstrap-select:has(button[data-id="warehouse_id"]) * {
+            pointer-events: auto !important;
+            background-color: #fff !important;
+            opacity: 1 !important;
+        }
+
+        /* 3. EXCEPT for the form actions (Save, Cancel, Draft buttons) in the footer! */
+        #saveInvoiceForm .form-actions,
+        #saveInvoiceForm .form-actions *,
+        #saveInvoiceForm .c-inv-btns,
+        #saveInvoiceForm .c-inv-btns *,
+        #saveInvoiceForm .inv-action,
+        #saveInvoiceForm .inv-action *,
+        #saveInvoiceForm .save-form,
+        #saveInvoiceForm .save-form * {
+            pointer-events: auto !important;
+        }
+
+        /* 4. EXCEPT for the Note field (recipient note) */
+        #saveInvoiceForm #note {
+            pointer-events: auto !important;
+            background-color: #fff !important;
+            opacity: 1 !important;
+        }
+    </style>
+@endif
 <div class="bg-white rounded b-shadow-4 create-inv">
 
 
@@ -856,16 +914,16 @@ $addProductPermission = user()->permission('add_product');
                                                             <input type="number" min="0" name="discount_value"
                                                                 class="form-control f-14 border-0 w-100 text-right discount_value"
                                                                 placeholder="0"
-                                                                value="{{ isset($invoice) ? $invoice->discount : '0' }}">
+                                                                value="{{ isset($invoice) ? $invoice->discount : (isset($order) ? $order->discount : '0') }}">
                                                         </td>
                                                         <td width="30%" align="left" class="c-inv-sub-padding">
                                                             <div
                                                                 class="select-others select-tax height-35 rounded border-0">
                                                                 <select class="form-control select-picker"
                                                                     id="discount_type" name="discount_type">
-                                                                    <option @if (isset($invoice) && $invoice->discount_type == 'percent') selected @endif value="percent">%
+                                                                    <option @if ((isset($invoice) && $invoice->discount_type == 'percent') || (isset($order) && $order->discount_type == 'percent')) selected @endif value="percent">%
                                                                     </option>
-                                                                    <option @if (isset($invoice) && $invoice->discount_type == 'fixed') selected @endif value="fixed">
+                                                                    <option @if ((isset($invoice) && $invoice->discount_type == 'fixed') || (isset($order) && $order->discount_type == 'fixed')) selected @endif value="fixed">
                                                                         @lang('modules.invoices.amount')</option>
                                                                 </select>
                                                             </div>
@@ -931,46 +989,46 @@ $addProductPermission = user()->permission('add_product');
         </div>
         <!-- UPLOAD MULTIPLE FILES END -->
 
-        <div class="d-flex px-lg-4 px-md-4 px-3 py-2 bg-light-grey">
+        <div class="d-flex flex-wrap px-lg-4 px-md-4 px-3 py-2 bg-light-grey">
             <div class="col-md-3">
                 <x-forms.select fieldId="sale_type" fieldLabel="Sale Type" fieldName="sale_type" search="false" fieldRequired="true">
-                    <option value="0">Credit Sale (Unpaid)</option>
-                    <option value="1">Cash Sale (Paid)</option>
+                    <option value="0" {{ isset($order) && $order->sale_type == 0 ? 'selected' : '' }}>Credit Sale (Unpaid)</option>
+                    <option value="1" {{ isset($order) && $order->sale_type == 1 ? 'selected' : '' }}>Cash Sale (Paid)</option>
                 </x-forms.select>
-                <input type="hidden" name="payment_status" id="payment_status" value="0">
+                <input type="hidden" name="payment_status" id="payment_status" value="{{ isset($order) ? $order->sale_type : '0' }}">
             </div>
 
             <div class="col-md-3 payment-types d-none">
                 <x-forms.select fieldId="payment_gateway_id" :fieldLabel="__('modules.payments.paymentGateway')" fieldName="gateway"
                 search="true" fieldRequired="true">
                     <option value="">--</option>
-                    <option value="Offline"  id="offline_method" >{{ __('modules.offlinePayment.offlinePayment') }}</option>
+                    <option value="Offline" id="offline_method" {{ isset($order) && $order->gateway == 'Offline' ? 'selected' : '' }}>{{ __('modules.offlinePayment.offlinePayment') }}</option>
                     @if ($paymentGateway->paypal_status == 'active')
-                        <option value="paypal">{{ __('app.paypal') }}</option>
+                        <option value="paypal" {{ isset($order) && $order->gateway == 'paypal' ? 'selected' : '' }}>{{ __('app.paypal') }}</option>
                     @endif
                     @if ($paymentGateway->stripe_status == 'active')
-                        <option value="stripe">{{ __('app.stripe') }}</option>
+                        <option value="stripe" {{ isset($order) && $order->gateway == 'stripe' ? 'selected' : '' }}>{{ __('app.stripe') }}</option>
                     @endif
                     @if ($paymentGateway->razorpay_status == 'active')
-                        <option value="razorpay">{{ __('app.razorpay') }}</option>
+                        <option value="razorpay" {{ isset($order) && $order->gateway == 'razorpay' ? 'selected' : '' }}>{{ __('app.razorpay') }}</option>
                     @endif
                     @if ($paymentGateway->paystack_status == 'active')
-                        <option value="paystack">{{ __('app.paystack') }}</option>
+                        <option value="paystack" {{ isset($order) && $order->gateway == 'paystack' ? 'selected' : '' }}>{{ __('app.paystack') }}</option>
                     @endif
                     @if ($paymentGateway->mollie_status == 'active')
-                        <option value="mollie">{{ __('app.mollie') }}</option>
+                        <option value="mollie" {{ isset($order) && $order->gateway == 'mollie' ? 'selected' : '' }}>{{ __('app.mollie') }}</option>
                     @endif
                     @if ($paymentGateway->payfast_status == 'active')
-                        <option value="payfast">{{ __('app.payfast') }}</option>
+                        <option value="payfast" {{ isset($order) && $order->gateway == 'payfast' ? 'selected' : '' }}>{{ __('app.payfast') }}</option>
                     @endif
                     @if ($paymentGateway->authorize_status == 'active')
-                        <option value="authorize">{{ __('app.authorize') }}</option>
+                        <option value="authorize" {{ isset($order) && $order->gateway == 'authorize' ? 'selected' : '' }}>{{ __('app.authorize') }}</option>
                     @endif
                     @if ($paymentGateway->square_status == 'active')
-                        <option value="square">{{ __('app.square') }}</option>
+                        <option value="square" {{ isset($order) && $order->gateway == 'square' ? 'selected' : '' }}>{{ __('app.square') }}</option>
                     @endif
                     @if ($paymentGateway->flutterwave_status == 'active')
-                        <option value="flutterwave">{{ __('app.flutterwave') }}</option>
+                        <option value="flutterwave" {{ isset($order) && $order->gateway == 'flutterwave' ? 'selected' : '' }}>{{ __('app.flutterwave') }}</option>
                     @endif
                 </x-forms.select>
             </div>
@@ -983,8 +1041,21 @@ $addProductPermission = user()->permission('add_product');
 
             <div class="col-md-3 payment-types d-none">
                 <x-forms.text fieldId="transaction_id" :fieldLabel="__('modules.payments.transactionId')"
-                    fieldName="transaction_id" :fieldPlaceholder="__('placeholders.payments.transactionId')" />
+                    fieldName="transaction_id" :fieldPlaceholder="__('placeholders.payments.transactionId')" :fieldValue="isset($order) ? $order->transaction_id : ''" />
             </div>
+
+            @if(isset($order) && $order->file)
+                <div class="col-md-3 payment-types d-none" id="order_payment_slip">
+                    <div class="form-group my-3">
+                        <x-forms.label fieldId="order_slip_btn" fieldLabel="Order Payment Slip" />
+                        <div class="mt-2">
+                            <a href="{{ asset_url('order-files/' . $order->file) }}" target="_blank" class="btn btn-secondary btn-sm rounded" style="pointer-events: auto !important;">
+                                <i class="fa fa-paperclip mr-1"></i> View Slip
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <!-- CANCEL SAVE SEND START -->
@@ -1375,7 +1446,7 @@ $addProductPermission = user()->permission('add_product');
         });
 
         // ── Save form ─────────────────────────────────────────────────────
-        $body.on('click' + namespace, '.save-form', function() {
+        $body.off('click' + namespace, '.save-form').on('click' + namespace, '.save-form', function() {
             var type = $(this).data('type');
 
             if (KTUtil.isMobileDevice()) {
@@ -1489,6 +1560,28 @@ $addProductPermission = user()->permission('add_product');
 
         if (defaultClient != "") { changeClient(defaultClient); }
 
+        @if (isset($order))
+            $('#saveInvoiceForm input, #saveInvoiceForm textarea, #saveInvoiceForm select:not(#warehouse_id), #saveInvoiceForm button:not([data-id="warehouse_id"], .save-form)').not('#note').attr('tabindex', '-1');
+            $('#saveInvoiceForm input, #saveInvoiceForm textarea').not('#note').attr('readonly', true);
+
+            @if ($order->sale_type == 1)
+                setTimeout(() => {
+                    // Show payment types container immediately
+                    $('.payment-types').removeClass('d-none');
+                    $('#payment_status').val('1');
+
+                    // Pre-fill payment gateway and trigger its handler to fetch offline methods
+                    $('#payment_gateway_id').val("{{ $order->gateway ?: 'Offline' }}").trigger('change').selectpicker('refresh');
+                    
+                    // Pre-fill transaction id
+                    $('#transaction_id').val("{{ $order->transaction_id }}");
+
+                    // Refresh sale_type selectpicker
+                    $('#sale_type').selectpicker('refresh');
+                }, 300);
+            @endif
+        @endif
+
         // ── Currency change ───────────────────────────────────────────────
         $body.on('change' + namespace, '#currency_id', function() {
             var curId = $(this).val();
@@ -1546,9 +1639,11 @@ $addProductPermission = user()->permission('add_product');
                             $('#add_offline').removeClass('d-none');
                             var options = [];
                             var rData = response.data;
+                            var selectedMethod = "{{ isset($order) ? $order->offline_method_id : '' }}";
                             $.each(rData, function(index, value) {
                                 if (value.status == 'yes') {
-                                    options.push('<option value="' + value.id + '">' + value.name + '</option>');
+                                    var selected = (selectedMethod == value.id) ? 'selected' : '';
+                                    options.push('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
                                 }
                             });
                             $('#add_offline_methods').html(options);

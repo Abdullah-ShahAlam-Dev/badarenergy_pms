@@ -32,6 +32,7 @@ class DeliveryOrder extends BaseModel
     protected $fillable = [
         'company_id',
         'source_type',
+        'source_id',
         'invoice_id',
         'transfer_id',
         'stock_issue_voucher_id',
@@ -46,9 +47,37 @@ class DeliveryOrder extends BaseModel
         'issue_date',
     ];
 
+    protected $appends = [
+        'delivery_order_number',
+    ];
+
+    public function getDeliveryOrderNumberAttribute()
+    {
+        $invoiceSettings = (company()) ? company()->invoiceSetting : $this->company->invoiceSetting;
+        
+        $zero = '';
+        if ($invoiceSettings && (strlen($this->id) < $invoiceSettings->delivery_order_digit)) {
+            $condition = $invoiceSettings->delivery_order_digit - strlen($this->id);
+            for ($i = 0; $i < $condition; $i++) {
+                $zero .= '0';
+            }
+        }
+        
+        if ($invoiceSettings) {
+            return $invoiceSettings->delivery_order_prefix . $invoiceSettings->delivery_order_number_separator . $zero . $this->id;
+        }
+        
+        return 'DO-' . $zero . $this->id;
+    }
+
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class, 'source_id');
     }
 
     public function stockTransfer(): BelongsTo

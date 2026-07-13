@@ -31,6 +31,7 @@
                         <th>DO ID</th>
                         <th>Invoice Ref</th>
                         <th>Customer</th>
+                        <th>Salesperson</th>
                         <th>Issue Date</th>
                         <th>Dispatcher</th>
                         <th>Status</th>
@@ -63,6 +64,7 @@
                     { data: 'id', name: 'id' },
                     { data: 'invoice_number', name: 'invoice_number' },
                     { data: 'client_name', name: 'client_name', orderable: false, searchable: false },
+                    { data: 'salesperson', name: 'salesperson', orderable: false, searchable: false },
                     { data: 'issue_date', name: 'issue_date' },
                     { data: 'dispatcher', name: 'dispatcher' },
                     { data: 'status', name: 'status' },

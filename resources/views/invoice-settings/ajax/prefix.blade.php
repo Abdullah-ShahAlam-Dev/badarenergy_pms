@@ -85,6 +85,27 @@
                 <x-forms.text class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="__('modules.invoiceSettings.orderLookLike')" fieldName="order_look_like"
                     fieldId="order_look_like" fieldValue="" fieldReadOnly="true" />
             </div>
+
+            <!-- Delivery Order prefix settings -->
+            <div class="col-lg-3 mt-3">
+                <x-forms.text class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="'Delivery Order Prefix'" :fieldPlaceholder="'DO'" fieldName="delivery_order_prefix"
+                    fieldRequired="true" fieldId="delivery_order_prefix" :fieldValue="$invoiceSetting->delivery_order_prefix" />
+            </div>
+
+            <div class="col-lg-3 mt-3">
+                <x-forms.text class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="'Delivery Order Number Separator'" :fieldPlaceholder="'-'"
+                    fieldName="delivery_order_number_separator" fieldId="delivery_order_number_separator" :fieldValue="$invoiceSetting->delivery_order_number_separator" />
+            </div>
+
+            <div class="col-lg-3 mt-3">
+                <x-forms.number class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="'Delivery Order Digit'" fieldName="delivery_order_digit"
+                    fieldId="delivery_order_digit" :fieldValue="$invoiceSetting->delivery_order_digit" minValue="2" />
+            </div>
+
+            <div class="col-lg-3 mt-3">
+                <x-forms.text class="mr-0 mr-lg-2 mr-md-2" :fieldLabel="'Delivery Order Look Like'" fieldName="delivery_order_look_like"
+                    fieldId="delivery_order_look_like" fieldValue="" fieldReadOnly="true" />
+            </div>
         @endif
     </div>
 </div>
@@ -114,7 +135,7 @@
         })
     });
 
-    $('#invoice_prefix, #invoice_number_separator, #invoice_digit, #estimate_prefix,#estimate_number_separator, #estimate_digit, #credit_note_prefix, #credit_note_number_separator, #credit_note_digit, #order_prefix, #order_number_separator, #order_digit').on('keyup', function() {
+    $('#invoice_prefix, #invoice_number_separator, #invoice_digit, #estimate_prefix,#estimate_number_separator, #estimate_digit, #credit_note_prefix, #credit_note_number_separator, #credit_note_digit, #order_prefix, #order_number_separator, #order_digit, #delivery_order_prefix, #delivery_order_number_separator, #delivery_order_digit').on('keyup', function() {
         genrateInvoiceNumber();
     });
 
@@ -142,6 +163,17 @@
         orderZero = orderZero + '1';
         var order_no = orderPrefix + orderNumberSeparator + orderZero;
         $('#order_look_like').val(order_no);
+
+        var deliveryOrderPrefix = $('#delivery_order_prefix').val();
+        var deliveryOrderNumberSeparator = $('#delivery_order_number_separator').val();
+        var deliveryOrderDigit = $('#delivery_order_digit').val();
+        var deliveryOrderZero = '';
+        for ($i = 0; $i < deliveryOrderDigit - 1; $i++) {
+            deliveryOrderZero = deliveryOrderZero + '0';
+        }
+        deliveryOrderZero = deliveryOrderZero + '1';
+        var deliveryOrder_no = deliveryOrderPrefix + deliveryOrderNumberSeparator + deliveryOrderZero;
+        $('#delivery_order_look_like').val(deliveryOrder_no);
 
         var estimatePrefix = $('#estimate_prefix').val();
         var estimateNumberSeparator = $('#estimate_number_separator').val();

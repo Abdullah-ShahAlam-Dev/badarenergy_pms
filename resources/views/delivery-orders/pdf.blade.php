@@ -1,198 +1,329 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <title>Delivery Order #DO-{{ $deliveryOrder->id }}</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Delivery Order - {{ $deliveryOrder->delivery_order_number }}</title>
+    @includeIf('invoices.pdf.invoice_pdf_css')
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="{{ global_setting()->favicon_url }}">
+    <meta name="theme-color" content="#ffffff">
+
     <style>
         body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            color: #333;
             margin: 0;
-            padding: 40px;
-            font-size: 14px;
-            line-height: 1.5;
+            font-size: 13px;
         }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 2px solid #3b82f6;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+
+        .bg-grey {
+            background-color: #F2F4F7;
         }
-        .logo-section h1 {
-            margin: 0;
-            color: #1e3a8a;
-            font-size: 28px;
+
+        .bg-white {
+            background-color: #fff;
+        }
+
+        .border-radius-25 {
+            border-radius: 0.25rem;
+        }
+
+        .p-25 {
+            padding: 1.25rem;
+        }
+
+        .f-11 {
+            font-size: 11px;
+        }
+
+        .f-13 {
+            font-size: 13px;
+        }
+
+        .f-14 {
+            font-size: 13px;
+        }
+
+        .f-15 {
+            font-size: 13px;
+        }
+
+        .f-21 {
+            font-size: 17px;
+        }
+
+        .text-black {
+            color: #28313c;
+        }
+
+        .text-grey {
+            color: #616e80;
+        }
+
+        .font-weight-700 {
             font-weight: 700;
         }
-        .logo-section p {
-            margin: 5px 0 0 0;
-            color: #6b7280;
+
+        .text-uppercase {
+            text-transform: uppercase;
         }
-        .do-details {
-            text-align: right;
+
+        .text-capitalize {
+            text-transform: capitalize;
         }
-        .do-details h2 {
-            margin: 0;
-            color: #1e3a8a;
-            font-size: 24px;
+
+        .line-height {
+            line-height: 20px;
         }
-        .do-details p {
-            margin: 5px 0 0 0;
+
+        .mt-1 {
+            margin-top: 1rem;
         }
-        .info-grid {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
-            gap: 20px;
+
+        .mb-0 {
+            margin-bottom: 0px;
         }
-        .info-box {
-            flex: 1;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-        }
-        .info-box h3 {
-            margin: 0 0 10px 0;
-            color: #1e3a8a;
-            font-size: 15px;
-            border-bottom: 1px solid #cbd5e1;
-            padding-bottom: 5px;
-        }
-        .info-box p {
-            margin: 4px 0;
-            color: #475569;
-        }
-        table {
-            width: 100%;
+
+        .b-collapse {
             border-collapse: collapse;
-            margin-bottom: 40px;
         }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
+
+        .heading-table-left {
+            padding: 6px;
+            border: 1px solid #DBDBDB;
+            font-weight: bold;
+            background-color: #f1f1f3;
+            border-right: 0;
         }
-        th {
-            background-color: #f1f5f9;
-            color: #1e3a8a;
-            font-weight: 600;
+
+        .heading-table-right {
+            padding: 6px;
+            border: 1px solid #DBDBDB;
+            border-left: 0;
         }
-        .serial-list {
-            font-family: monospace;
-            background: #f8fafc;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #0f172a;
-            display: inline-block;
-            margin-top: 5px;
-        }
-        .signatures {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 80px;
-            gap: 40px;
-        }
-        .sig-box {
-            flex: 1;
-            text-align: center;
-            border-top: 1px solid #cbd5e1;
-            padding-top: 10px;
-            color: #475569;
-        }
-        .no-print-btn {
-            background-color: #3b82f6;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
+
+        .unpaid {
+            color: #000000;
+            border: 1px solid #000000;
+            position: relative;
+            padding: 11px 22px;
             font-size: 14px;
-            font-weight: 600;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-bottom: 20px;
-            transition: background 0.2s;
+            border-radius: 0.25rem;
+            width: 120px;
+            text-align: center;
+            margin-top: 50px;
         }
-        .no-print-btn:hover {
-            background-color: #2563eb;
+
+        .main-table-heading {
+            border: 1px solid #DBDBDB;
+            background-color: #f1f1f3;
+            font-weight: 700;
         }
-        @media print {
-            .no-print-btn {
-                display: none !important;
-            }
-            body {
-                padding: 0;
-            }
+
+        .main-table-heading td, .main-table-heading th {
+            padding: 5px 8px;
+            border: 1px solid #DBDBDB;
         }
+
+        .main-table-items td {
+            padding: 5px 8px;
+            border: 1px solid #e7e9eb;
+        }
+
+        .centered {
+            margin: 0 auto;
+        }
+
+        .rightaligned {
+            margin-right: 0;
+            margin-left: auto;
+        }
+
+        .leftaligned {
+            margin-left: 0;
+            margin-right: auto;
+        }
+
+        .word-break {
+            max-width:175px;
+            word-wrap:break-word;
+        }
+
+        .border-left-0 {
+            border-left: 0 !important;
+        }
+
+        .border-right-0 {
+            border-right: 0 !important;
+        }
+
+        .border-top-0 {
+            border-top: 0 !important;
+        }
+
+        .border-bottom-0 {
+            border-bottom: 0 !important;
+        }
+
+        .signatures {
+            margin-top: 60px;
+            width: 100%;
+        }
+
+        .sig-box {
+            text-align: center;
+            vertical-align: bottom;
+            padding: 10px;
+        }
+
+        .sig-line {
+            border-top: 1px solid #28313c;
+            margin-top: 50px;
+            padding-top: 5px;
+            font-weight: bold;
+        }
+
     </style>
 </head>
-<body>
 
-    <button class="no-print-btn" onclick="window.print()">Print Delivery Order</button>
-
-    <div class="header">
-        <div class="logo-section">
-            @if(company()->logo)
-                <img src="{{ company()->logo_url }}" alt="Logo" style="max-height: 60px; max-width: 250px; margin-bottom: 10px;" />
-            @else
-                <h1>{{ company()->company_name }}</h1>
-            @endif
-            <p>{{ company()->address }}</p>
-        </div>
-        <div class="do-details">
-            <h2>DELIVERY ORDER</h2>
-            <p><strong>DO Number:</strong> #DO-{{ $deliveryOrder->id }}</p>
-            <p><strong>Date:</strong> {{ $deliveryOrder->issue_date->format(company()->date_format) }}</p>
-            <p><strong>Status:</strong> {{ ucfirst($deliveryOrder->status) }}</p>
-        </div>
-    </div>
-
-    <div class="info-grid">
-        @if($deliveryOrder->source_type === 'transfer' && $deliveryOrder->stockTransfer)
-            <div class="info-box">
-                <h3>Destination / Recipient details</h3>
-                <p><strong>Warehouse Name:</strong> {{ $deliveryOrder->stockTransfer->destinationWarehouse->name }}</p>
-                <p><strong>Address:</strong> {{ $deliveryOrder->stockTransfer->destinationWarehouse->address ?? '--' }}</p>
-                <p><strong>Driver Name:</strong> {{ $deliveryOrder->driver_name ?? $deliveryOrder->stockTransfer->driver_name ?? '--' }}</p>
-                <p><strong>Vehicle Number:</strong> {{ $deliveryOrder->vehicle_number ?? $deliveryOrder->stockTransfer->vehicle_number ?? '--' }}</p>
-            </div>
-
-            <div class="info-box">
-                <h3>Reference & Logistics</h3>
-                <p><strong>Transfer Number:</strong> {{ $deliveryOrder->stockTransfer->transfer_number }}</p>
-                <p><strong>Source Warehouse:</strong> {{ $deliveryOrder->stockTransfer->sourceWarehouse->name }}</p>
-                <p><strong>Assigned Dispatcher:</strong> {{ $deliveryOrder->dispatcher->name ?? 'Not Assigned' }}</p>
-            </div>
-        @else
-            <div class="info-box">
-                <h3>Customer / Dealer Details</h3>
-                <p><strong>Name:</strong> {{ $deliveryOrder->invoice->client->name ?? 'N/A' }}</p>
-                @if ($deliveryOrder->invoice && $deliveryOrder->invoice->client && $deliveryOrder->invoice->client->clientDetails)
-                    <p><strong>Contact Person:</strong> {{ $deliveryOrder->invoice->client->clientDetails->contact_relation ?? $deliveryOrder->invoice->client->name }}</p>
-                    <p><strong>Address:</strong> {{ $deliveryOrder->invoice->client->clientDetails->address }}</p>
-                    <p><strong>City:</strong> {{ $deliveryOrder->invoice->client->clientDetails->city }} ({{ $deliveryOrder->invoice->client->clientDetails->area }})</p>
-                    <p><strong>Phone:</strong> {{ $deliveryOrder->invoice->client->mobile ?? $deliveryOrder->invoice->client->clientDetails->cell ?? '--' }}</p>
-                @endif
-            </div>
-
-            <div class="info-box">
-                <h3>Reference & Logistics</h3>
-                <p><strong>Invoice Number:</strong> {{ $deliveryOrder->invoice->invoice_number ?? 'N/A' }}</p>
-                <p><strong>Invoice Date:</strong> {{ $deliveryOrder->invoice ? $deliveryOrder->invoice->issue_date->format(company()->date_format) : '--' }}</p>
-                <p><strong>Warehouse:</strong> {{ $deliveryOrder->invoice->warehouse->name ?? '--' }}</p>
-                <p><strong>Assigned Dispatcher:</strong> {{ $deliveryOrder->dispatcher->name ?? 'Not Assigned' }}</p>
-            </div>
-        @endif
-    </div>
-
-    <table>
-        <thead>
+<body class="content-wrapper">
+    <table class="bg-white" border="0" cellpadding="0" cellspacing="0" width="100%" role="presentation">
+        <tbody>
+            <!-- Table Row Start -->
             <tr>
-                <th style="width: 5%;">#</th>
-                <th style="width: 55%;">Product / Model</th>
-                <th style="width: 15%;">Qty Ordered</th>
-                <th style="width: 25%;">Serials Dispatched</th>
+                <td><img src="{{ company()->logo_url }}" alt="{{ mb_ucwords(company()->company_name) }}"
+                        style="height: 50px;" /></td>
+                <td align="right" class="f-21 text-black font-weight-700 text-uppercase">DELIVERY ORDER</td>
+            </tr>
+            <!-- Table Row End -->
+            <!-- Table Row Start -->
+            <tr>
+                <td>
+                    <p class="line-height mt-1 mb-0 f-14 text-black">
+                        {{ mb_ucwords(company()->company_name) }}<br>
+                        {{ company()->address }}<br>
+                        {{ company()->company_phone }}<br>
+                    </p>
+                </td>
+                <td>
+                    <table class="text-black mt-1 f-13 b-collapse rightaligned">
+                        <tr>
+                            <td class="heading-table-left">DO Number</td>
+                            <td class="heading-table-right">{{ $deliveryOrder->delivery_order_number }}</td>
+                        </tr>
+                        <tr>
+                            <td class="heading-table-left">DO Date</td>
+                            <td class="heading-table-right">{{ $deliveryOrder->issue_date->format(company()->date_format) }}</td>
+                        </tr>
+                        @if($deliveryOrder->source_type === 'transfer' && $deliveryOrder->stockTransfer)
+                            <tr>
+                                <td class="heading-table-left">Transfer No.</td>
+                                <td class="heading-table-right">{{ $deliveryOrder->stockTransfer->transfer_number }}</td>
+                            </tr>
+                        @elseif($deliveryOrder->invoice)
+                            <tr>
+                                <td class="heading-table-left">Invoice No.</td>
+                                <td class="heading-table-right">{{ $deliveryOrder->invoice->invoice_number }}</td>
+                            </tr>
+                        @endif
+                        @if($deliveryOrder->dispatcher)
+                            <tr>
+                                <td class="heading-table-left">Dispatcher</td>
+                                <td class="heading-table-right">{{ $deliveryOrder->dispatcher->name }}</td>
+                            </tr>
+                        @endif
+                        @php
+                            $drvName = $deliveryOrder->driver_name ?: ($deliveryOrder->stockTransfer->driver_name ?? null);
+                            $vehNo = $deliveryOrder->vehicle_number ?: ($deliveryOrder->stockTransfer->vehicle_number ?? null);
+                        @endphp
+                        @if($drvName)
+                            <tr>
+                                <td class="heading-table-left">Driver Name</td>
+                                <td class="heading-table-right">{{ $drvName }}</td>
+                            </tr>
+                        @endif
+                        @if($vehNo)
+                            <tr>
+                                <td class="heading-table-left">Vehicle No.</td>
+                                <td class="heading-table-right">{{ $vehNo }}</td>
+                            </tr>
+                        @endif
+                    </table>
+                </td>
+            </tr>
+            <!-- Table Row End -->
+            <!-- Table Row Start -->
+            <tr>
+                <td height="10"></td>
+            </tr>
+            <!-- Table Row End -->
+            <!-- Table Row Start -->
+            <tr>
+                <td colspan="2">
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                        <tr>
+                            <td class="f-14 text-black" valign="top">
+                                @if($deliveryOrder->source_type === 'transfer' && $deliveryOrder->stockTransfer)
+                                    <p class="line-height mb-0">
+                                        <span class="text-grey text-capitalize">Destination Warehouse</span><br>
+                                        <strong>{{ $deliveryOrder->stockTransfer->destinationWarehouse->name }}</strong><br>
+                                        {!! nl2br($deliveryOrder->stockTransfer->destinationWarehouse->address ?? '--') !!}
+                                    </p>
+                                @else
+                                    @php
+                                        $client = $deliveryOrder->invoice->client ?? $deliveryOrder->order->client ?? null;
+                                    @endphp
+                                    @if($client)
+                                        <p class="line-height mb-0">
+                                            <span class="text-grey text-capitalize">@lang("modules.invoices.billedTo")</span><br>
+                                            <strong>{{ mb_ucwords($client->name) }}</strong><br>
+                                            @if($client->clientDetails)
+                                                {!! nl2br($client->clientDetails->address) !!}<br>
+                                                {{ $client->clientDetails->city }} ({{ $client->clientDetails->area }})<br>
+                                            @endif
+                                            {{ $client->mobile ?? ($client->clientDetails->cell ?? '--') }}
+                                        </p>
+                                    @endif
+                                @endif
+                            </td>
+                            <td class="f-14 text-black" valign="top">
+                                @if($deliveryOrder->source_type === 'transfer' && $deliveryOrder->stockTransfer)
+                                    <p class="line-height">
+                                        <span class="text-grey text-capitalize">Source Warehouse</span><br>
+                                        <strong>{{ $deliveryOrder->stockTransfer->sourceWarehouse->name }}</strong>
+                                    </p>
+                                @else
+                                    @php
+                                        $orderSource = $deliveryOrder->order ?? ($deliveryOrder->invoice ? $deliveryOrder->invoice->order : null);
+                                    @endphp
+                                    @if ($orderSource && $orderSource->show_shipping_address == 'yes' && $client && $client->clientDetails->shipping_address)
+                                        <p class="line-height"><span
+                                                class="text-grey text-capitalize">@lang('app.shippingAddress')</span><br>
+                                            {!! nl2br($client->clientDetails->shipping_address) !!}</p>
+                                    @endif
+                                @endif
+                            </td>
+                            <td align="right" valign="top">
+                                <br />
+                                <div class="text-uppercase bg-white unpaid rightaligned" style="border: 1px solid #000; width: 130px; margin-top: 10px;">
+                                    {{ $deliveryOrder->status }}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table width="100%" class="f-14 b-collapse" style="margin-top: 20px;">
+        <thead>
+            <tr class="main-table-heading text-grey">
+                <td width="5%">#</td>
+                <td width="55%">Product / Model</td>
+                <th width="15%" class="qty" align="right">Qty Ordered</th>
+                <td width="25%" align="right">Serials Dispatched</td>
             </tr>
         </thead>
         <tbody>
@@ -202,28 +333,44 @@
                         @php
                             $serials = $item->serials->map(fn($ts) => $ts->serial->serial_number)->toArray();
                         @endphp
-                        <tr>
+                        <tr class="main-table-items text-black">
                             <td>{{ $index + 1 }}</td>
                             <td>
                                 <strong>{{ $item->product->name }}</strong>
                                 @if($item->product->description)
-                                    <br><small style="color: #64748b;">{{ $item->product->description }}</small>
+                                    <br><small style="color: #616e80;">{{ $item->product->description }}</small>
                                 @endif
                             </td>
-                            <td>{{ (int)$item->quantity }}</td>
-                            <td>
+                            <td align="right">{{ (int)$item->quantity }}</td>
+                            <td align="right">
                                 @if(!empty($serials))
-                                    <div class="serial-list">
-                                        {{ implode(', ', $serials) }}
-                                    </div>
+                                    {{ implode(', ', $serials) }}
                                 @else
-                                    <span style="color: #94a3b8; font-style: italic;">Non-serialized</span>
+                                    <span class="text-grey" style="font-style: italic;">Non-serialized</span>
                                 @endif
                             </td>
                         </tr>
                     @endif
                 @endforeach
-            @else
+            @elseif($deliveryOrder->source_type === 'order' && !$deliveryOrder->invoice_id && $deliveryOrder->order)
+                @foreach ($deliveryOrder->order->items as $index => $item)
+                    @if($item->product_id)
+                        <tr class="main-table-items text-black">
+                            <td>{{ $index + 1 }}</td>
+                            <td>
+                                <strong>{{ $item->product->name }}</strong>
+                                @if($item->product->description)
+                                    <br><small style="color: #616e80;">{{ $item->product->description }}</small>
+                                @endif
+                            </td>
+                            <td align="right">{{ (int)$item->quantity }}</td>
+                            <td align="right">
+                                <span class="text-grey" style="font-style: italic;">Pending Invoice & Dispatch</span>
+                            </td>
+                        </tr>
+                    @endif
+                @endforeach
+            @elseif($deliveryOrder->invoice)
                 @foreach ($deliveryOrder->invoice->items as $index => $item)
                     @if($item->product_id)
                         @php
@@ -232,22 +379,20 @@
                                 ->pluck('serial_number')
                                 ->toArray();
                         @endphp
-                        <tr>
+                        <tr class="main-table-items text-black">
                             <td>{{ $index + 1 }}</td>
                             <td>
                                 <strong>{{ $item->product->name }}</strong>
                                 @if($item->product->description)
-                                    <br><small style="color: #64748b;">{{ $item->product->description }}</small>
+                                    <br><small style="color: #616e80;">{{ $item->product->description }}</small>
                                 @endif
                             </td>
-                            <td>{{ (int)$item->quantity }}</td>
-                            <td>
+                            <td align="right">{{ (int)$item->quantity }}</td>
+                            <td align="right">
                                 @if(!empty($serials))
-                                    <div class="serial-list">
-                                        {{ implode(', ', $serials) }}
-                                    </div>
+                                    {{ implode(', ', $serials) }}
                                 @else
-                                    <span style="color: #94a3b8; font-style: italic;">Non-serialized</span>
+                                    <span class="text-grey" style="font-style: italic;">Non-serialized</span>
                                 @endif
                             </td>
                         </tr>
@@ -257,23 +402,64 @@
         </tbody>
     </table>
 
-    <div class="signatures">
-        <div class="sig-box">
-            <p>Prepared By</p>
-            <div style="height: 60px;"></div>
-            <strong>Warehouse Officer</strong>
-        </div>
-        <div class="sig-box">
-            <p>Dispatcher Signature</p>
-            <div style="height: 60px;"></div>
-            <strong>{{ $deliveryOrder->dispatcher->name ?? 'Carrier/Driver' }}</strong>
-        </div>
-        <div class="sig-box">
-            <p>Receiver Signature & Stamp</p>
-            <div style="height: 60px;"></div>
-            <strong>Customer / Representative</strong>
-        </div>
-    </div>
+    <table class="signatures" border="0" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="sig-box" width="33%">
+                <div class="sig-line">Prepared By (Warehouse Officer)</div>
+            </td>
+            <td class="sig-box" width="33%">
+                <div class="sig-line">Dispatcher: {{ $deliveryOrder->dispatcher->name ?? 'Carrier/Driver' }}</div>
+            </td>
+            <td class="sig-box" width="33%">
+                <div class="sig-line">Receiver Signature & Stamp</div>
+            </td>
+        </tr>
+    </table>
+
+    @if(isset($printView) && $printView)
+        <style>
+            @media print {
+                .no-print { display: none !important; }
+            }
+            .print-button-container {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 99999;
+                text-align: center;
+            }
+            .print-btn {
+                padding: 12px 28px;
+                font-size: 15px;
+                font-weight: bold;
+                background-color: #000000;
+                color: #fff;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            .print-btn:hover {
+                background-color: #333333;
+            }
+        </style>
+        <script>
+            window.addEventListener('DOMContentLoaded', (event) => {
+                const container = document.createElement('div');
+                container.className = 'print-button-container no-print';
+                container.innerHTML = '<button class="print-btn" onclick="window.print();">Print Now</button>';
+                document.body.appendChild(container);
+                
+                // Auto trigger browser print window
+                setTimeout(() => {
+                    window.print();
+                }, 600);
+            });
+        </script>
+    @endif
 
 </body>
 </html>

@@ -70,6 +70,51 @@ $deleteOrderPermission = user()->permission('delete_order');
                                     {{ \Carbon\Carbon::parse($order->order_date)->translatedFormat(company()->date_format) }}
                                 </td>
                             </tr>
+                            <tr>
+                                <td class="bg-light-grey border-right-0 f-w-500">Sale Type</td>
+                                <td class="border-left-0">
+                                    @if($order->sale_type == 1)
+                                        <span class="badge badge-success px-2 py-1">Cash Sale (Paid)</span>
+                                    @else
+                                        <span class="badge badge-secondary px-2 py-1">Credit Sale (Unpaid)</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @if($order->sale_type == 1)
+                                @if($order->gateway)
+                                    <tr>
+                                        <td class="bg-light-grey border-right-0 f-w-500">Gateway</td>
+                                        <td class="border-left-0">{{ $order->gateway }}</td>
+                                    </tr>
+                                @endif
+                                @if($order->offline_method_id)
+                                    @php
+                                        $offlineMethod = \App\Models\OfflinePaymentMethod::find($order->offline_method_id);
+                                    @endphp
+                                    @if($offlineMethod)
+                                        <tr>
+                                            <td class="bg-light-grey border-right-0 f-w-500">Bank/Method</td>
+                                            <td class="border-left-0">{{ $offlineMethod->name }}</td>
+                                        </tr>
+                                    @endif
+                                @endif
+                                @if($order->transaction_id)
+                                    <tr>
+                                        <td class="bg-light-grey border-right-0 f-w-500">Transaction ID</td>
+                                        <td class="border-left-0">{{ $order->transaction_id }}</td>
+                                    </tr>
+                                @endif
+                                @if($order->file)
+                                    <tr>
+                                        <td class="bg-light-grey border-right-0 f-w-500">Payment Slip</td>
+                                        <td class="border-left-0">
+                                            <a href="{{ asset_url('order-files/' . $order->file) }}" target="_blank" class="text-primary font-weight-bold">
+                                                <i class="fa fa-download mr-1"></i> View Slip
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endif
+                            @endif
                         </table>
                     </td>
                 </tr>
@@ -338,7 +383,7 @@ $deleteOrderPermission = user()->permission('delete_order');
                         </table>
                     </td>
                 </tr>
-                @if ($order->remarks)
+            @if ($order->remarks)
                 <tr>
                     <td height="20"></td>
                 </tr>
@@ -352,8 +397,25 @@ $deleteOrderPermission = user()->permission('delete_order');
                         </table>
                     </td>
                 </tr>
-                @endif
+            @endif
             </table>
+
+            @if ((in_array('admin', user_roles()) || user()->permission('edit_order') == 'all') && $order->status == 'pending')
+                <div class="mt-4 pt-3 border-top-grey">
+                    <div class="form-group">
+                        <label class="f-14 text-dark-grey font-weight-bold">HOD Remarks / Approval Note</label>
+                        <textarea class="form-control" name="hod_remarks" id="hod_remarks" rows="3" placeholder="Enter remarks..."></textarea>
+                    </div>
+                    <div class="d-flex mt-2">
+                        <button type="button" class="btn btn-primary btn-sm rounded mr-3 btn-hod-action" data-status="processing">
+                            <i class="fa fa-check mr-1"></i> Approve Order
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm rounded mr-3 btn-hod-action" data-status="canceled">
+                            <i class="fa fa-times mr-1"></i> Reject Order
+                        </button>
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
     <!-- CARD BODY END -->
@@ -370,7 +432,7 @@ $deleteOrderPermission = user()->permission('delete_order');
                     </button>
                     <!-- DROPDOWN - INFORMATION -->
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton" tabindex="0">
-                        <li><a data-turbo="false" href="{{ route('orders.download', $order->id) }}" class="dropdown-item"><i class="fa fa-download f-w-500 mr-2 f-11"></i> @lang('app.download')</a></li>
+                        <li><a data-turbo="false" target="_blank" href="{{ route('orders.download', $order->id) }}" class="dropdown-item"><i class="fa fa-print f-w-500 mr-2 f-11"></i> Print Order</a></li>
                         @if(
                             (in_array('admin', user_roles()) || in_array('employee', user_roles()))
                         )
@@ -383,11 +445,11 @@ $deleteOrderPermission = user()->permission('delete_order');
                             </li>
                         @endif
 
-                        @if (($editOrderPermission == 'all' || (in_array($editOrderPermission, ['added', 'both']) && $order->added_by == user()->id)) && in_array($order->status, ['pending', 'on-hold', 'failed', 'processing']))
+                        @if ((in_array('admin', user_roles()) || user()->permission('add_invoices') == 'all') && $order->status == 'processing')
                             <li>
-                                <a class="dropdown-item f-14 text-dark orderStatus" data-status="completed"
-                                href="javascript:;">
-                                    <i class="fa fa-check f-w-500 mr-2 f-11"></i> @lang('app.orderMarkAsComplete')
+                                <a class="dropdown-item f-14 text-dark"
+                                href="{{ route('invoices.create') }}?order={{ $order->id }}">
+                                    <i class="fa fa-receipt f-w-500 mr-2 f-11"></i> Create Invoice
                                 </a>
                             </li>
                         @endif
@@ -516,6 +578,10 @@ $deleteOrderPermission = user()->permission('delete_order');
                 </div>
             @endif
             {{-- PAYMENT GATEWAY --}}
+            
+            <button type="button" class="btn btn-secondary rounded f-15 close-task-detail-btn" data-dismiss="modal">
+                @lang('app.close')
+            </button>
         </div>
 
     </div>
@@ -813,5 +879,74 @@ $deleteOrderPermission = user()->permission('delete_order');
         }
 
     @endif
+
+    $('.close-task-detail-btn').click(function() {
+        if ($('#close-task-detail').length > 0) {
+            $('#close-task-detail').click();
+        } else {
+            window.location.href = "{{ route('orders.index') }}";
+        }
+    });
+
+    $('body').on('click', '.btn-hod-action', function() {
+        var status = $(this).data('status');
+        var remarks = $('#hod_remarks').val();
+        var orderId = "{{ $order->id }}";
+        var token = "{{ csrf_token() }}";
+        var url = "{{ route('orders.change_status') }}";
+
+        var statusMessage;
+        if (status == 'processing') {
+            statusMessage = "Are you sure you want to approve this order?";
+        } else {
+            statusMessage = "Are you sure you want to reject this order?";
+        }
+
+        Swal.fire({
+            title: "Order Status Change",
+            text: statusMessage,
+            icon: 'warning',
+            showCancelButton: true,
+            focusConfirm: false,
+            confirmButtonText: "Yes, Change Status",
+            cancelButtonText: "@lang('app.cancel')",
+            customClass: {
+                confirmButton: 'btn btn-primary mr-3',
+                cancelButton: 'btn btn-secondary'
+            },
+            showClass: {
+                popup: 'swal2-noanimation',
+                backdrop: 'swal2-noanimation'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.easyAjax({
+                    type: 'POST',
+                    url: url,
+                    data: {
+                        '_token': token,
+                        'orderId': orderId,
+                        'status': status,
+                        'remarks': remarks
+                    },
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            if ($('#close-task-detail').length > 0) {
+                                $('#close-task-detail').click();
+                                if (typeof showTable === 'function') {
+                                    showTable();
+                                } else {
+                                    window.location.reload();
+                                }
+                            } else {
+                                window.location.href = "{{ route('orders.index') }}";
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    });
 
 </script>

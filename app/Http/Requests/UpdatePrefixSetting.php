@@ -37,6 +37,7 @@ class UpdatePrefixSetting extends FormRequest
 
         if(in_array('orders', user_modules())){
             $rules['order_prefix'] = 'required';
+            $rules['delivery_order_prefix'] = 'required';
         }
 
         return $rules;

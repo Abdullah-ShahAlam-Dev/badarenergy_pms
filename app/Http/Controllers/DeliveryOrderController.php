@@ -27,32 +27,35 @@ class DeliveryOrderController extends AccountBaseController
         if ($request->ajax()) {
             $model = DeliveryOrder::with([
                 'invoice.client', 
+                'invoice.order.addedBy',
+                'order.client',
+                'order.addedBy',
                 'dispatcher', 
                 'stockTransfer.sourceWarehouse', 
                 'stockTransfer.destinationWarehouse'
             ])->select('delivery_orders.*');
-
+ 
             return DataTables::of($model)
                 ->addColumn('action', function ($row) {
-                    $action = '<div class="task_view">
-                        <div class="dropdown">
-                            <a class="align-items-center d-flex justify-content-center dropdown-toggle f-16 text-lightest" href="javascript:;" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fa fa-ellipsis-h"></i>
-                            </a>
-                            <div class="dropdown-menu dropdown-menu-right">';
+                    $buttons = '';
+                    if (!$row->invoice_id && $row->source_type === 'order' && $row->source_id) {
+                        $buttons .= '<a href="' . route('invoices.create') . '?order=' . $row->source_id . '" class="btn btn-primary btn-sm rounded mr-2">Create Invoice</a>';
+                    } else {
+                        $buttons .= '<span class="badge badge-success px-2 py-1 mr-2">Invoiced</span>';
+                    }
                     
-                    $action .= '<a class="dropdown-item open-edit-modal" href="javascript:;" data-do-id="' . $row->id . '"><i class="fa fa-edit mr-2"></i>Edit / Dispatch</a>';
-                    $action .= '<a class="dropdown-item" href="' . route('delivery-orders.show', $row->id) . '" target="_blank"><i class="fa fa-print mr-2"></i>Print DO Slip</a>';
-                    
-                    $action .= '</div></div></div>';
-                    return $action;
+                    $buttons .= '<a href="' . route('delivery-orders.show', $row->id) . '" target="_blank" class="btn btn-secondary btn-sm rounded"><i class="fa fa-print mr-1"></i>Print DO</a>';
+                    return $buttons;
                 })
                 ->editColumn('id', function ($row) {
-                    return '#' . $row->id;
+                    return $row->delivery_order_number;
                 })
                 ->editColumn('invoice_number', function ($row) {
                     if ($row->source_type === 'transfer' && $row->transfer_id) {
                         return '<a href="' . route('stock-transfers.show', $row->transfer_id) . '" class="text-darkest-grey font-weight-bold">' . ($row->stockTransfer->transfer_number ?? ('TRF-' . $row->transfer_id)) . '</a> <span class="badge badge-secondary">Transfer</span>';
+                    }
+                    if ($row->source_type === 'order' && $row->source_id) {
+                        return '<a href="' . route('orders.show', $row->source_id) . '" class="text-darkest-grey font-weight-bold">' . ($row->order->order_number ?? ('#'.$row->source_id)) . '</a> <span class="badge badge-info">Order</span>';
                     }
                     return $row->invoice_id ? '<a href="' . route('invoices.show', $row->invoice_id) . '" class="text-darkest-grey font-weight-bold">' . ($row->invoice->invoice_number ?? ('#'.$row->invoice_id)) . '</a>' : '--';
                 })
@@ -62,7 +65,19 @@ class DeliveryOrderController extends AccountBaseController
                         $dest = $row->stockTransfer->destinationWarehouse->name ?? 'Dest';
                         return 'WMS: ' . $src . ' &rarr; ' . $dest;
                     }
+                    if ($row->source_type === 'order' && $row->order) {
+                        return $row->order->client->name ?? '--';
+                    }
                     return $row->invoice->client->name ?? '--';
+                })
+                ->addColumn('salesperson', function ($row) {
+                    if ($row->source_type === 'order' && $row->order && $row->order->addedBy) {
+                        return $row->order->addedBy->name;
+                    }
+                    if ($row->invoice && $row->invoice->order && $row->invoice->order->addedBy) {
+                        return $row->invoice->order->addedBy->name;
+                    }
+                    return '--';
                 })
                 ->editColumn('issue_date', function ($row) {
                     return $row->issue_date ? $row->issue_date->format(company()->date_format) : '--';
@@ -124,12 +139,17 @@ class DeliveryOrderController extends AccountBaseController
         $this->deliveryOrder = DeliveryOrder::with([
             'invoice.items.product', 
             'invoice.client', 
+            'order.items.product',
+            'order.client',
+            'order.addedBy',
             'dispatcher',
             'stockTransfer.sourceWarehouse',
             'stockTransfer.destinationWarehouse',
             'stockTransfer.items.product',
             'stockTransfer.items.serials.serial'
         ])->findOrFail($id);
+        $this->invoiceSetting = invoice_setting();
+        $this->printView = true;
         return view('delivery-orders.pdf', $this->data);
     }
 }

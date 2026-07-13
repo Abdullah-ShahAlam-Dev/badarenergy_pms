@@ -68,7 +68,8 @@
                             data-size="8">
                             <option value="all" data-content="@lang('app.all')">@lang('app.all')</option>
                             <option value="pending" {{ request('status') == 'pending' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-warning'></i> Pending">Pending</option>
-                            <option value="completed" {{ request('status') == 'completed' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-success'></i> Approved">Approved</option>
+                            <option value="processing" {{ request('status') == 'processing' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-primary'></i> Approved">Approved</option>
+                            <option value="completed" {{ request('status') == 'completed' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-success'></i> Completed">Completed</option>
                             <option value="canceled" {{ request('status') == 'canceled' ? 'selected' : ''}} data-content="<i class='fa fa-circle mr-2 text-danger'></i> Rejected">Rejected</option>
                         </select>
                     </div>

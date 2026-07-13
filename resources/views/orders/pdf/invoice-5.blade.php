@@ -295,6 +295,41 @@
                             <td class="heading-table-right">{{ \Carbon\Carbon::parse($order->order_date)->translatedFormat(company()->date_format) }}
                             </td>
                         </tr>
+                        <tr>
+                            <td class="heading-table-left">Sale Type</td>
+                            <td class="heading-table-right">
+                                @if($order->sale_type == 1)
+                                    <span style="color: #22c55e; font-weight: bold;">Cash Sale (PAID)</span>
+                                @else
+                                    <span style="color: #64748b; font-weight: bold;">Credit Sale (Unpaid)</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @if($order->sale_type == 1)
+                            @if($order->gateway)
+                                <tr>
+                                    <td class="heading-table-left">Gateway</td>
+                                    <td class="heading-table-right">{{ $order->gateway }}</td>
+                                </tr>
+                            @endif
+                            @if($order->offline_method_id)
+                                @php
+                                    $offlineMethod = \App\Models\OfflinePaymentMethod::find($order->offline_method_id);
+                                @endphp
+                                @if($offlineMethod)
+                                    <tr>
+                                        <td class="heading-table-left">Payment Bank/Method</td>
+                                        <td class="heading-table-right">{{ $offlineMethod->name }}</td>
+                                    </tr>
+                                @endif
+                            @endif
+                            @if($order->transaction_id)
+                                <tr>
+                                    <td class="heading-table-left">Transaction ID</td>
+                                    <td class="heading-table-right">{{ $order->transaction_id }}</td>
+                                </tr>
+                            @endif
+                        @endif
                     </table>
                 </td>
             </tr>

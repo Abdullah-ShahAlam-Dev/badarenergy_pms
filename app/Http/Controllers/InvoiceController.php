@@ -285,37 +285,18 @@ class InvoiceController extends AccountBaseController
             $order->status = 'completed';
             $order->save();
 
-            // Automatically record payment if it was a Cash Sale
-            if ($order->sale_type == 1) {
-                $payment = new \App\Models\Payment();
-                $payment->invoice_id = $invoice->id;
-                $payment->company_id = $invoice->company_id;
-                $payment->currency_id = $invoice->currency_id;
-                $payment->default_currency_id = company()->currency_id;
-                $payment->exchange_rate = $invoice->exchange_rate;
-                $payment->amount = $invoice->total;
-                $payment->gateway = $order->gateway ?: 'Offline';
-                $payment->offline_method_id = $order->offline_method_id;
-                $payment->transaction_id = $order->transaction_id;
-                $payment->paid_on = now();
-                $payment->status = 'complete';
-                $payment->bank_account_id = $invoice->bank_account_id;
-
-                if ($order->file) {
-                    $payment->file = $order->file;
-                    $payment->file_original_name = $order->file_original_name;
+            if ($order->file) {
+                $source = public_path('user-uploads/order-files/' . $order->file);
+                if (!file_exists($source)) {
                     $source = storage_path('app/public/order-files/' . $order->file);
-                    $dest = storage_path('app/public/invoice-files/' . $order->file);
-                    if (file_exists($source)) {
-                        @copy($source, $dest);
-                        $invoice->file = $order->file;
-                        $invoice->file_original_name = $order->file_original_name;
-                    }
                 }
-                $payment->save();
-
-                $invoice->status = 'paid';
-                $invoice->save();
+                $dest = storage_path('app/public/invoice-files/' . $order->file);
+                if (file_exists($source)) {
+                    @copy($source, $dest);
+                    $invoice->file = $order->file;
+                    $invoice->file_original_name = $order->file_original_name;
+                    $invoice->saveQuietly();
+                }
             }
         }
 

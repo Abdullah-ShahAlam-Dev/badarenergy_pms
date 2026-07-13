@@ -87,10 +87,10 @@ $addProductPermission = user()->permission('add_product');
             <!-- Order Status -->
             <div class="col-md-4">
                 <x-forms.label fieldId="status" :fieldLabel="__('app.status')" :fieldRequired="true" class="mt-0"></x-forms.label>
-                @if (in_array('admin', user_roles()) || user()->permission('edit_order') == 'all')
+                @if ((in_array('admin', user_roles()) || user()->permission('edit_order') == 'all') && in_array($order->status, ['pending', 'processing']))
                     <select class="form-control select-picker" name="status" id="status">
                         <option value="pending" {{ $order->status == 'pending' ? 'selected' : '' }} data-content="<i class='fa fa-circle mr-2 text-warning'></i> Pending">Pending</option>
-                        <option value="completed" {{ $order->status == 'completed' ? 'selected' : '' }} data-content="<i class='fa fa-circle mr-2 text-success'></i> Approved">Approved</option>
+                        <option value="processing" {{ $order->status == 'processing' ? 'selected' : '' }} data-content="<i class='fa fa-circle mr-2 text-primary'></i> Approved">Approved</option>
                         <option value="canceled" {{ $order->status == 'canceled' ? 'selected' : '' }} data-content="<i class='fa fa-circle mr-2 text-danger'></i> Rejected">Rejected</option>
                     </select>
                 @else
@@ -98,8 +98,10 @@ $addProductPermission = user()->permission('add_product');
                     <div class="mt-2">
                         @if ($order->status == 'pending')
                             <i class='fa fa-circle mr-2 text-warning'></i> Pending
+                        @elseif ($order->status == 'processing')
+                            <i class='fa fa-circle mr-2 text-primary'></i> Approved
                         @elseif ($order->status == 'completed')
-                            <i class='fa fa-circle mr-2 text-success'></i> Approved
+                            <i class='fa fa-circle mr-2 text-success'></i> Completed
                         @elseif ($order->status == 'canceled')
                             <i class='fa fa-circle mr-2 text-danger'></i> Rejected
                         @else

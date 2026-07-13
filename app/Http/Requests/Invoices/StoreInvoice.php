@@ -39,8 +39,11 @@ class StoreInvoice extends CoreRequest
             'currency_id' => 'required',
             'exchange_rate' => 'required',
             'gateway' => 'required_if:payment_status,1',
-            'offline_methods' => 'required_if:gateway,Offline',
         ];
+
+        if ($this->payment_status == '1' && $this->gateway == 'Offline') {
+            $rules['offline_methods'] = 'required';
+        }
 
         if ($this->has('due_date')) {
             $rules['due_date'] = 'required|date_format:"' . $setting->date_format . '"|after_or_equal:'.$this->issue_date;

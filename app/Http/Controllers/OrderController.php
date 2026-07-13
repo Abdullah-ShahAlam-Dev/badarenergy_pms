@@ -232,7 +232,7 @@ class OrderController extends AccountBaseController
         if ($request->hasFile('payment_slip')) {
             $file = $request->file('payment_slip');
             $newName = $file->hashName();
-            $file->move(storage_path('app/public/order-files'), $newName);
+            $file->move(public_path('user-uploads/order-files'), $newName);
             $order->file = $newName;
             $order->file_original_name = $file->getClientOriginalName();
         }
@@ -263,7 +263,7 @@ class OrderController extends AccountBaseController
          // Log search
          $this->logSearchEntry($order->id, $order->id, 'orders.show', 'order');
 
-         return response(Reply::redirect(route('orders.show', $order->id), __('messages.recordSaved')))->withCookie(Cookie::forget('productDetails'));
+         return response(Reply::redirect(route('orders.index'), __('messages.recordSaved')))->withCookie(Cookie::forget('productDetails'));
 
     }
 
@@ -398,11 +398,11 @@ class OrderController extends AccountBaseController
         $order->gateway = $request->gateway ?: null;
         if ($request->hasFile('payment_slip')) {
             if ($order->file != null) {
-                @unlink(storage_path('app/public/order-files') . '/' . $order->file);
+                @unlink(public_path('user-uploads/order-files') . '/' . $order->file);
             }
             $file = $request->file('payment_slip');
             $newName = $file->hashName();
-            $file->move(storage_path('app/public/order-files'), $newName);
+            $file->move(public_path('user-uploads/order-files'), $newName);
             $order->file = $newName;
             $order->file_original_name = $file->getClientOriginalName();
         }
@@ -732,14 +732,38 @@ class OrderController extends AccountBaseController
 
         $order = Order::findOrFail($request->orderId);
 
-        if ($request->status == 'completed') {
-            $invoice = $this->makeOrderInvoice($order);
-            $this->makePayment($order->total, $invoice, 'complete');
+        if ($request->status == 'processing') {
+            $existingDO = \App\Models\DeliveryOrder::where('source_type', 'order')
+                ->where('source_id', $order->id)
+                ->first();
+
+            if (!$existingDO) {
+                $do = \App\Models\DeliveryOrder::create([
+                    'company_id' => $order->company_id,
+                    'source_type' => 'order',
+                    'source_id' => $order->id,
+                    'issue_date' => now(),
+                    'status' => 'pending',
+                ]);
+
+                foreach ($order->items as $item) {
+                    \App\Models\DeliveryOrderLine::create([
+                        'delivery_order_id' => $do->id,
+                        'product_id' => $item->product_id,
+                        'quantity_requested' => $item->quantity,
+                        'quantity_dispatched' => 0,
+                    ]);
+                }
+            }
         }
 
         /** @phpstan-ignore-next-line */
         if ($request->status == 'refunded' && $order->invoice && !$order->invoice->credit_note && $order->status == 'completed') {
             $this->createCreditNote($order->invoice);
+        }
+
+        if ($request->has('remarks')) {
+            $order->remarks = $request->remarks;
         }
 
         $order->status = $request->status;
@@ -933,8 +957,8 @@ class OrderController extends AccountBaseController
     public function download($id)
     {
         $this->invoiceSetting = invoice_setting();
-
-        $this->order = Order::with('client', 'unit')->findOrFail($id);
+        $this->order = Order::with('client', 'unit', 'clientdetails')->findOrFail($id);
+        $this->client = $this->order->client;
 
         $this->viewPermission = user()->permission('view_order');
         abort_403(!($this->viewPermission == 'all' || ($this->viewPermission == 'both' && ($this->order->added_by == user()->id || $this->order->client_id == user()->id)) || ($this->viewPermission == 'owned' && $this->order->client_id == user()->id) || ($this->viewPermission == 'added' && $this->order->added_by == user()->id)));
@@ -942,11 +966,42 @@ class OrderController extends AccountBaseController
         App::setLocale($this->invoiceSetting->locale);
         Carbon::setLocale($this->invoiceSetting->locale);
 
-        $pdfOption = $this->domPdfObjectForDownload($id);
-        $pdf = $pdfOption['pdf'];
-        $filename = $pdfOption['fileName'];
+        if (!view()->exists('orders.pdf.' . $this->invoiceSetting->template)) {
+            $availableTemplates = ['invoice-1', 'invoice-2', 'invoice-3', 'invoice-4', 'invoice-5'];
+            $this->invoiceSetting->template = $availableTemplates[0];
+        }
 
-        return $pdf->download($filename . '.pdf');
+        $this->paidAmount = $this->order->total;
+        $this->discount = 0;
+
+        if ($this->order->discount > 0) {
+            if ($this->order->discount_type == 'percent') {
+                $this->discount = (($this->order->discount / 100) * $this->order->sub_total);
+            }
+            else {
+                $this->discount = $this->order->discount;
+            }
+        }
+
+        $taxList = array();
+        $items = OrderItems::whereNotNull('taxes')->where('order_id', $this->order->id)->get();
+        foreach ($items as $item) {
+            foreach (json_decode($item->taxes) as $tax) {
+                $this->tax = OrderItems::taxbyid($tax)->first();
+                if (!isset($taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'])) {
+                    $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $item->amount * ($this->tax->rate_percent / 100);
+                }
+                else {
+                    $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + ($item->amount * ($this->tax->rate_percent / 100));
+                }
+            }
+        }
+
+        $this->taxes = $taxList;
+        $this->settings = company();
+        $this->printView = true;
+
+        return view('orders.pdf.' . $this->invoiceSetting->template, $this->data);
     }
 
     public function domPdfObjectForDownload($id)

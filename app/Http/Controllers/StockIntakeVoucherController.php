@@ -101,7 +101,7 @@ class StockIntakeVoucherController extends AccountBaseController
 
         $companyId = company() ? company()->id : 1;
         $this->voucher = StockIntakeVoucher::where('company_id', $companyId)
-            ->with(['items.product', 'items.batch', 'warehouse', 'shipment', 'creator', 'serials'])
+            ->with(['items.product', 'items.batch', 'warehouse', 'shipment', 'creator', 'serials.product'])
             ->findOrFail($id);
 
         $this->approvePermission = user()->permission('approve_stock_intake');
@@ -152,14 +152,21 @@ class StockIntakeVoucherController extends AccountBaseController
     /**
      * Print all barcodes for the Stock Intake Voucher.
      */
-    public function printBarcodes($id)
+    public function printBarcodes(Request $request, $id)
     {
         $this->viewPermission = user()->permission('view_stock_intake');
         abort_403($this->viewPermission == 'none' && !in_array('admin', user_roles()));
 
         $companyId = company() ? company()->id : 1;
+        $productId = $request->product_id;
+
         $voucher = StockIntakeVoucher::where('company_id', $companyId)
-            ->with(['serials.product'])
+            ->with(['serials' => function ($query) use ($productId) {
+                if ($productId) {
+                    $query->where('product_id', $productId);
+                }
+                $query->with('product');
+            }])
             ->findOrFail($id);
 
         $factory = resolve(\App\Services\Barcode\BarcodeDriverFactory::class);

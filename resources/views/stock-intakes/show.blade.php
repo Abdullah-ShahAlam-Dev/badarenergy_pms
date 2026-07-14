@@ -99,6 +99,7 @@
                                 <th>Product</th>
                                 <th class="text-right">Qty Declared</th>
                                 <th class="text-right">Qty Received</th>
+                                <th class="text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -109,8 +110,15 @@
                                     </td>
                                     <td class="text-right">{{ number_format($item->quantity_declared, 2) }}</td>
                                     <td class="text-right font-weight-bold">{{ number_format($item->quantity_received, 2) }}</td>
-
-
+                                    <td class="text-right">
+                                        @if ($voucher->serials->where('product_id', $item->product_id)->count() > 0)
+                                            <a href="{{ route('stock-intakes.print-barcodes', [$voucher->id]) }}?product_id={{ $item->product_id }}" target="_blank" class="btn btn-outline-info btn-xs">
+                                                <i class="fa fa-barcode mr-1"></i> Print Barcodes
+                                            </a>
+                                        @else
+                                            <span class="text-muted f-12">-</span>
+                                        @endif
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -127,7 +135,7 @@
                                 <div class="col-md-4 mb-3">
                                     <div class="border rounded p-2 text-center bg-light">
                                         <span class="f-14 font-weight-bold text-dark d-block mb-1">{{ $serial->serial_number }}</span>
-                                        <small class="text-muted d-block mb-2">Product ID: {{ $serial->product_id }}</small>
+                                        <small class="text-muted d-block mb-2">{{ $serial->product ? $serial->product->name : ('Product ID: ' . $serial->product_id) }}</small>
                                         <a href="{{ route('stock-intakes.print-single-barcode', [$voucher->id, $serial->id]) }}" target="_blank" class="btn btn-outline-info btn-xs">
                                             <i class="fa fa-print"></i> Print Label
                                         </a>

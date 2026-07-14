@@ -75,7 +75,7 @@
             font-size: 11px;
             font-weight: bold;
             letter-spacing: 1px;
-            margin: 0 0 1mm 0;
+            margin: 1.5mm 0 0 0;
         }
 
         .barcode-svg {
@@ -96,7 +96,7 @@
             font-size: 9px;
             font-weight: bold;
             color: #000;
-            margin: 1.5mm 0 0 0;
+            margin: 0 0 1.5mm 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             text-align: center;
@@ -138,9 +138,9 @@
 
             <!-- Right side: Serial and Linear Barcode -->
             <div class="barcode-section">
-                <!-- Serial Text above Barcode -->
-                <div class="serial-text">
-                    {{ $barcode['serial_number'] }}
+                <!-- Product Name/Model above Barcode -->
+                <div class="model-text">
+                    Model: {{ $barcode['product_name'] }}
                 </div>
                 
                 <!-- Linear Barcode SVG -->
@@ -148,9 +148,9 @@
                     {!! $barcode['barcode_svg'] !!}
                 </div>
 
-                <!-- Product Name/Model below Barcode -->
-                <div class="model-text">
-                    Model: {{ $barcode['product_name'] }}
+                <!-- Serial Text below Barcode -->
+                <div class="serial-text">
+                    {{ $barcode['serial_number'] }}
                 </div>
             </div>
         </div>

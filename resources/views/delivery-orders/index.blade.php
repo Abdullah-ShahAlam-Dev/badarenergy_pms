@@ -240,89 +240,117 @@
                 }
             });
 
-            // Handle scan input enter key
+            var scanTimeout = null;
+
+            function processScan(val) {
+                if (scanTimeout) {
+                    clearTimeout(scanTimeout);
+                    scanTimeout = null;
+                }
+
+                if (val === '') {
+                    return;
+                }
+
+                // Check duplicate scan locally
+                var alreadyScanned = scannedSerials.some(function(item) {
+                    return item.serial_number.toLowerCase() === val.toLowerCase();
+                });
+
+                if (alreadyScanned) {
+                    playErrorSound();
+                    showAlert('danger', 'Serial number <strong>' + val + '</strong> is already scanned in this session.');
+                    return;
+                }
+
+                // Validate on server
+                $('#barcode-input').prop('disabled', true);
+                var url = "{{ route('delivery-orders.validate-serial', ':id') }}".replace(':id', currentDoId);
+                
+                $.ajax({
+                    url: url,
+                    type: "POST",
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        serial_number: val
+                    },
+                    success: function(response) {
+                        $('#barcode-input').prop('disabled', false).focus();
+                        
+                        if (response.status === 'success') {
+                            // Match line product
+                            var matchedLine = doLines.find(function(line) {
+                                return line.product_id == response.product_id;
+                            });
+
+                            if (!matchedLine) {
+                                playErrorSound();
+                                showAlert('danger', 'Validated serial matches product ' + response.product_name + ' but it is not ordered in this DO.');
+                                return;
+                            }
+
+                            if (matchedLine.scanned_qty >= matchedLine.quantity_requested) {
+                                playErrorSound();
+                                showAlert('danger', 'Quantity limit exceeded for ' + response.product_name + '. Ordered: ' + matchedLine.quantity_requested);
+                                return;
+                            }
+
+                            // Add to list
+                            playSuccessSound();
+                            scannedSerials.push({
+                                serial_id: response.serial_id,
+                                product_id: response.product_id,
+                                product_name: response.product_name,
+                                serial_number: response.serial_number
+                            });
+
+                            matchedLine.scanned_qty += 1;
+                            showAlert('success', 'Scanned: <strong>' + response.serial_number + '</strong> (' + response.product_name + ') successfully.');
+                            
+                            renderProductsTable();
+                            renderScannedList();
+                        } else {
+                            playErrorSound();
+                            showAlert('danger', response.message || 'Invalid serial number scan.');
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#barcode-input').prop('disabled', false).focus();
+                        playErrorSound();
+                        var errorMsg = 'Server validation failed.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMsg = xhr.responseJSON.message;
+                        }
+                        showAlert('danger', errorMsg);
+                    }
+                });
+            }
+
+            // Handle scan input key listeners
             $('#barcode-input').on('keydown', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
+                    if (scanTimeout) {
+                        clearTimeout(scanTimeout);
+                        scanTimeout = null;
+                    }
                     var val = $(this).val().trim();
                     $(this).val('');
+                    processScan(val);
+                }
+            });
 
-                    if (val === '') {
-                        return;
-                    }
-
-                    // Check duplicate scan locally
-                    var alreadyScanned = scannedSerials.some(function(item) {
-                        return item.serial_number.toLowerCase() === val.toLowerCase();
-                    });
-
-                    if (alreadyScanned) {
-                        playErrorSound();
-                        showAlert('danger', 'Serial number <strong>' + val + '</strong> is already scanned in this session.');
-                        return;
-                    }
-
-                    // Validate on server
-                    $('#barcode-input').prop('disabled', true);
-                    var url = "{{ route('delivery-orders.validate-serial', ':id') }}".replace(':id', currentDoId);
-                    
-                    $.ajax({
-                        url: url,
-                        type: "POST",
-                        data: {
-                            _token: "{{ csrf_token() }}",
-                            serial_number: val
-                        },
-                        success: function(response) {
-                            $('#barcode-input').prop('disabled', false).focus();
-                            
-                            if (response.status === 'success') {
-                                // Match line product
-                                var matchedLine = doLines.find(function(line) {
-                                    return line.product_id == response.product_id;
-                                });
-
-                                if (!matchedLine) {
-                                    playErrorSound();
-                                    showAlert('danger', 'Validated serial matches product ' + response.product_name + ' but it is not ordered in this DO.');
-                                    return;
-                                }
-
-                                if (matchedLine.scanned_qty >= matchedLine.quantity_requested) {
-                                    playErrorSound();
-                                    showAlert('danger', 'Quantity limit exceeded for ' + response.product_name + '. Ordered: ' + matchedLine.quantity_requested);
-                                    return;
-                                }
-
-                                // Add to list
-                                playSuccessSound();
-                                scannedSerials.push({
-                                    serial_id: response.serial_id,
-                                    product_id: response.product_id,
-                                    product_name: response.product_name,
-                                    serial_number: response.serial_number
-                                });
-
-                                matchedLine.scanned_qty += 1;
-                                showAlert('success', 'Scanned: <strong>' + response.serial_number + '</strong> (' + response.product_name + ') successfully.');
-                                
-                                renderProductsTable();
-                                renderScannedList();
-                            } else {
-                                playErrorSound();
-                                showAlert('danger', response.message || 'Invalid serial number scan.');
-                            }
-                        },
-                        error: function(xhr) {
-                            $('#barcode-input').prop('disabled', false).focus();
-                            playErrorSound();
-                            var errorMsg = 'Server validation failed.';
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMsg = xhr.responseJSON.message;
-                            }
-                            showAlert('danger', errorMsg);
-                        }
-                    });
+            $('#barcode-input').on('input', function() {
+                if (scanTimeout) {
+                    clearTimeout(scanTimeout);
+                }
+                
+                var val = $(this).val().trim();
+                if (val !== '') {
+                    scanTimeout = setTimeout(function() {
+                        $('#barcode-input').val('');
+                        processScan(val);
+                    }, 400); // 400ms delay to detect complete barcode scanning sequences
                 }
             });
 

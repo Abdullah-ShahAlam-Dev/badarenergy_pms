@@ -62,9 +62,8 @@
                                     <table class="table table-bordered" id="intake-items-table">
                                         <thead class="thead-light">
                                             <tr>
-                                                <th width="50%">Product</th>
-                                                <th width="22%">Qty Declared</th>
-                                                <th width="23%">Qty Received</th>
+                                                <th width="70%">Product</th>
+                                                <th width="25%">Qty Received</th>
                                                 <th width="5%" class="text-center">Action</th>
                                             </tr>
                                         </thead>
@@ -110,9 +109,7 @@
                     @endforeach
                 </select>
             </td>
-            <td>
-                <input type="number" class="form-control quantity-declared" name="items[__INDEX__][quantity_declared]" min="0.01" step="any" required>
-            </td>
+            <input type="hidden" class="quantity-declared" name="items[__INDEX__][quantity_declared]" value="1">
             <td>
                 <input type="number" class="form-control quantity-received" name="items[__INDEX__][quantity_received]" min="0" step="any" required>
             </td>
@@ -139,6 +136,13 @@
             // Click action to add a row
             $('#add-row-btn').click(function() {
                 addRow();
+            });
+
+            // Automatically synchronize quantity_declared with quantity_received
+            $('body').on('input change', '.quantity-received', function() {
+                var row = $(this).closest('tr');
+                var val = parseFloat($(this).val()) || 0;
+                row.find('.quantity-declared').val(Math.max(0.01, val));
             });
 
             function addRow() {

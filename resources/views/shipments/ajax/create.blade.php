@@ -20,7 +20,7 @@
                                 <x-forms.text fieldId="shipment_number" fieldLabel="Shipment Number (Auto Generated)"
                                     fieldName="shipment_number"
                                     :fieldValue="$autoShipmentNumber"
-                                    readOnly="true">
+                                    fieldReadOnly="true">
                                 </x-forms.text>
                             @endif
                         </div>
@@ -120,7 +120,21 @@
 
 <script>
     $(document).ready(function() {
+        const dp1 = datepicker('#eta', {
+            position: 'bl',
+            ...datepickerConfig
+        });
+        const dp2 = datepicker('#arrival_date', {
+            position: 'bl',
+            ...datepickerConfig
+        });
         init(RIGHT_MODAL);
+
+        window.addEventListener('turbo:before-cache', function cleanup() {
+            if (dp1) dp1.destroy();
+            if (dp2) dp2.destroy();
+            window.removeEventListener('turbo:before-cache', cleanup);
+        }, { once: true });
     });
 
     $('#saveShipment').click(function() {

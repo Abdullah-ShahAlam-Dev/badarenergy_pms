@@ -97,7 +97,6 @@
                         <thead class="thead-light">
                             <tr>
                                 <th>Product</th>
-                                <th class="text-right">Qty Declared</th>
                                 <th class="text-right">Qty Received</th>
                                 <th class="text-right">Action</th>
                             </tr>
@@ -108,7 +107,6 @@
                                     <td>
                                         {{ $item->product ? $item->product->name : '-' }}
                                     </td>
-                                    <td class="text-right">{{ number_format($item->quantity_declared, 2) }}</td>
                                     <td class="text-right font-weight-bold">{{ number_format($item->quantity_received, 2) }}</td>
                                     <td class="text-right">
                                         @if ($voucher->serials->where('product_id', $item->product_id)->count() > 0)

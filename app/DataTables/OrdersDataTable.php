@@ -113,14 +113,16 @@ class OrdersDataTable extends BaseDataTable
                 if (in_array('admin', user_roles()) || user()->permission('edit_order') == 'all') {
                     $status = '<select class="form-control select-picker order-status" data-order-id="' . $row->id . '" ' . ($row->status == 'canceled' ? 'disabled' : '') . '>';
                     $status .= '<option value="pending" ' . ($row->status == 'pending' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-warning\'></i> Pending">Pending</option>';
-                    $status .= '<option value="completed" ' . ($row->status == 'completed' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-success\'></i> Approved">Approved</option>';
+                    $status .= '<option value="processing" ' . ($row->status == 'processing' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-primary\'></i> Approved">Approved</option>';
+                    $status .= '<option value="completed" ' . ($row->status == 'completed' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-success\'></i> Completed">Completed</option>';
                     $status .= '<option value="canceled" ' . ($row->status == 'canceled' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-red\'></i> Rejected">Rejected</option>';
                     $status .= '</select>';
                 }
                 else {
                     $status = match ($row->status) {
                         'pending' => ' <i class="fa fa-circle mr-1 text-warning f-10"></i> Pending',
-                        'completed' => ' <i class="fa fa-circle mr-1 text-success f-10"></i> Approved',
+                        'processing' => ' <i class="fa fa-circle mr-1 text-primary f-10"></i> Approved',
+                        'completed' => ' <i class="fa fa-circle mr-1 text-success f-10"></i> Completed',
                         'canceled' => ' <i class="fa fa-circle mr-1 text-red f-10"></i> Rejected',
                         default => ' <i class="fa fa-circle mr-1 text-muted f-10"></i> ' . ucfirst($row->status),
                     };
@@ -140,7 +142,12 @@ class OrdersDataTable extends BaseDataTable
                 }
             )
             ->addColumn('order_status', function ($row) {
-                return ucfirst($row->status);
+                return match ($row->status) {
+                    'processing' => 'Approved',
+                    'completed' => 'Completed',
+                    'canceled' => 'Rejected',
+                    default => ucfirst($row->status),
+                };
             })
             ->orderColumn('order_number', 'created_at $1')
             ->orderColumn('name', 'client_id $1')

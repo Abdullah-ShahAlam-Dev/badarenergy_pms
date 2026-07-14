@@ -1446,7 +1446,7 @@ $addProductPermission = user()->permission('add_product');
         });
 
         // ── Save form ─────────────────────────────────────────────────────
-        $body.off('click' + namespace, '.save-form').on('click' + namespace, '.save-form', function() {
+        $body.on('click' + namespace, '.save-form', function() {
             var type = $(this).data('type');
 
             if (KTUtil.isMobileDevice()) {

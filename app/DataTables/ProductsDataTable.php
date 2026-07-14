@@ -123,6 +123,16 @@ class ProductsDataTable extends BaseDataTable
 
             return currency_format($row->price);
         });
+        $datatables->addColumn('available_stock', function ($row) {
+            $totalStock = $row->inventories->sum('quantity');
+            if ($totalStock <= 0) {
+                return '<span class="badge badge-danger">Out of Stock</span>';
+            }
+            if ($totalStock < 10) {
+                return '<span class="badge badge-warning">' . number_format($totalStock, 2) . ' (Low Stock)</span>';
+            }
+            return '<span class="badge badge-success">' . number_format($totalStock, 2) . '</span>';
+        });
         $datatables->addIndexColumn();
         $datatables->smart(false);
         $datatables->setRowId(function ($row) {
@@ -132,7 +142,7 @@ class ProductsDataTable extends BaseDataTable
         // Custom Fields For export
         $customFieldColumns = CustomField::customFieldData($datatables, Product::CUSTOM_FIELD_MODEL);
 
-        $datatables->rawColumns(array_merge(['action', 'price', 'allow_purchase', 'check', 'name', 'default_image'], $customFieldColumns));
+        $datatables->rawColumns(array_merge(['action', 'price', 'allow_purchase', 'check', 'name', 'default_image', 'available_stock'], $customFieldColumns));
 
         return $datatables;
     }
@@ -145,7 +155,7 @@ class ProductsDataTable extends BaseDataTable
     {
         $request = $this->request();
 
-        $model = $model->with('tax', 'category', 'subCategory')->select('id', 'name', 'price', 'taxes', 'allow_purchase', 'added_by', 'default_image', 'category_id', 'sub_category_id', 'description');
+        $model = $model->with('tax', 'category', 'subCategory', 'inventories')->select('id', 'name', 'price', 'taxes', 'allow_purchase', 'added_by', 'default_image', 'category_id', 'sub_category_id', 'description');
 
         if (!is_null($request->category_id) && $request->category_id != 'all' && $request->category_id > 0) {
             $model->where('category_id', $request->category_id);
@@ -224,6 +234,7 @@ class ProductsDataTable extends BaseDataTable
             __('app.description') => ['data' => 'description', 'name' => 'description', 'title' => __('app.description'), 'visible' => false],
             __('app.menu.products') => ['data' => 'name', 'name' => 'name', 'title' => __('app.menu.products')],
             __('app.price') . ' (' . __('app.inclusiveAllTaxes') . ')' => ['data' => 'price', 'name' => 'price', 'title' => __('app.price') . ' (' . __('app.inclusiveAllTaxes') . ')'],
+            'available_stock' => ['data' => 'available_stock', 'name' => 'available_stock', 'title' => 'Available Stock', 'orderable' => false, 'searchable' => false],
             __('app.purchaseAllow') => ['data' => 'allow_purchase', 'name' => 'allow_purchase', 'visible' => !in_array('client', user_roles()), 'title' => __('app.purchaseAllow')]
         ];
 

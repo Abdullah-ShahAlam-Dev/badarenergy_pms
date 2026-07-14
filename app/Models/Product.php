@@ -209,4 +209,9 @@ class Product extends BaseModel
     {
         return $this->hasMany(ProductSerial::class, 'product_id');
     }
+
+    public function inventories(): HasMany
+    {
+        return $this->hasMany(Inventory::class, 'product_id');
+    }
 }

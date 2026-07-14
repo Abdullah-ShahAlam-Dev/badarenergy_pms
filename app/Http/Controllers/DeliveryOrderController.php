@@ -34,7 +34,8 @@ class DeliveryOrderController extends AccountBaseController
                 'dispatcher', 
                 'stockTransfer.sourceWarehouse', 
                 'stockTransfer.destinationWarehouse'
-            ])->select('delivery_orders.*');
+            ])->select('delivery_orders.*')
+            ->orderBy('delivery_orders.id', 'desc');
  
             return DataTables::of($model)
                 ->addColumn('action', function ($row) {

@@ -121,7 +121,8 @@ class StockIntakeVoucherDataTable extends BaseDataTable
         $request = $this->request();
         $query = StockIntakeVoucher::with(['shipment', 'warehouse'])
             ->withCount('items')
-            ->where('company_id', company()->id);
+            ->where('company_id', company()->id)
+            ->orderBy('stock_intake_vouchers.id', 'desc');
 
         if (!is_null($request->searchText)) {
             $query->where(function ($q) use ($request) {
@@ -148,6 +149,7 @@ class StockIntakeVoucherDataTable extends BaseDataTable
                    window.LaravelDataTables["stock-intakes-table"].buttons().container()
                     .appendTo("#table-actions")
                 }',
+                'order' => [1, 'desc'],
             ])
             ->buttons(\Yajra\DataTables\Html\Button::make(['extend' => 'excel', 'text' => '<i class="fa fa-file-export"></i> ' . trans('app.exportExcel')]));
     }

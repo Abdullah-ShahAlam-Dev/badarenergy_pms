@@ -135,6 +135,7 @@
                 responsive: true,
                 serverSide: true,
                 processing: true,
+                order: [[0, "desc"]],
                 ajax: {
                     url: "{{ route('delivery-orders.index') }}",
                     data: function(d) {

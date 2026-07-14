@@ -46,9 +46,7 @@ class OrdersDataTable extends BaseDataTable
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuLink-' . $row->id . '" tabindex="0">';
 
-                if (!in_array('client', user_roles()) && in_array($row->status, ['pending', 'on-hold', 'failed', 'processing']) && ($this->editOrderPermission == 'all' || (in_array($this->editOrderPermission, ['added', 'both']) && $row->added_by == user()->id))) {
-                    $action .= '<a class="dropdown-item orderStatusChange" href="javascript:;"  data-order-id="' . $row->id . '" data-status="completed"><i class="fa fa-check mr-2"></i>' . __('app.orderMarkAsComplete') . '</a>';
-                }
+
 
                 $action .= ' <a href="' . route('orders.show', [$row->id]) . '" class="dropdown-item"><i class="fa fa-eye mr-2"></i>' . __('app.view') . '</a>';
 
@@ -111,12 +109,18 @@ class OrdersDataTable extends BaseDataTable
             ->editColumn('status', function ($row) {
 
                 if (in_array('admin', user_roles()) || user()->permission('edit_order') == 'all') {
-                    $status = '<select class="form-control select-picker order-status" data-order-id="' . $row->id . '" ' . ($row->status == 'canceled' ? 'disabled' : '') . '>';
-                    $status .= '<option value="pending" ' . ($row->status == 'pending' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-warning\'></i> Pending">Pending</option>';
-                    $status .= '<option value="processing" ' . ($row->status == 'processing' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-primary\'></i> Approved">Approved</option>';
-                    $status .= '<option value="completed" ' . ($row->status == 'completed' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-success\'></i> Completed">Completed</option>';
-                    $status .= '<option value="canceled" ' . ($row->status == 'canceled' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-red\'></i> Rejected">Rejected</option>';
-                    $status .= '</select>';
+                    if ($row->status === 'completed' || $row->status === 'canceled') {
+                        $status = match ($row->status) {
+                            'completed' => ' <i class="fa fa-circle mr-1 text-success f-10"></i> Completed',
+                            'canceled' => ' <i class="fa fa-circle mr-1 text-red f-10"></i> Rejected',
+                        };
+                    } else {
+                        $status = '<select class="form-control select-picker order-status" data-order-id="' . $row->id . '">';
+                        $status .= '<option value="pending" ' . ($row->status == 'pending' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-warning\'></i> Pending">Pending</option>';
+                        $status .= '<option value="processing" ' . ($row->status == 'processing' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-primary\'></i> Approved">Approved</option>';
+                        $status .= '<option value="canceled" ' . ($row->status == 'canceled' ? 'selected' : '') . ' data-content="<i class=\'fa fa-circle mr-2 text-red\'></i> Rejected">Rejected</option>';
+                        $status .= '</select>';
+                    }
                 }
                 else {
                     $status = match ($row->status) {

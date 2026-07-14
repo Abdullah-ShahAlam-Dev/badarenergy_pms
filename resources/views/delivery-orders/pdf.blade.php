@@ -321,18 +321,14 @@
         <thead>
             <tr class="main-table-heading text-grey">
                 <td width="5%">#</td>
-                <td width="55%">Product / Model</td>
-                <th width="15%" class="qty" align="right">Qty Ordered</th>
-                <td width="25%" align="right">Serials Dispatched</td>
+                <td width="75%">Product / Model</td>
+                <th width="20%" class="qty" align="right">Qty Ordered</th>
             </tr>
         </thead>
         <tbody>
             @if($deliveryOrder->source_type === 'transfer' && $deliveryOrder->stockTransfer)
                 @foreach ($deliveryOrder->stockTransfer->items as $index => $item)
                     @if($item->product_id)
-                        @php
-                            $serials = $item->serials->map(fn($ts) => $ts->serial->serial_number)->toArray();
-                        @endphp
                         <tr class="main-table-items text-black">
                             <td>{{ $index + 1 }}</td>
                             <td>
@@ -342,13 +338,6 @@
                                 @endif
                             </td>
                             <td align="right">{{ (int)$item->quantity }}</td>
-                            <td align="right">
-                                @if(!empty($serials))
-                                    {{ implode(', ', $serials) }}
-                                @else
-                                    <span class="text-grey" style="font-style: italic;">Non-serialized</span>
-                                @endif
-                            </td>
                         </tr>
                     @endif
                 @endforeach
@@ -364,21 +353,12 @@
                                 @endif
                             </td>
                             <td align="right">{{ (int)$item->quantity }}</td>
-                            <td align="right">
-                                <span class="text-grey" style="font-style: italic;">Pending Invoice & Dispatch</span>
-                            </td>
                         </tr>
                     @endif
                 @endforeach
             @elseif($deliveryOrder->invoice)
                 @foreach ($deliveryOrder->invoice->items as $index => $item)
                     @if($item->product_id)
-                        @php
-                            $serials = \App\Models\ProductSerial::where('invoice_id', $deliveryOrder->invoice_id)
-                                ->where('product_id', $item->product_id)
-                                ->pluck('serial_number')
-                                ->toArray();
-                        @endphp
                         <tr class="main-table-items text-black">
                             <td>{{ $index + 1 }}</td>
                             <td>
@@ -388,13 +368,6 @@
                                 @endif
                             </td>
                             <td align="right">{{ (int)$item->quantity }}</td>
-                            <td align="right">
-                                @if(!empty($serials))
-                                    {{ implode(', ', $serials) }}
-                                @else
-                                    <span class="text-grey" style="font-style: italic;">Non-serialized</span>
-                                @endif
-                            </td>
                         </tr>
                     @endif
                 @endforeach

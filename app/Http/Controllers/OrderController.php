@@ -732,6 +732,10 @@ class OrderController extends AccountBaseController
 
         $order = Order::findOrFail($request->orderId);
 
+        if ($request->status == 'completed') {
+            return Reply::error('Orders can only be marked as completed automatically when an invoice is created.');
+        }
+
         if ($request->status == 'processing') {
             $existingDO = \App\Models\DeliveryOrder::where('source_type', 'order')
                 ->where('source_id', $order->id)

@@ -175,6 +175,9 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     // Warehouse Management (TSK-3.1)
     Route::post('warehouses/toggle-status', [WarehouseController::class, 'toggleStatus'])->name('warehouses.toggle-status');
     Route::resource('warehouses', WarehouseController::class);
+    Route::get('delivery-orders/{id}/details', [DeliveryOrderController::class, 'getDODetails'])->name('delivery-orders.details');
+    Route::post('delivery-orders/{id}/validate-serial', [DeliveryOrderController::class, 'validateSerial'])->name('delivery-orders.validate-serial');
+    Route::post('delivery-orders/{id}/submit-scanned-serials', [DeliveryOrderController::class, 'submitScannedSerials'])->name('delivery-orders.submit-scanned-serials');
     Route::resource('delivery-orders', DeliveryOrderController::class)->only(['index', 'edit', 'update', 'show']);
 
     // Inventory & Stock Movements (TSK-4.1)

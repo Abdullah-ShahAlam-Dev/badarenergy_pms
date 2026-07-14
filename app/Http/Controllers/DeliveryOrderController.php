@@ -7,6 +7,7 @@ use App\Models\DeliveryOrder;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Support\Facades\DB;
 
 class DeliveryOrderController extends AccountBaseController
 {
@@ -38,13 +39,11 @@ class DeliveryOrderController extends AccountBaseController
             return DataTables::of($model)
                 ->addColumn('action', function ($row) {
                     $buttons = '';
-                    if (!$row->invoice_id && $row->source_type === 'order' && $row->source_id) {
-                        $buttons .= '<a href="' . route('invoices.create') . '?order=' . $row->source_id . '" class="btn btn-primary btn-sm rounded mr-2">Create Invoice</a>';
+                    if ($row->status === 'pending') {
+                        $buttons .= '<button type="button" class="btn btn-primary btn-sm rounded open-scan-modal mr-2" data-do-id="' . $row->id . '"><i class="fa fa-barcode mr-1"></i>Scan</button>';
                     } else {
-                        $buttons .= '<span class="badge badge-success px-2 py-1 mr-2">Invoiced</span>';
+                        $buttons .= '<a href="' . route('delivery-orders.show', $row->id) . '" target="_blank" class="btn btn-secondary btn-sm rounded mr-2"><i class="fa fa-print mr-1"></i>Print DO</a>';
                     }
-                    
-                    $buttons .= '<a href="' . route('delivery-orders.show', $row->id) . '" target="_blank" class="btn btn-secondary btn-sm rounded"><i class="fa fa-print mr-1"></i>Print DO</a>';
                     return $buttons;
                 })
                 ->editColumn('id', function ($row) {
@@ -146,10 +145,158 @@ class DeliveryOrderController extends AccountBaseController
             'stockTransfer.sourceWarehouse',
             'stockTransfer.destinationWarehouse',
             'stockTransfer.items.product',
-            'stockTransfer.items.serials.serial'
+            'stockTransfer.items.serials.serial',
+            'lines.lineSerials.serial'
         ])->findOrFail($id);
         $this->invoiceSetting = invoice_setting();
         $this->printView = true;
         return view('delivery-orders.pdf', $this->data);
+    }
+
+    public function validateSerial(Request $request, $id)
+    {
+        $do = DeliveryOrder::findOrFail($id);
+        $serialNumber = trim($request->serial_number);
+
+        if (empty($serialNumber)) {
+            return Reply::error('Serial number cannot be empty.');
+        }
+
+        $companyId = $do->company_id ?? (company() ? company()->id : 1);
+        $serial = \App\Models\ProductSerial::where('company_id', $companyId)
+            ->where('serial_number', $serialNumber)
+            ->with('product')
+            ->first();
+
+        if (!$serial) {
+            return Reply::error("Serial number [{$serialNumber}] does not exist in the system database.");
+        }
+
+        if ($serial->status !== \App\Enums\SerialStatus::AVAILABLE->value) {
+            return Reply::error("Serial number [{$serialNumber}] is currently not available. Current status: " . ucfirst($serial->status));
+        }
+
+        $do->load(['lines.product']);
+        $matchedLine = $do->lines->first(function ($line) use ($serial) {
+            return $line->product_id == $serial->product_id;
+        });
+
+        if (!$matchedLine) {
+            return Reply::error("Product [{$serial->product->name}] does not belong to this Delivery Order.");
+        }
+
+        $warehouseId = $do->warehouse_id ?? $this->resolveWarehouseId($do);
+        if ($warehouseId && $serial->warehouse_id != $warehouseId) {
+            $expectedWarehouse = \App\Models\Warehouse::find($warehouseId);
+            $actualWarehouse = \App\Models\Warehouse::find($serial->warehouse_id);
+            $expectedName = $expectedWarehouse ? $expectedWarehouse->name : 'Expected';
+            $actualName = $actualWarehouse ? $actualWarehouse->name : 'Actual';
+            return Reply::error("Serial [{$serialNumber}] belongs to warehouse '{$actualName}' but this DO requires warehouse '{$expectedName}'.");
+        }
+
+        return Reply::dataOnly([
+            'status' => 'success',
+            'serial_id' => $serial->id,
+            'product_id' => $serial->product_id,
+            'product_name' => $serial->product->name,
+            'serial_number' => $serial->serial_number,
+        ]);
+    }
+
+    public function submitScannedSerials(Request $request, $id)
+    {
+        $do = DeliveryOrder::findOrFail($id);
+        $scannedSerials = (array) $request->serials;
+
+        $do->load(['lines.product']);
+        $companyId = $do->company_id ?? (company() ? company()->id : 1);
+        $serialsInDb = \App\Models\ProductSerial::where('company_id', $companyId)
+            ->whereIn('serial_number', $scannedSerials)
+            ->get()
+            ->keyBy('serial_number');
+
+        $lineSerialsMapping = [];
+
+        foreach ($do->lines as $line) {
+            $isSerialized = $line->product ? $line->product->is_serialized : false;
+            if (!$isSerialized) {
+                continue;
+            }
+
+            $expectedQty = (int) $line->quantity_requested;
+            $productScans = [];
+            foreach ($scannedSerials as $sNo) {
+                if (isset($serialsInDb[$sNo]) && $serialsInDb[$sNo]->product_id == $line->product_id) {
+                    $productScans[] = $serialsInDb[$sNo]->id;
+                }
+            }
+
+            if (count($productScans) !== $expectedQty) {
+                return Reply::error("Product [{$line->product->name}] requires {$expectedQty} serials, but only " . count($productScans) . " were scanned.");
+            }
+
+            $lineSerialsMapping[$line->id] = $productScans;
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $do->lockForUpdate();
+
+            $doService = resolve(\App\Services\DeliveryOrderService::class);
+            $doService->releaseReservations($do);
+            $doService->reserveSerials($do, $lineSerialsMapping);
+            $doService->dispatch($do, auth()->id());
+
+            DB::commit();
+
+            return Reply::success('Delivery Order successfully scanned and dispatched.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return Reply::error($e->getMessage());
+        }
+    }
+
+    public function getDODetails($id)
+    {
+        $do = DeliveryOrder::with(['lines.product'])->findOrFail($id);
+        return response()->json([
+            'id' => $do->id,
+            'delivery_order_number' => $do->delivery_order_number,
+            'lines' => $do->lines->map(function ($line) {
+                return [
+                    'id' => $line->id,
+                    'product_id' => $line->product_id,
+                    'product_name' => $line->product->name,
+                    'is_serialized' => $line->product->is_serialized,
+                    'quantity_requested' => $line->quantity_requested,
+                ];
+            })
+        ]);
+    }
+
+    protected function resolveWarehouseId($do): ?int
+    {
+        if (isset($do->warehouse_id) && $do->warehouse_id) {
+            return $do->warehouse_id;
+        }
+
+        if ($do->invoice_id && $do->invoice) {
+            return $do->invoice->warehouse_id;
+        }
+
+        if ($do->transfer_id && $do->stockTransfer) {
+            return $do->stockTransfer->from_warehouse_id;
+        }
+
+        $firstLine = $do->lines()->first();
+        if ($firstLine) {
+            $firstSerialLink = $firstLine->lineSerials()->first();
+            if ($firstSerialLink && $firstSerialLink->serial) {
+                return $firstSerialLink->serial->warehouse_id;
+            }
+        }
+
+        return null;
     }
 }

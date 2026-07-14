@@ -329,12 +329,26 @@
             @if($deliveryOrder->source_type === 'transfer' && $deliveryOrder->stockTransfer)
                 @foreach ($deliveryOrder->stockTransfer->items as $index => $item)
                     @if($item->product_id)
+                        @php
+                            $line = $deliveryOrder->lines->where('product_id', $item->product_id)->first();
+                            $serials = [];
+                            if ($line) {
+                                $serials = $line->lineSerials->map(fn($ls) => $ls->serial->serial_number ?? null)->filter()->toArray();
+                            }
+                        @endphp
                         <tr class="main-table-items text-black">
                             <td>{{ $index + 1 }}</td>
                             <td>
                                 <strong>{{ $item->product->name }}</strong>
                                 @if($item->product->description)
                                     <br><small style="color: #616e80;">{{ $item->product->description }}</small>
+                                @endif
+                                @if(!empty($serials))
+                                    <div class="scanned-serials" style="margin-top: 5px; font-size: 11px; color: #555;">
+                                        @foreach($serials as $serial)
+                                            <span style="display: block;">• {{ $serial }}</span>
+                                        @endforeach
+                                    </div>
                                 @endif
                             </td>
                             <td align="right">{{ (int)$item->quantity }}</td>
@@ -344,12 +358,26 @@
             @elseif($deliveryOrder->source_type === 'order' && !$deliveryOrder->invoice_id && $deliveryOrder->order)
                 @foreach ($deliveryOrder->order->items as $index => $item)
                     @if($item->product_id)
+                        @php
+                            $line = $deliveryOrder->lines->where('product_id', $item->product_id)->first();
+                            $serials = [];
+                            if ($line) {
+                                $serials = $line->lineSerials->map(fn($ls) => $ls->serial->serial_number ?? null)->filter()->toArray();
+                            }
+                        @endphp
                         <tr class="main-table-items text-black">
                             <td>{{ $index + 1 }}</td>
                             <td>
                                 <strong>{{ $item->product->name }}</strong>
                                 @if($item->product->description)
                                     <br><small style="color: #616e80;">{{ $item->product->description }}</small>
+                                @endif
+                                @if(!empty($serials))
+                                    <div class="scanned-serials" style="margin-top: 5px; font-size: 11px; color: #555;">
+                                        @foreach($serials as $serial)
+                                            <span style="display: block;">• {{ $serial }}</span>
+                                        @endforeach
+                                    </div>
                                 @endif
                             </td>
                             <td align="right">{{ (int)$item->quantity }}</td>
@@ -359,12 +387,26 @@
             @elseif($deliveryOrder->invoice)
                 @foreach ($deliveryOrder->invoice->items as $index => $item)
                     @if($item->product_id)
+                        @php
+                            $line = $deliveryOrder->lines->where('product_id', $item->product_id)->first();
+                            $serials = [];
+                            if ($line) {
+                                $serials = $line->lineSerials->map(fn($ls) => $ls->serial->serial_number ?? null)->filter()->toArray();
+                            }
+                        @endphp
                         <tr class="main-table-items text-black">
                             <td>{{ $index + 1 }}</td>
                             <td>
                                 <strong>{{ $item->product->name }}</strong>
                                 @if($item->product->description)
                                     <br><small style="color: #616e80;">{{ $item->product->description }}</small>
+                                @endif
+                                @if(!empty($serials))
+                                    <div class="scanned-serials" style="margin-top: 5px; font-size: 11px; color: #555;">
+                                        @foreach($serials as $serial)
+                                            <span style="display: block;">• {{ $serial }}</span>
+                                        @endforeach
+                                    </div>
                                 @endif
                             </td>
                             <td align="right">{{ (int)$item->quantity }}</td>

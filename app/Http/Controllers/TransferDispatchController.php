@@ -20,7 +20,7 @@ class TransferDispatchController extends AccountBaseController
 
     public function dispatch(Request $request, $id)
     {
-        abort_403(user()->permission('dispatch_stock_transfer') == 'none');
+        abort_403(user()->permission('manage_dispatch') == 'none');
 
         $request->validate([
             'vehicle_number' => 'nullable|string|max:50',

@@ -11,7 +11,7 @@ class StoreStockIntakeRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return user()->permission('add_stock_intake') === 'all' || in_array('admin', user_roles());
+        return user()->permission('add_inventory') === 'all' || in_array('admin', user_roles());
     }
 
     /**

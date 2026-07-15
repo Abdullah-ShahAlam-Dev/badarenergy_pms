@@ -16,9 +16,9 @@ class StockIntakeVoucherDataTable extends BaseDataTable
     public function __construct()
     {
         parent::__construct();
-        $this->viewPermission = user()->permission('view_stock_intake');
-        $this->editPermission = user()->permission('edit_stock_intake');
-        $this->deletePermission = user()->permission('delete_stock_intake');
+        $this->viewPermission = user()->permission('approve_stock_intake');
+        $this->editPermission = user()->permission('edit_inventory');
+        $this->deletePermission = user()->permission('delete_inventory');
         $this->approvePermission = user()->permission('approve_stock_intake');
     }
 

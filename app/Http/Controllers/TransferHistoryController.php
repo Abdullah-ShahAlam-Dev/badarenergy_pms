@@ -14,7 +14,7 @@ class TransferHistoryController extends AccountBaseController
 
     public function timeline($id)
     {
-        abort_403(user()->permission('view_transfer_history') == 'none');
+        abort_403(user()->permission('approve_stock_transfer') == 'none');
 
         $this->transfer = StockTransfer::with([
             'sourceWarehouse',

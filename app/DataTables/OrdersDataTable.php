@@ -256,6 +256,7 @@ class OrdersDataTable extends BaseDataTable
         return [
             __('app.id') => ['data' => 'id', 'name' => 'id', 'visible' => false, 'title' => __('app.id')],
             __('app.order') . __('app.no') => ['data' => 'order_number_export', 'name' => 'order_number_export', 'visible' => false, 'title' => __('app.order') . ' ' . __('app.no')],
+            __('modules.orders.orderNumber') => ['data' => 'order_number', 'name' => 'order_number', 'title' => __('modules.orders.orderNumber')],
             __('app.client_name') => ['data' => 'client_name', 'name' => 'project.client.name', 'visible' => false, 'title' => __('app.client_name')],
             __('app.client') => ['data' => 'name', 'name' => 'name', 'visible' => !in_array('client', user_roles()), 'exportable' => false, 'title' => __('app.client')],
             __('modules.invoices.total') => ['data' => 'total', 'name' => 'total', 'title' => __('modules.invoices.total')],

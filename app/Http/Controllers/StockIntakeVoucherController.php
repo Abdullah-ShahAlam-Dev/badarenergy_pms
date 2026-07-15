@@ -24,7 +24,7 @@ class StockIntakeVoucherController extends AccountBaseController
         $this->activeMenu = 'stock-intakes';
 
         $this->middleware(function ($request, $next) {
-            abort_403(!in_array('admin', user_roles()) && user()->permission('view_stock_intake') == 'none');
+            abort_403(!in_array('admin', user_roles()) && user()->permission('approve_stock_intake') == 'none');
 
             return $next($request);
         });
@@ -35,8 +35,8 @@ class StockIntakeVoucherController extends AccountBaseController
      */
     public function index(StockIntakeVoucherDataTable $dataTable)
     {
-        $this->viewPermission = user()->permission('view_stock_intake');
-        $this->addPermission = user()->permission('add_stock_intake');
+        $this->viewPermission = user()->permission('approve_stock_intake');
+        $this->addPermission = user()->permission('add_inventory');
 
         abort_403($this->viewPermission == 'none' && !in_array('admin', user_roles()));
 
@@ -48,7 +48,7 @@ class StockIntakeVoucherController extends AccountBaseController
      */
     public function create()
     {
-        $this->addPermission = user()->permission('add_stock_intake');
+        $this->addPermission = user()->permission('add_inventory');
         abort_403($this->addPermission != 'all' && !in_array('admin', user_roles()));
 
         $companyId = company() ? company()->id : 1;
@@ -68,7 +68,7 @@ class StockIntakeVoucherController extends AccountBaseController
      */
     public function store(StoreStockIntakeRequest $request)
     {
-        $this->addPermission = user()->permission('add_stock_intake');
+        $this->addPermission = user()->permission('add_inventory');
         abort_403($this->addPermission != 'all' && !in_array('admin', user_roles()));
 
         $intakeDate = $request->intake_date;
@@ -96,7 +96,7 @@ class StockIntakeVoucherController extends AccountBaseController
      */
     public function show($id)
     {
-        $this->viewPermission = user()->permission('view_stock_intake');
+        $this->viewPermission = user()->permission('approve_stock_intake');
         abort_403($this->viewPermission == 'none' && !in_array('admin', user_roles()));
 
         $companyId = company() ? company()->id : 1;
@@ -133,7 +133,7 @@ class StockIntakeVoucherController extends AccountBaseController
      */
     public function destroy($id)
     {
-        $this->deletePermission = user()->permission('delete_stock_intake');
+        $this->deletePermission = user()->permission('delete_inventory');
         abort_403($this->deletePermission != 'all' && !in_array('admin', user_roles()));
 
         $companyId = company() ? company()->id : 1;
@@ -154,7 +154,7 @@ class StockIntakeVoucherController extends AccountBaseController
      */
     public function printBarcodes(Request $request, $id)
     {
-        $this->viewPermission = user()->permission('view_stock_intake');
+        $this->viewPermission = user()->permission('approve_stock_intake');
         abort_403($this->viewPermission == 'none' && !in_array('admin', user_roles()));
 
         $companyId = company() ? company()->id : 1;
@@ -196,7 +196,7 @@ class StockIntakeVoucherController extends AccountBaseController
      */
     public function printSingleBarcode($voucherId, $serialId)
     {
-        $this->viewPermission = user()->permission('view_stock_intake');
+        $this->viewPermission = user()->permission('approve_stock_intake');
         abort_403($this->viewPermission == 'none' && !in_array('admin', user_roles()));
 
         $companyId = company() ? company()->id : 1;

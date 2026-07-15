@@ -13,7 +13,7 @@ class InventoryDataTable extends BaseDataTable
     public function __construct()
     {
         parent::__construct();
-        $this->adjustInventoryPermission = user()->permission('adjust_inventory');
+        $this->adjustInventoryPermission = user()->permission('adjust_stock');
     }
 
     /**

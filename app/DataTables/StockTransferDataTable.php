@@ -36,7 +36,7 @@ class StockTransferDataTable extends BaseDataTable
                 $btn = '<div class="btn-group" role="group">';
                 $btn .= '<a href="' . route('stock-transfers.show', $row->id) . '" class="btn btn-xs btn-primary"><i class="fa fa-eye"></i> View</a>';
                 
-                if ($row->status === StockTransfer::STATUS_DRAFT && user()->permission('edit_stock_transfer') != 'none') {
+                if ($row->status === StockTransfer::STATUS_DRAFT && user()->permission('edit_inventory') != 'none') {
                     $btn .= '<a href="' . route('stock-transfers.edit', $row->id) . '" class="btn btn-xs btn-warning ml-1"><i class="fa fa-edit"></i> Edit</a>';
                 }
                 

@@ -19,6 +19,7 @@ class DeliveryOrderController extends AccountBaseController
             if (in_array('client', user_roles())) {
                 abort(403);
             }
+            abort_403(!in_array('admin', user_roles()) && user()->permission('view_inventory') == 'none');
             return $next($request);
         });
     }
@@ -112,6 +113,8 @@ class DeliveryOrderController extends AccountBaseController
 
     public function edit($id)
     {
+        abort_403(user()->permission('manage_dispatch') == 'none' && !in_array('admin', user_roles()));
+
         $this->deliveryOrder = DeliveryOrder::findOrFail($id);
         $this->employees = User::allEmployees(null, true);
         
@@ -120,6 +123,8 @@ class DeliveryOrderController extends AccountBaseController
 
     public function update(Request $request, $id)
     {
+        abort_403(user()->permission('manage_dispatch') == 'none' && !in_array('admin', user_roles()));
+
         $request->validate([
             'dispatcher_id' => 'nullable|exists:users,id',
             'status' => 'required|in:pending,dispatched,delivered,cancelled',
@@ -156,6 +161,8 @@ class DeliveryOrderController extends AccountBaseController
 
     public function validateSerial(Request $request, $id)
     {
+        abort_403(user()->permission('manage_dispatch') == 'none' && !in_array('admin', user_roles()));
+
         $do = DeliveryOrder::findOrFail($id);
         $serialNumber = trim($request->serial_number);
 
@@ -206,6 +213,8 @@ class DeliveryOrderController extends AccountBaseController
 
     public function submitScannedSerials(Request $request, $id)
     {
+        abort_403(user()->permission('manage_dispatch') == 'none' && !in_array('admin', user_roles()));
+
         $do = DeliveryOrder::findOrFail($id);
         $scannedSerials = (array) $request->serials;
 

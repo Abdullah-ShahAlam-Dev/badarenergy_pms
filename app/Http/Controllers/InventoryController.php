@@ -19,7 +19,7 @@ class InventoryController extends AccountBaseController
         $this->pageTitle = 'app.menu.inventory';
 
         $this->middleware(function ($request, $next) {
-            abort_403(!in_array('admin', user_roles()) && user()->permission('view_inventory') == 'none');
+            abort_403(!in_array('admin', user_roles()) && user()->permission('view_stock_movements') == 'none');
 
             return $next($request);
         });
@@ -30,8 +30,8 @@ class InventoryController extends AccountBaseController
      */
     public function index(InventoryDataTable $dataTable)
     {
-        $this->viewPermission   = user()->permission('view_inventory');
-        $this->adjustPermission = user()->permission('adjust_inventory');
+        $this->viewPermission   = user()->permission('view_stock_movements');
+        $this->adjustPermission = user()->permission('adjust_stock');
 
         abort_403($this->viewPermission == 'none' && !in_array('admin', user_roles()));
 
@@ -52,7 +52,7 @@ class InventoryController extends AccountBaseController
             return redirect(route('inventory.index'));
         }
 
-        $this->adjustPermission = user()->permission('adjust_inventory');
+        $this->adjustPermission = user()->permission('adjust_stock');
         abort_403($this->adjustPermission != 'all' && !in_array('admin', user_roles()));
 
         $this->warehouses = Warehouse::active()->get();
@@ -72,7 +72,7 @@ class InventoryController extends AccountBaseController
      */
     public function store(StoreAdjustmentRequest $request, StockAdjustmentService $adjustmentService)
     {
-        $this->adjustPermission = user()->permission('adjust_inventory');
+        $this->adjustPermission = user()->permission('adjust_stock');
         abort_403($this->adjustPermission != 'all' && !in_array('admin', user_roles()));
 
         try {
@@ -106,8 +106,7 @@ class InventoryController extends AccountBaseController
      */
     public function serials(ProductSerialDataTable $dataTable)
     {
-        $this->viewPermission = user()->permission('view_inventory');
-        abort_403($this->viewPermission == 'none' && !in_array('admin', user_roles()));
+        abort_403(user()->permission('manage_serial_numbers') == 'none' && !in_array('admin', user_roles()));
 
         $this->warehouses = Warehouse::active()->get();
         $this->products = Product::where('is_serialized', true)->get();

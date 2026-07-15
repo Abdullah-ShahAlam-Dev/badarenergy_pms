@@ -26,7 +26,7 @@ class StockTransferController extends AccountBaseController
 
     public function index(StockTransferDataTable $dataTable)
     {
-        abort_403(user()->permission('view_stock_transfer') == 'none');
+        abort_403(user()->permission('approve_stock_transfer') == 'none');
 
         $this->warehouses = Warehouse::where('is_active', true)
             ->where('company_id', company()->id)
@@ -37,7 +37,7 @@ class StockTransferController extends AccountBaseController
 
     public function create()
     {
-        abort_403(user()->permission('add_stock_transfer') == 'none');
+        abort_403(user()->permission('add_inventory') == 'none');
 
         $this->warehouses = Warehouse::where('is_active', true)
             ->where('company_id', company()->id)
@@ -54,7 +54,7 @@ class StockTransferController extends AccountBaseController
 
     public function store(Request $request)
     {
-        abort_403(user()->permission('add_stock_transfer') == 'none');
+        abort_403(user()->permission('add_inventory') == 'none');
 
         $request->validate([
             'source_warehouse_id' => 'required|integer',
@@ -89,7 +89,7 @@ class StockTransferController extends AccountBaseController
 
     public function edit($id)
     {
-        abort_403(user()->permission('edit_stock_transfer') == 'none');
+        abort_403(user()->permission('edit_inventory') == 'none');
 
         $this->transfer = StockTransfer::with(['items.product', 'items.serials.serial'])->findOrFail($id);
         
@@ -112,7 +112,7 @@ class StockTransferController extends AccountBaseController
 
     public function update(Request $request, $id)
     {
-        abort_403(user()->permission('edit_stock_transfer') == 'none');
+        abort_403(user()->permission('edit_inventory') == 'none');
 
         $request->validate([
             'source_warehouse_id' => 'required|integer',
@@ -144,7 +144,7 @@ class StockTransferController extends AccountBaseController
 
     public function show($id)
     {
-        abort_403(user()->permission('view_stock_transfer') == 'none');
+        abort_403(user()->permission('approve_stock_transfer') == 'none');
 
         $this->transfer = StockTransfer::with([
             'sourceWarehouse',
@@ -167,7 +167,7 @@ class StockTransferController extends AccountBaseController
 
     public function destroy($id)
     {
-        abort_403(user()->permission('delete_stock_transfer') == 'none');
+        abort_403(user()->permission('delete_inventory') == 'none');
 
         try {
             DB::transaction(function () use ($id) {
@@ -199,7 +199,7 @@ class StockTransferController extends AccountBaseController
 
     public function cancel($id)
     {
-        abort_403(user()->permission('cancel_stock_transfer') == 'none');
+        abort_403(user()->permission('approve_stock_transfer') == 'none');
 
         try {
             DB::transaction(function () use ($id) {

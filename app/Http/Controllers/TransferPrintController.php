@@ -16,7 +16,7 @@ class TransferPrintController extends AccountBaseController
 
     public function printChallan($id)
     {
-        abort_403(user()->permission('print_stock_transfer') == 'none');
+        abort_403(user()->permission('approve_stock_transfer') == 'none');
         
         $data = $this->printService->getChallanData($id);
         $this->transfer = $data['transfer'];
@@ -26,7 +26,7 @@ class TransferPrintController extends AccountBaseController
 
     public function printGRN($id)
     {
-        abort_403(user()->permission('print_stock_transfer') == 'none');
+        abort_403(user()->permission('approve_stock_transfer') == 'none');
         
         $data = $this->printService->getGRNData($id);
         $this->transfer = $data['transfer'];

@@ -1668,6 +1668,66 @@ class Module extends BaseModel
             'module_name' => 'messages',
             'permissions' => []
         ],
+        [
+            'module_name' => 'inventory',
+            'permissions' => [
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 0,
+                    'name' => 'add_inventory',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_4_ADDED_1_OWNED_2_BOTH_3_NONE_5,
+                    'is_custom' => 0,
+                    'name' => 'view_inventory',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 0,
+                    'name' => 'edit_inventory',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 0,
+                    'name' => 'delete_inventory',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 1,
+                    'name' => 'view_stock_movements',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 1,
+                    'name' => 'manage_warehouses',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 1,
+                    'name' => 'approve_stock_intake',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 1,
+                    'name' => 'approve_stock_transfer',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 1,
+                    'name' => 'manage_serial_numbers',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 1,
+                    'name' => 'adjust_stock',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 1,
+                    'name' => 'manage_dispatch',
+                ]
+            ]
+        ],
         ...self::SUPERADMIN_MODULE_LIST
     ];
 

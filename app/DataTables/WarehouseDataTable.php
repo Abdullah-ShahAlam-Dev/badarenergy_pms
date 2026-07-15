@@ -14,8 +14,8 @@ class WarehouseDataTable extends BaseDataTable
     public function __construct()
     {
         parent::__construct();
-        $this->editWarehousePermission   = user()->permission('edit_warehouses');
-        $this->deleteWarehousePermission = user()->permission('delete_warehouses');
+        $this->editWarehousePermission   = user()->permission('manage_warehouses');
+        $this->deleteWarehousePermission = user()->permission('manage_warehouses');
     }
 
     /**

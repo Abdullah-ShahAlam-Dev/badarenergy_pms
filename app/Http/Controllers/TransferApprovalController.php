@@ -42,7 +42,7 @@ class TransferApprovalController extends AccountBaseController
 
     public function reject(Request $request, $id)
     {
-        abort_403(user()->permission('reject_stock_transfer') == 'none');
+        abort_403(user()->permission('approve_stock_transfer') == 'none');
 
         $request->validate([
             'reason' => 'required|string|max:255'

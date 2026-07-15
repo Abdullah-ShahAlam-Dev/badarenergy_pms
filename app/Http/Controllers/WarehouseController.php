@@ -17,7 +17,7 @@ class WarehouseController extends AccountBaseController
         $this->pageTitle = 'modules.warehouse.warehouses';
 
         $this->middleware(function ($request, $next) {
-            abort_403(!in_array('admin', user_roles()) && user()->permission('view_warehouses') == 'none');
+            abort_403(!in_array('admin', user_roles()) && user()->permission('manage_warehouses') == 'none');
 
             return $next($request);
         });
@@ -28,8 +28,8 @@ class WarehouseController extends AccountBaseController
      */
     public function index(WarehouseDataTable $dataTable)
     {
-        $this->viewPermission   = user()->permission('view_warehouses');
-        $this->addPermission    = user()->permission('add_warehouses');
+        $this->viewPermission   = user()->permission('manage_warehouses');
+        $this->addPermission    = user()->permission('manage_warehouses');
 
         abort_403($this->viewPermission == 'none' && !in_array('admin', user_roles()));
 
@@ -47,7 +47,7 @@ class WarehouseController extends AccountBaseController
             return redirect(route('warehouses.index'));
         }
 
-        $this->addPermission = user()->permission('add_warehouses');
+        $this->addPermission = user()->permission('manage_warehouses');
         abort_403($this->addPermission != 'all' && !in_array('admin', user_roles()));
 
         $this->warehouseTypes = Warehouse::TYPES;
@@ -66,7 +66,7 @@ class WarehouseController extends AccountBaseController
      */
     public function store(StoreWarehouseRequest $request)
     {
-        $this->addPermission = user()->permission('add_warehouses');
+        $this->addPermission = user()->permission('manage_warehouses');
         abort_403($this->addPermission != 'all' && !in_array('admin', user_roles()));
 
         $warehouse              = new Warehouse();
@@ -94,7 +94,7 @@ class WarehouseController extends AccountBaseController
             return redirect(route('warehouses.index'));
         }
 
-        $this->editPermission = user()->permission('edit_warehouses');
+        $this->editPermission = user()->permission('manage_warehouses');
         abort_403($this->editPermission != 'all' && !in_array('admin', user_roles()));
 
         $this->warehouse      = Warehouse::findOrFail($id);
@@ -114,7 +114,7 @@ class WarehouseController extends AccountBaseController
      */
     public function update(UpdateWarehouseRequest $request, $id)
     {
-        $this->editPermission = user()->permission('edit_warehouses');
+        $this->editPermission = user()->permission('manage_warehouses');
         abort_403($this->editPermission != 'all' && !in_array('admin', user_roles()));
 
         $warehouse            = Warehouse::findOrFail($id);
@@ -147,7 +147,7 @@ class WarehouseController extends AccountBaseController
      */
     public function destroy($id)
     {
-        $this->deletePermission = user()->permission('delete_warehouses');
+        $this->deletePermission = user()->permission('manage_warehouses');
         abort_403($this->deletePermission != 'all' && !in_array('admin', user_roles()));
 
         $warehouse = Warehouse::findOrFail($id);
@@ -171,7 +171,7 @@ class WarehouseController extends AccountBaseController
      */
     public function toggleStatus(Request $request)
     {
-        $this->editPermission = user()->permission('edit_warehouses');
+        $this->editPermission = user()->permission('manage_warehouses');
         abort_403($this->editPermission != 'all' && !in_array('admin', user_roles()));
 
         $warehouse = Warehouse::findOrFail($request->warehouseId);

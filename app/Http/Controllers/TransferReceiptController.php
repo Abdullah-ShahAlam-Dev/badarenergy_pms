@@ -20,7 +20,7 @@ class TransferReceiptController extends AccountBaseController
 
     public function receive(Request $request, $id)
     {
-        abort_403(user()->permission('receive_stock_transfer') == 'none');
+        abort_403(user()->permission('add_inventory') == 'none');
 
         $request->validate([
             'items' => 'required|array',

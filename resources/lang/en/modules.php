@@ -1677,6 +1677,7 @@ return array (
         'settings' => 'Settings',
         'dashboards' => 'Dashboards',
         'orders' => 'Sales Orders',
+        'inventory' => 'Inventory',
         'sms' => 'SMS',
         'knowledgebase' => 'Knowledge Base',
         'addknowledgebaseCategory' => 'Manage Article Category',

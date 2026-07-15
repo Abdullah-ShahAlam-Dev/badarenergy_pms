@@ -527,7 +527,7 @@
 
             </div>
 
-            <x-forms.button-cancel :link="route('invoices.index')" class="border-0">@lang('app.cancel')
+            <x-forms.button-cancel :link="route('orders.index')" class="border-0">@lang('app.cancel')
             </x-forms.button-cancel>
 
         </x-form-actions>

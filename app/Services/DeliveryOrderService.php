@@ -136,6 +136,19 @@ class DeliveryOrderService
                 'dispatcher_id' => $userId ?? (auth()->user() ? auth()->user()->id : null),
             ]);
 
+            // Sync linked Order status to completed
+            $order = null;
+            if ($do->source_type === 'order' && $do->source_id) {
+                $order = \App\Models\Order::find($do->source_id);
+            } elseif ($do->invoice && $do->invoice->order_id) {
+                $order = \App\Models\Order::find($do->invoice->order_id);
+            }
+
+            if ($order) {
+                $order->status = 'completed';
+                $order->save();
+            }
+
             // Fire event - Listeners will execute inventory increments and log audit history inside the transaction
             event(new DeliveryOrderDispatched($do, $userId));
         });
@@ -161,6 +174,19 @@ class DeliveryOrderService
             $do->update([
                 'status' => DeliveryOrderStatus::CANCELLED->value,
             ]);
+
+            // Sync linked Order status back to processing
+            $order = null;
+            if ($do->source_type === 'order' && $do->source_id) {
+                $order = \App\Models\Order::find($do->source_id);
+            } elseif ($do->invoice && $do->invoice->order_id) {
+                $order = \App\Models\Order::find($do->invoice->order_id);
+            }
+
+            if ($order) {
+                $order->status = 'processing';
+                $order->save();
+            }
 
             // Fire cancellation event to reverse inventory and serial status
             event(new DeliveryOrderCancelled($do, $userId));

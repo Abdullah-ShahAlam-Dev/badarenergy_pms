@@ -244,12 +244,20 @@
             });
 
             var scanTimeout = null;
+            var lastInputTime = 0;
+            var isManualTyping = false;
 
-            function processScan(val) {
+            function resetScanState() {
                 if (scanTimeout) {
                     clearTimeout(scanTimeout);
                     scanTimeout = null;
                 }
+                lastInputTime = 0;
+                isManualTyping = false;
+            }
+
+            function processScan(val) {
+                resetScanState();
 
                 if (val === '') {
                     return;
@@ -333,10 +341,6 @@
             $('#barcode-input').on('keydown', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    if (scanTimeout) {
-                        clearTimeout(scanTimeout);
-                        scanTimeout = null;
-                    }
                     var val = $(this).val().trim();
                     $(this).val('');
                     processScan(val);
@@ -344,12 +348,30 @@
             });
 
             $('#barcode-input').on('input', function() {
+                var currentTime = Date.now();
+                var val = $(this).val().trim();
+
+                if (val === '') {
+                    resetScanState();
+                    return;
+                }
+
+                // Detect manual typing speed
+                if (lastInputTime !== 0) {
+                    var diff = currentTime - lastInputTime;
+                    // If difference between characters is > 80ms, flag as manual typing
+                    if (diff > 80) {
+                        isManualTyping = true;
+                    }
+                }
+                lastInputTime = currentTime;
+
                 if (scanTimeout) {
                     clearTimeout(scanTimeout);
                 }
                 
-                var val = $(this).val().trim();
-                if (val !== '') {
+                // Do not auto-submit if manual typing is detected, or if input is less than 3 characters
+                if (!isManualTyping && val.length >= 3) {
                     scanTimeout = setTimeout(function() {
                         $('#barcode-input').val('');
                         processScan(val);

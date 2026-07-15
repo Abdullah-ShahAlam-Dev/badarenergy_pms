@@ -161,7 +161,15 @@ class WarehouseController extends AccountBaseController
             }
         }
 
-        $warehouse->delete();
+        try {
+            $warehouse->delete();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Check for integrity constraint violation (e.g. SQLState 23000)
+            if ($e->getCode() == '23000') {
+                return Reply::error('This warehouse is in use (contains stock records, intakes, or transfers) and cannot be deleted. Please deactivate it instead.');
+            }
+            throw $e;
+        }
 
         return Reply::success(__('messages.deleteSuccess'));
     }

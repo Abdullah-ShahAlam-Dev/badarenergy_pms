@@ -732,6 +732,10 @@ class OrderController extends AccountBaseController
 
         $order = Order::findOrFail($request->orderId);
 
+        if (in_array($order->status, ['processing', 'completed', 'canceled', 'refunded'])) {
+            return Reply::error('Once an order is approved, completed, or rejected, its status cannot be changed.');
+        }
+
         if ($request->status == 'completed') {
             return Reply::error('Orders can only be marked as completed automatically when an invoice is created.');
         }

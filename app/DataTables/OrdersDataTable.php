@@ -109,10 +109,11 @@ class OrdersDataTable extends BaseDataTable
             ->editColumn('status', function ($row) {
 
                 if (in_array('admin', user_roles()) || user()->permission('edit_order') == 'all') {
-                    if ($row->status === 'completed' || $row->status === 'canceled') {
+                    if ($row->status === 'completed' || $row->status === 'canceled' || $row->status === 'processing') {
                         $status = match ($row->status) {
                             'completed' => ' <i class="fa fa-circle mr-1 text-success f-10"></i> Completed',
                             'canceled' => ' <i class="fa fa-circle mr-1 text-red f-10"></i> Rejected',
+                            'processing' => ' <i class="fa fa-circle mr-1 text-primary f-10"></i> Approved',
                         };
                     } else {
                         $status = '<select class="form-control select-picker order-status" data-order-id="' . $row->id . '">';

@@ -97,6 +97,30 @@ return new class extends Migration
                     'display_name' => 'Manage Dispatch',
                     'is_custom' => 1,
                     'allowed' => Permission::ALL_NONE
+                ],
+                [
+                    'name' => 'view_shipments',
+                    'display_name' => 'View Shipments',
+                    'is_custom' => 1,
+                    'allowed' => Permission::ALL_4_ADDED_1_OWNED_2_BOTH_3_NONE_5
+                ],
+                [
+                    'name' => 'add_shipments',
+                    'display_name' => 'Add Shipments',
+                    'is_custom' => 1,
+                    'allowed' => Permission::ALL_NONE
+                ],
+                [
+                    'name' => 'edit_shipments',
+                    'display_name' => 'Edit Shipments',
+                    'is_custom' => 1,
+                    'allowed' => Permission::ALL_NONE
+                ],
+                [
+                    'name' => 'delete_shipments',
+                    'display_name' => 'Delete Shipments',
+                    'is_custom' => 1,
+                    'allowed' => Permission::ALL_NONE
                 ]
             ];
 

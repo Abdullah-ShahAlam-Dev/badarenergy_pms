@@ -239,43 +239,41 @@ $addOrderPermission = user()->permission('add_order');
         }
 
 
-        $('#orders-table').on('change', '.order-status', function() {
+        $('body').on('change', '#orders-table .order-status', function() {
             var id = $(this).data('order-id');
             var status = $(this).val();
 
             changeOrderStatus(id, status);
         });
 
-        $('#orders-table').on('click', '.orderStatusChange', function() {
+        $('body').on('click', '#orders-table .orderStatusChange', function() {
             var id = $(this).data('order-id');
             var status = $(this).data('status');
 
             changeOrderStatus(id, status);
         });
 
-        $('#clientID, #status')
-            .on('change keyup',
-                function() {
-                    if ($('#status').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else if ($('#clientID').val() != "all") {
-                        $('#reset-filters').removeClass('d-none');
-                        showTable();
-                    } else {
-                        $('#reset-filters').addClass('d-none');
-                        showTable();
-                    }
-                });
+        $('body').on('change keyup', '#clientID, #status', function() {
+            if ($('#status').val() != "all") {
+                $('#reset-filters').removeClass('d-none');
+                showTable();
+            } else if ($('#clientID').val() != "all") {
+                $('#reset-filters').removeClass('d-none');
+                showTable();
+            } else {
+                $('#reset-filters').addClass('d-none');
+                showTable();
+            }
+        });
 
-        $('#search-text-field').on('keyup', function() {
+        $('body').on('keyup', '#search-text-field', function() {
             if ($('#search-text-field').val() != "") {
                 $('#reset-filters').removeClass('d-none');
                 showTable();
             }
         });
 
-        $('#reset-filters,#reset-filters-2').click(function() {
+        $('body').on('click', '#reset-filters,#reset-filters-2', function() {
             $('#filter-form')[0].reset();
 
             $('.filter-box .select-picker').selectpicker("refresh");
@@ -283,7 +281,7 @@ $addOrderPermission = user()->permission('add_order');
             showTable();
         });
 
-        $('#quick-action-type').change(function() {
+        $('body').on('change', '#quick-action-type', function() {
             const actionValue = $(this).val();
             if (actionValue != '') {
                 $('#quick-action-apply').removeAttr('disabled');
@@ -300,7 +298,7 @@ $addOrderPermission = user()->permission('add_order');
             }
         });
 
-        $('#quick-action-apply').click(function() {
+        $('body').on('click', '#quick-action-apply', function() {
             const actionValue = $('#quick-action-type').val();
             if (actionValue == 'delete') {
                 Swal.fire({

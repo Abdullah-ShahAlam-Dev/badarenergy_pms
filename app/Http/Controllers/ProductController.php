@@ -118,7 +118,7 @@ class ProductController extends AccountBaseController
         $product->product_code = $request->product_code;
         $product->barcode = $request->barcode;
         $product->type = $request->type;
-        $product->is_serialized = true;
+        $product->is_serialized = (bool) $request->is_serialized;
 
         if (request()->hasFile('downloadable_file') && request()->downloadable == 'true') {
             Files::deleteFile($product->downloadable_file, ProductFiles::FILE_PATH);
@@ -270,7 +270,7 @@ class ProductController extends AccountBaseController
         $product->product_code = $request->product_code;
         $product->barcode = $request->barcode;
         $product->type = $request->type;
-        $product->is_serialized = true;
+        $product->is_serialized = (bool) $request->is_serialized;
 
         if (request()->hasFile('downloadable_file') && request()->downloadable == 'true') {
             Files::deleteFile($product->downloadable_file, ProductFiles::FILE_PATH);

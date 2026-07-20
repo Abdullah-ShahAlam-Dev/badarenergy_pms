@@ -40,7 +40,7 @@ class UpdateProductRequest extends CoreRequest
             'capacity' => 'nullable|string',
             'barcode' => 'nullable|string',
             'type' => 'nullable|in:imported,assembled',
-            'is_serialized' => 'nullable|boolean',
+            'is_serialized' => 'required|boolean',
         ];
 
         $rules = $this->customFieldRules($rules);

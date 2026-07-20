@@ -136,7 +136,21 @@
                                 </div>
                             </div>
 
-                            <input type="hidden" name="is_serialized" value="1">
+                            <div class="col-lg-4 col-md-6">
+                                <div class="form-group my-3">
+                                    <x-forms.label fieldId="is_serialized" :fieldLabel="__('Product Source')" fieldRequired="true" />
+                                    <div class="d-flex">
+                                        <x-forms.radio fieldId="serialize-badar" fieldLabel="Badar Energy"
+                                                       fieldName="is_serialized" fieldValue="1"
+                                                       checked="true">
+                                        </x-forms.radio>
+                                        <x-forms.radio fieldId="serialize-oem" fieldLabel="OEM"
+                                                       fieldValue="0"
+                                                       fieldName="is_serialized">
+                                        </x-forms.radio>
+                                    </div>
+                                </div>
+                            </div>
 
                             <div class="col-lg-4 col-md-6">
                                 <x-forms.label class="my-3" fieldId="" :fieldLabel="__('modules.unitType.unitType')">

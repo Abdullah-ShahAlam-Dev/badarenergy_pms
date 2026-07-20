@@ -542,7 +542,6 @@ $addProductPermission = user()->permission('add_product');
         }
 
         function addProduct(id) {
-
             $.easyAjax({
                 url: "{{ route('orders.add_item') }}",
                 type: "GET",
@@ -570,14 +569,39 @@ $addProductPermission = user()->permission('add_product');
                     $(document).find('#dropify' + i).dropify({
                         messages: dropifyMessages
                     });
+
+                    // Disable option in dropdown
+                    var option = $('#add-products option[value="' + id + '"]');
+                    if (option.length) {
+                        var originalText = option.text().replace(' (Selected)', '');
+                        option.text(originalText + ' (Selected)');
+                        option.attr('data-content', originalText + ' <span class="badge badge-secondary">Selected</span>');
+                        option.prop('disabled', true);
+                    }
+                    $('#add-products').selectpicker('refresh');
                 }
             });
         }
 
 
         $('#saveInvoiceForm').on('click', '.remove-item', function() {
-            $(this).closest('.item-row').fadeOut(300, function() {
-                $(this).remove();
+            var row = $(this).closest('.item-row');
+            var productId = row.find('input[name="product_id[]"]').val();
+
+            row.fadeOut(300, function() {
+                row.remove();
+
+                if (productId) {
+                    var option = $('#add-products option[value="' + productId + '"]');
+                    if (option.length) {
+                        var originalText = option.text().replace(' (Selected)', '');
+                        option.text(originalText);
+                        option.attr('data-content', originalText);
+                        option.prop('disabled', false);
+                    }
+                    $('#add-products').selectpicker('refresh');
+                }
+
                 $('select.customSequence').each(function(index) {
                     $(this).attr('name', 'taxes[' + index + '][]');
                     $(this).attr('id', 'multiselect' + index + '');

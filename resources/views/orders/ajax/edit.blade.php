@@ -226,7 +226,11 @@ $addProductPermission = user()->permission('add_product');
                                             class="form-control f-14 border-0 w-100 text-right quantity mt-3"
                                             value="{{ $item->quantity }}" name="quantity[]">
                                         @if (!is_null($item->product_id) && $item->product_id != 0)
+                                            @php
+                                                $availableStock = \App\Models\Inventory::where('product_id', $item->product_id)->sum('quantity');
+                                            @endphp
                                             <span class="text-dark-grey float-right border-0 f-12">{{ $item->unit->unit_type }}</span>
+                                            <div class="text-muted f-11 mt-1 text-left">Available: {{ (float) $availableStock }}</div>
                                             <input type="hidden" name="product_id[]" value="{{ $item->product_id }}">
                                             <input type="hidden" name="unit_id[]" value="{{ $item->unit_id }}">
                                         @else
@@ -671,14 +675,38 @@ $addProductPermission = user()->permission('add_product');
                     itemRow.attr('id', 'multiselect' + i);
                     itemRow.attr('name', 'taxes[' + i + '][]');
                     $(document).find('#multiselect' + i).selectpicker();
-                    // $('#multiselect' + i).selectpicker();
+
+                    // Disable option in dropdown
+                    var option = $('#add-products option[value="' + id + '"]');
+                    if (option.length) {
+                        var originalText = option.text().replace(' (Selected)', '');
+                        option.text(originalText + ' (Selected)');
+                        option.attr('data-content', originalText + ' <span class="badge badge-secondary">Selected</span>');
+                        option.prop('disabled', true);
+                    }
+                    $('#add-products').selectpicker('refresh');
                 }
             });
         }
 
         $('#saveOrderForm').on('click', '.remove-item', function() {
-            $(this).closest('.item-row').fadeOut(300, function() {
-                $(this).remove();
+            var row = $(this).closest('.item-row');
+            var productId = row.find('input[name="product_id[]"]').val();
+
+            row.fadeOut(300, function() {
+                row.remove();
+
+                if (productId) {
+                    var option = $('#add-products option[value="' + productId + '"]');
+                    if (option.length) {
+                        var originalText = option.text().replace(' (Selected)', '');
+                        option.text(originalText);
+                        option.attr('data-content', originalText);
+                        option.prop('disabled', false);
+                    }
+                    $('#add-products').selectpicker('refresh');
+                }
+
                 $('select.customSequence').each(function(index) {
                     $(this).attr('name', 'taxes[' + index + '][]');
                     $(this).attr('id', 'multiselect' + index + '');
@@ -729,17 +757,6 @@ $addProductPermission = user()->permission('add_product');
             })
         });
 
-        $('#saveOrderForm').on('click', '.remove-item', function() {
-            $(this).closest('.item-row').fadeOut(300, function() {
-                $(this).remove();
-                $('select.customSequence').each(function(index) {
-                    $(this).attr('name', 'taxes[' + index + '][]');
-                    $(this).attr('id', 'multiselect' + index + '');
-                });
-                calculateTotal();
-            });
-        });
-
         $('#saveOrderForm').on('keyup', '.quantity,.cost_per_item,.item_name, .discount_value', function() {
             var quantity = $(this).closest('.item-row').find('.quantity').val();
             var perItemCost = $(this).closest('.item-row').find('.cost_per_item').val();
@@ -774,6 +791,21 @@ $addProductPermission = user()->permission('add_product');
         });
 
         calculateTotal();
+
+        // Disable already added products in dropdown on page load
+        $('input[name="product_id[]"]').each(function() {
+            var id = $(this).val();
+            if (id) {
+                var option = $('#add-products option[value="' + id + '"]');
+                if (option.length) {
+                    var originalText = option.text().replace(' (Selected)', '');
+                    option.text(originalText + ' (Selected)');
+                    option.attr('data-content', originalText + ' <span class="badge badge-secondary">Selected</span>');
+                    option.prop('disabled', true);
+                }
+            }
+        });
+        $('#add-products').selectpicker('refresh');
 
         // Cleanup modal backdrops and reset body classes on Turbo page transitions
         document.addEventListener('turbo:before-cache', function cleanup() {

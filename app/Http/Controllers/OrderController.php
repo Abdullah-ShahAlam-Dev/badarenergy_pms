@@ -319,6 +319,7 @@ class OrderController extends AccountBaseController
     {
         $companyCurrencyID = company()->currency_id;
         $this->item = Product::with('tax')->findOrFail($request->id);
+        $this->item->available_stock = (float) \App\Models\Inventory::where('product_id', $this->item->id)->sum('quantity');
         $this->invoiceSetting = $this->company->invoiceSetting;
         $exchangeRate = ($request->currencyId) ? Currency::findOrFail($request->currencyId) : Currency::findOrFail($companyCurrencyID);
 

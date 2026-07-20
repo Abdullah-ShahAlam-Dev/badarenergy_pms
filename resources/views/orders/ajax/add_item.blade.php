@@ -45,6 +45,7 @@
                         <input type="number" min="1" class="f-14 border-0 w-100 text-right quantity mt-3"
                             value="{{ 1 }}" name="quantity[]">
                         <span class="text-dark-grey float-right border-0 f-12">{{ $item->unit->unit_type }}</span>
+                        <div class="text-muted f-11 mt-1 text-left">Available: {{ (float) $item->available_stock }}</div>
                         <input type="hidden" name="product_id[]" value="{{ $item->id }}">
                         <input type="hidden" name="unit_id[]" value="{{ $item->unit_id }}">
                     </td>

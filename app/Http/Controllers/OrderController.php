@@ -190,6 +190,36 @@ class OrderController extends AccountBaseController
             }
         }
 
+        // Inventory stock validation check
+        if (!empty($request->product_id)) {
+            $productQuantities = [];
+            foreach ($request->product_id as $key => $pId) {
+                if ($pId) {
+                    $qty = floatval($request->quantity[$key]);
+                    if (!isset($productQuantities[$pId])) {
+                        $productQuantities[$pId] = 0;
+                    }
+                    $productQuantities[$pId] += $qty;
+                }
+            }
+
+            foreach ($productQuantities as $pId => $totalRequested) {
+                $product = \App\Models\Product::find($pId);
+                if ($product) {
+                    $warehouseId = $request->warehouse_id ?: null;
+                    $query = \App\Models\Inventory::where('product_id', $pId);
+                    if ($warehouseId) {
+                        $query->where('warehouse_id', $warehouseId);
+                    }
+                    $availableStock = (float) $query->sum('quantity');
+
+                    if ($totalRequested > $availableStock) {
+                        return Reply::error("The product '{$product->name}' only has {$availableStock} items in stock. You requested {$totalRequested}.");
+                    }
+                }
+            }
+        }
+
         $this->lastOrder = Order::lastOrderNumber() + 1;
         $this->orderSetting = invoice_setting();
 
@@ -392,6 +422,36 @@ class OrderController extends AccountBaseController
 
         $order = Order::findOrFail($id);
 
+        // Inventory stock validation check
+        if (!empty($request->product_id)) {
+            $productQuantities = [];
+            foreach ($request->product_id as $key => $pId) {
+                if ($pId) {
+                    $qty = floatval($request->quantity[$key]);
+                    if (!isset($productQuantities[$pId])) {
+                        $productQuantities[$pId] = 0;
+                    }
+                    $productQuantities[$pId] += $qty;
+                }
+            }
+
+            foreach ($productQuantities as $pId => $totalRequested) {
+                $product = \App\Models\Product::find($pId);
+                if ($product) {
+                    $warehouseId = $request->warehouse_id ?: $order->warehouse_id;
+                    $query = \App\Models\Inventory::where('product_id', $pId);
+                    if ($warehouseId) {
+                        $query->where('warehouse_id', $warehouseId);
+                    }
+                    $availableStock = (float) $query->sum('quantity');
+
+                    if ($totalRequested > $availableStock) {
+                        return Reply::error("The product '{$product->name}' only has {$availableStock} items in stock. You requested {$totalRequested}.");
+                    }
+                }
+            }
+        }
+
         // Credit Validation check (only if client exists and sale_type is credit/0)
         $clientId = $request->client_id ?: $order->client_id;
         $saleType = $request->has('sale_type') ? $request->sale_type : $order->sale_type;
@@ -472,6 +532,8 @@ class OrderController extends AccountBaseController
             $orderItem->item_summary = $itemsSummary[$key];
             $orderItem->type = $item;
             $orderItem->hsn_sac_code = (isset($hsn_sac_code[$key]) ? $hsn_sac_code[$key] : null);
+            $orderItem->product_id = (isset($request->product_id[$key]) && !is_null($request->product_id[$key])) ? $request->product_id[$key] : null;
+            $orderItem->unit_id = (isset($request->unit_id[$key]) && !is_null($request->unit_id[$key])) ? $request->unit_id[$key] : null;
             $orderItem->quantity = $quantity[$key];
             $orderItem->unit_price = round($cost_per_item[$key], 2);
             $orderItem->amount = round($amount[$key], 2);

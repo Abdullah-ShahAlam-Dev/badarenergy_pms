@@ -145,6 +145,66 @@ class DeliveryOrderService
             }
 
             if ($order) {
+                // Generate Invoice automatically if it doesn't exist
+                if (!$order->invoice) {
+                    $invoice = new \App\Models\Invoice();
+                    $invoice->order_id = $order->id;
+                    $invoice->company_id = $order->company_id;
+                    $invoice->client_id = $order->client_id;
+                    $invoice->sub_total = $order->sub_total;
+                    $invoice->discount = $order->discount;
+                    $invoice->discount_type = $order->discount_type;
+                    $invoice->total = $order->total;
+                    $invoice->currency_id = $order->currency_id;
+
+                    // Credit Sale is 0, Cash Sale is 1
+                    if ($order->sale_type == 0 || $order->sale_type === '0') {
+                        $invoice->status = 'unpaid';
+                        $invoice->due_amount = $order->total;
+                    } else {
+                        $invoice->status = 'paid';
+                        $invoice->due_amount = 0;
+                    }
+
+                    $invoice->note = trim_editor($order->note);
+                    $invoice->issue_date = now();
+                    $invoice->send_status = 1;
+                    $invoice->invoice_number = \App\Models\Invoice::lastInvoiceNumber() + 1;
+                    $invoice->hash = md5(microtime());
+                    $invoice->added_by = $order->added_by;
+                    $invoice->save();
+
+                    /* Make invoice items */
+                    $orderItems = \App\Models\OrderItems::where('order_id', $order->id)->get();
+
+                    foreach ($orderItems as $item) {
+                        $invoiceItem = new \App\Models\InvoiceItems();
+                        $invoiceItem->invoice_id = $invoice->id;
+                        $invoiceItem->item_name = $item->item_name;
+                        $invoiceItem->item_summary = $item->item_summary;
+                        $invoiceItem->type = 'item';
+                        $invoiceItem->quantity = $item->quantity;
+                        $invoiceItem->unit_price = $item->unit_price;
+                        $invoiceItem->amount = $item->amount;
+                        $invoiceItem->taxes = $item->taxes;
+                        $invoiceItem->product_id = $item->product_id;
+                        $invoiceItem->unit_id = $item->unit_id;
+                        $invoiceItem->saveQuietly();
+
+                        // Save invoice item image
+                        if ($item->orderItemImage) {
+                            $invoiceItemImage = new \App\Models\InvoiceItemImage();
+                            $invoiceItemImage->invoice_item_id = $invoiceItem->id;
+                            $invoiceItemImage->external_link = $item->orderItemImage->external_link;
+                            $invoiceItemImage->save();
+                        }
+                    }
+
+                    // Link DO to the newly created invoice
+                    $do->invoice_id = $invoice->id;
+                    $do->save();
+                }
+
                 $order->status = 'completed';
                 $order->save();
             }
@@ -186,6 +246,10 @@ class DeliveryOrderService
             if ($order) {
                 $order->status = 'processing';
                 $order->save();
+            }
+
+            if ($do->invoice) {
+                $do->invoice->delete();
             }
 
             // Fire cancellation event to reverse inventory and serial status

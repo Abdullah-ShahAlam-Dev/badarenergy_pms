@@ -209,6 +209,24 @@ class OrderController extends AccountBaseController
         $orderDate = $request->order_date ? \Carbon\Carbon::createFromFormat(company()->date_format, $request->order_date)->format('Y-m-d') : now()->format('Y-m-d');
         $dueDate = $request->due_date ? \Carbon\Carbon::createFromFormat(company()->date_format, $request->due_date)->format('Y-m-d') : null;
 
+        // Credit Validation check (only if client exists and sale_type is credit/0)
+        if ($request->client_id && ($request->sale_type === '0' || $request->sale_type === 0 || !$request->has('sale_type'))) {
+            $clientUser = User::findOrFail($request->client_id);
+            $validationService = new \App\Services\DealerValidationService();
+
+            // Validate Credit Days
+            $daysResult = $validationService->validateCreditDays($clientUser);
+            if (!$daysResult['status']) {
+                return Reply::error($daysResult['message']);
+            }
+
+            // Validate Credit Limit
+            $limitResult = $validationService->validateCreditLimit($clientUser, (float) $request->total);
+            if (!$limitResult['status']) {
+                return Reply::error($limitResult['message']);
+            }
+        }
+
         $order = new Order();
         $order->client_id = $request->client_id ?: user()->id;
         $order->project_id = $request->project_id ?: null;
@@ -373,6 +391,27 @@ class OrderController extends AccountBaseController
         }
 
         $order = Order::findOrFail($id);
+
+        // Credit Validation check (only if client exists and sale_type is credit/0)
+        $clientId = $request->client_id ?: $order->client_id;
+        $saleType = $request->has('sale_type') ? $request->sale_type : $order->sale_type;
+
+        if ($clientId && ($saleType === '0' || $saleType === 0)) {
+            $clientUser = User::findOrFail($clientId);
+            $validationService = new \App\Services\DealerValidationService();
+
+            // Validate Credit Days
+            $daysResult = $validationService->validateCreditDays($clientUser);
+            if (!$daysResult['status']) {
+                return Reply::error($daysResult['message']);
+            }
+
+            // Validate Credit Limit
+            $limitResult = $validationService->validateCreditLimit($clientUser, (float) $request->total);
+            if (!$limitResult['status']) {
+                return Reply::error($limitResult['message']);
+            }
+        }
 
         if ($order->status == 'completed') {
             return Reply::error(__('messages.invalidRequest'));

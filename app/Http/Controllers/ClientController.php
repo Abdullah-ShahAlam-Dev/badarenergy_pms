@@ -652,7 +652,12 @@ class ClientController extends AccountBaseController
     {
         if ($id != 0) {
             $client = User::withoutGlobalScope(ActiveScope::class)->with('clientDetails', 'country')->find($id);
-
+            if ($client && $client->clientDetails) {
+                $validationService = new \App\Services\DealerValidationService();
+                $outstanding = $validationService->getOutstandingBalance($client);
+                $client->clientDetails->outstanding_balance = $outstanding;
+                $client->clientDetails->available_credit = (float)$client->clientDetails->credit_limit - $outstanding;
+            }
         }
         else {
             $client = null;

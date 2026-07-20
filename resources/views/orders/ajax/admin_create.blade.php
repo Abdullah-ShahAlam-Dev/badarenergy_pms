@@ -81,6 +81,7 @@ $addProductPermission = user()->permission('add_product');
             <!-- CLIENT START -->
             <div class="col-md-4 mb-4">
                 <x-client-selection-dropdown :clients="$clients" :selected="null" />
+                <div id="client-credit-info" class="mt-2 f-12 d-none"></div>
             </div>
             <!-- CLIENT END -->
             <!-- BILLING ADDRESS START -->
@@ -426,6 +427,10 @@ $addProductPermission = user()->permission('add_product');
             changeClient(id);
         });
 
+        if ($('#client_list_id').val() != '' && $('#client_list_id').val() != undefined) {
+            changeClient($('#client_list_id').val());
+        }
+
         function changeClient(id) {
 
             if (id == '') {
@@ -477,15 +482,35 @@ $addProductPermission = user()->permission('add_product');
                                     .shipping_address));
                             }
 
+                            // Credit details section
+                            if (response.data.client_details !== undefined && response.data.client_details !== null) {
+                                var details = response.data.client_details;
+                                var creditLimit = parseFloat(details.credit_limit) || 0.00;
+                                var outstanding = parseFloat(details.outstanding_balance) || 0.00;
+                                var available = parseFloat(details.available_credit) || 0.00;
+
+                                var badgeClass = available > 0 ? 'badge-success' : 'badge-danger';
+                                var html = '<div class="alert alert-light border p-2 mt-2 mb-0" style="background-color: #f8f9fa;">' +
+                                    '<div class="d-flex justify-content-between mb-1"><span>Credit Limit:</span> <strong>PKR ' + creditLimit.toLocaleString('en-US', {minimumFractionDigits: 2}) + '</strong></div>' +
+                                    '<div class="d-flex justify-content-between mb-1"><span>Outstanding:</span> <strong>PKR ' + outstanding.toLocaleString('en-US', {minimumFractionDigits: 2}) + '</strong></div>' +
+                                    '<div class="d-flex justify-content-between"><span>Available Credit:</span> <span class="badge ' + badgeClass + '">PKR ' + available.toLocaleString('en-US', {minimumFractionDigits: 2}) + '</span></div>' +
+                                    '</div>';
+                                $('#client-credit-info').html(html).removeClass('d-none');
+                            } else {
+                                $('#client-credit-info').addClass('d-none').html('');
+                            }
+
                         } else {
                             $('#client_billing_address').html(
                                 '<span class="text-lightest">@lang("messages.selectCustomerForBillingAddress")</span>'
                             );
+                            $('#client-credit-info').addClass('d-none').html('');
                         }
                     } else {
                         var addShippingLink =
                             '<a href="javascript:;" class="text-capitalize" id="show-shipping-field"><i class="f-12 mr-2 fa fa-plus"></i>@lang("app.addShippingAddress")</a>';
                         $('#client_shipping_address').html(addShippingLink);
+                        $('#client-credit-info').addClass('d-none').html('');
                     }
                 }
             });

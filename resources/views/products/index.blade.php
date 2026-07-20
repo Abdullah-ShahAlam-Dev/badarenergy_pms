@@ -52,6 +52,20 @@
 
         <!-- UNITTYPE END-->
 
+        <!-- PRODUCT SOURCE START -->
+        <div class="select-box d-flex py-2 px-lg-2 px-md-2 px-0 border-right-grey border-right-grey-sm-0">
+            <p class="mb-0 pr-2 f-14 text-dark-grey d-flex align-items-center">
+                Product Source</p>
+            <div class="select-status d-flex">
+                <select class="form-control select-picker" name="is_serialized" id="is_serialized_filter">
+                    <option value="all">@lang('app.all')</option>
+                    <option value="1">Badar Energy</option>
+                    <option value="0">OEM</option>
+                </select>
+            </div>
+        </div>
+        <!-- PRODUCT SOURCE END -->
+
         <!-- SEARCH BY TASK START -->
         <div class="task-search d-flex  py-1 px-lg-3 px-0 border-right-grey align-items-center">
             <form class="w-100 mr-1 mr-lg-0 mr-md-1 ml-md-1 ml-0 ml-lg-0">
@@ -182,27 +196,32 @@ $addOrderPermission = user()->permission('add_order');
             var subCategoryID = $('#sub_category').val();
             var searchText = $('#search-text-field').val();
             var unitTypeID  = $('#unit_type_id').val();
+            var isSerialized = $('#is_serialized_filter').val();
 
             data['category_id'] = categoryID;
             data['sub_category_id'] = subCategoryID;
             data['searchText'] = searchText;
             data['unit_type_id'] = unitTypeID;
+            data['is_serialized'] = isSerialized;
         });
         const showTable = () => {
             window.LaravelDataTables["products-table"].draw(false);
         }
 
-        $('#category_id, #sub_category, #unit_type_id').on('change keyup', function() {
-            if ($('#category_id').val() != "") {
+        $('#category_id, #sub_category, #unit_type_id, #is_serialized_filter').on('change keyup', function() {
+            if ($('#category_id').val() != "all" && $('#category_id').val() != "") {
                 $('#reset-filters').removeClass('d-none');
                 showTable();
-            } else if ($('#sub_category').val() != "") {
+            } else if ($('#sub_category').val() != "all" && $('#sub_category').val() != "") {
                 $('#reset-filters').removeClass('d-none');
                 showTable();
-            } else if ($('#unit_type_id').val() != "") {
+            } else if ($('#unit_type_id').val() != "all" && $('#unit_type_id').val() != "") {
                 $('#reset-filters').removeClass('d-none');
                 showTable();
-            }else{
+            } else if ($('#is_serialized_filter').val() != "all" && $('#is_serialized_filter').val() != "") {
+                $('#reset-filters').removeClass('d-none');
+                showTable();
+            } else {
                 $('#reset-filters').addClass('d-none');
                 showTable();
             }
@@ -220,6 +239,7 @@ $addOrderPermission = user()->permission('add_order');
 
             $('#category_id').val('all');
             $('.select-picker').val('all');
+            $('#is_serialized_filter').val('all');
 
             $('#sub_category').html('<option value="all">@lang("app.all")</option>');
 

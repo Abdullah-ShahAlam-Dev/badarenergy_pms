@@ -155,7 +155,11 @@ class ProductsDataTable extends BaseDataTable
     {
         $request = $this->request();
 
-        $model = $model->with('tax', 'category', 'subCategory', 'inventories')->select('id', 'name', 'price', 'taxes', 'allow_purchase', 'added_by', 'default_image', 'category_id', 'sub_category_id', 'description');
+        $model = $model->with('tax', 'category', 'subCategory', 'inventories')->select('id', 'name', 'price', 'taxes', 'allow_purchase', 'added_by', 'default_image', 'category_id', 'sub_category_id', 'description', 'is_serialized');
+
+        if (!is_null($request->is_serialized) && $request->is_serialized != 'all') {
+            $model->where('products.is_serialized', $request->is_serialized);
+        }
 
         if (!is_null($request->category_id) && $request->category_id != 'all' && $request->category_id > 0) {
             $model->where('category_id', $request->category_id);

@@ -14,8 +14,8 @@ class WarehouseDataTable extends BaseDataTable
     public function __construct()
     {
         parent::__construct();
-        $this->editWarehousePermission   = user()->permission('manage_warehouses');
-        $this->deleteWarehousePermission = user()->permission('manage_warehouses');
+        $this->editWarehousePermission   = user()->permission('edit_warehouses');
+        $this->deleteWarehousePermission = user()->permission('delete_warehouses');
     }
 
     /**
@@ -62,8 +62,12 @@ class WarehouseDataTable extends BaseDataTable
                 return $action;
             })
             ->editColumn('name', function ($row) {
-                return '<a class="text-darkest-grey openRightModal" href="' . route('warehouses.edit', $row->id) . '">'
-                    . ucfirst($row->name) . '</a>';
+                if ($this->editWarehousePermission == 'all' || in_array('admin', user_roles())) {
+                    return '<a class="text-darkest-grey openRightModal" href="' . route('warehouses.edit', $row->id) . '">'
+                        . ucfirst($row->name) . '</a>';
+                }
+
+                return ucfirst($row->name);
             })
             ->editColumn('type', function ($row) {
                 return $row->type_label;

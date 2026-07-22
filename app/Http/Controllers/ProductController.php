@@ -321,9 +321,7 @@ class ProductController extends AccountBaseController
     {
         switch ($request->action_type) {
         case 'delete':
-            $this->deleteRecords($request);
-
-            return Reply::success(__('messages.deleteSuccess'));
+            return $this->deleteRecords($request);
         case 'change-purchase':
             $this->allowPurchase($request);
 
@@ -337,7 +335,17 @@ class ProductController extends AccountBaseController
     {
         abort_403(user()->permission('delete_product') != 'all');
 
-        Product::whereIn('id', explode(',', $request->row_ids))->forceDelete();
+        $productIds = explode(',', $request->row_ids);
+
+        try {
+            Product::whereIn('id', $productIds)->delete();
+            return Reply::success(__('messages.deleteSuccess'));
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == '23000') {
+                return Reply::error('These products are in use (associated with stock records, intakes, or invoices) and cannot be deleted.');
+            }
+            throw $e;
+        }
     }
 
     protected function allowPurchase($request)

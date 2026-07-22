@@ -25,14 +25,7 @@
             <h4 class="mb-0 f-21 font-weight-normal text-capitalize"><i class="bi bi-cart3"></i> @lang('app.cart')</h4>
         </div>
 
-        <div class="px-lg-4 px-md-4 px-3 py-3 cart_empty">
-            <x-forms.link-primary :link="route('products.empty_cart')" class="empty-cart"
-                icon="trash">
-                @lang('app.emptyCart')
-             </x-forms.link-primary>
-
-
-        </div>
+        {{-- Empty cart button hidden --}}
         <input type ="hidden" name="user_id" class="userId" value={{ user()->id }}>
     </div>
 

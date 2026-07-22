@@ -1699,7 +1699,22 @@ class Module extends BaseModel
                 [
                     'allowed_permissions' => Permission::ALL_NONE,
                     'is_custom' => 1,
-                    'name' => 'manage_warehouses',
+                    'name' => 'view_warehouses',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 1,
+                    'name' => 'add_warehouses',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 1,
+                    'name' => 'edit_warehouses',
+                ],
+                [
+                    'allowed_permissions' => Permission::ALL_NONE,
+                    'is_custom' => 1,
+                    'name' => 'delete_warehouses',
                 ],
                 [
                     'allowed_permissions' => Permission::ALL_NONE,

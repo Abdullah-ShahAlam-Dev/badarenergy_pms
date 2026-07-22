@@ -209,7 +209,7 @@
                 <path fill-rule="evenodd" d="M12 1a1 1 0 0 1 .897.553l2.917 5.834A.5.5 0 0 1 15.5 8V14a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1V8a.5.5 0 0 1 .186-.38L3.103 1.553A1 1 0 0 1 4 1h8zM4.646 2.057l-2.613 5.225h11.934L11.354 2.057H4.646zM14 8.283H2V14h12V8.283z"/>
             </x-slot>
             <div class="accordionItemContent pb-2">
-                @if (user()->permission('manage_warehouses') != 'none' || in_array('admin', user_roles()))
+                @if (user()->permission('view_warehouses') != 'none' || in_array('admin', user_roles()))
                     <x-sub-menu-item :link="route('warehouses.index')" :text="__('modules.warehouse.warehouses')" />
                 @endif
                 @if (\Route::has('inventory.index') && (user()->permission('view_stock_movements') != 'none' || in_array('admin', user_roles())))

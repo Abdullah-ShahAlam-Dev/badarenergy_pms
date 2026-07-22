@@ -113,10 +113,6 @@ $addOrderPermission = user()->permission('add_order');
                     </x-forms.link-primary>
                 @endif
             </div>
-            <div id="emptyCartBox">
-                <a href="javascript:;" class="f-20 mt-2 text-lightest d-flex align-items-center mr-3 empty-cart fa fa-trash" data-user-id = {{ user()->id }} data-toggle="tooltip" data-original-title="@lang('app.emptyCart')" ><i
-                    ></i></a>
-            </div>
 
             @if (in_array('client', user_roles()) && $addOrderPermission == 'all')
                 <div class="btn-group" role="group">
@@ -392,10 +388,8 @@ $addOrderPermission = user()->permission('add_order');
                     '_token': "{{ csrf_token() }}"
                 },
                 success: function(response) {
-                         $('#emptyCartBox').show();
                         cartItems = response.cartProduct;
                         $('.productCounter').html(cartItems);
-
                 }
             })
 

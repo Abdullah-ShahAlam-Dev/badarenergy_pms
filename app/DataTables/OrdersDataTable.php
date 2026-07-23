@@ -96,9 +96,31 @@ class OrdersDataTable extends BaseDataTable
 
             })
             ->addColumn('client_name', function ($row) {
-                return $row->client->name;
+                if ($row->customer_type === 'end_to_end' || !empty($row->custom_customer_name)) {
+                    return $row->custom_customer_name ?: 'End-to-End Customer';
+                }
+                if ($row->customer_type === 'care_of' || (!is_null($row->care_of_id) && is_null($row->client_id))) {
+                    return $row->careOf ? $row->careOf->name . ' (Care of)' : 'Care of';
+                }
+                if ($row->customer_type === 'distributor' || !is_null($row->distributor_id)) {
+                    return $row->distributor ? $row->distributor->name . ' (Distributor)' : 'Distributor';
+                }
+                return $row->client ? $row->client->name : '--';
             })
             ->editColumn('name', function ($row) {
+                if ($row->customer_type === 'end_to_end' || (is_null($row->client_id) && !empty($row->custom_customer_name))) {
+                    return '<div class="media align-items-center"><div class="media-body"><h5 class="mb-0 f-13 text-darkest-grey">' . e($row->custom_customer_name) . '</h5><p class="mb-0 f-12 text-lightest">End-to-End Customer</p></div></div>';
+                }
+
+                if ($row->customer_type === 'care_of' || (!is_null($row->care_of_id) && is_null($row->client_id))) {
+                    $careOfName = $row->careOf ? e($row->careOf->name) : 'Employee';
+                    return '<div class="media align-items-center"><div class="media-body"><h5 class="mb-0 f-13 text-darkest-grey">' . $careOfName . '</h5><p class="mb-0 f-12 text-lightest">Care of (Employee)</p></div></div>';
+                }
+
+                if ($row->customer_type === 'distributor' || !is_null($row->distributor_id)) {
+                    $distName = $row->distributor ? e($row->distributor->name) : 'Distributor';
+                    return '<div class="media align-items-center"><div class="media-body"><h5 class="mb-0 f-13 text-darkest-grey">' . $distName . '</h5><p class="mb-0 f-12 text-lightest">Distributor</p></div></div>';
+                }
 
                 $client = $row->client;
 
@@ -169,10 +191,10 @@ class OrdersDataTable extends BaseDataTable
         $request = $this->request();
 
         $model = Order::with([
-            'currency:id,currency_symbol,currency_code', 'client', 'payment'
+            'currency:id,currency_symbol,currency_code', 'client', 'payment', 'distributor', 'careOf'
         ])
-            ->with('client', 'client.session', 'client.clientDetails', 'payment')
-            ->select('orders.id', 'orders.client_id', 'orders.currency_id', 'orders.total', 'orders.status', 'orders.order_date', 'orders.show_shipping_address', 'orders.added_by', 'orders.order_number', 'orders.custom_order_number');
+            ->with('client', 'client.session', 'client.clientDetails', 'payment', 'distributor', 'careOf')
+            ->select('orders.id', 'orders.client_id', 'orders.distributor_id', 'orders.care_of_id', 'orders.customer_type', 'orders.custom_customer_name', 'orders.currency_id', 'orders.total', 'orders.status', 'orders.order_date', 'orders.show_shipping_address', 'orders.added_by', 'orders.order_number', 'orders.custom_order_number');
 
         if ($request->startDate !== null && $request->startDate != 'null' && $request->startDate != '') {
             $startDate = Carbon::createFromFormat($this->company->date_format, $request->startDate)->toDateString();

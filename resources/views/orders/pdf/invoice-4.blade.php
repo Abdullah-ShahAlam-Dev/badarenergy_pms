@@ -447,58 +447,9 @@
             <div id="title">{{ $order->custom_order_number }}</div>
 
         </section>
-        @if(!is_null($order->client_id))
-            <section id="client-info">
-                @if(($order->client->name || $order->client->email || $order->client->mobile || $order->clientDetails->company_name || $order->clientDetails->address )
-                    && ($invoiceSetting->show_client_name == 'yes' || $invoiceSetting->show_client_email == 'yes' || $invoiceSetting->show_client_phone == 'yes' || $invoiceSetting->show_client_company_name == 'yes' || $invoiceSetting->show_client_company_address == 'yes'))
-                    <span>@lang('modules.invoices.billedTo'):</span>
-
-                    @if ($order->client->name && $invoiceSetting->show_client_name == 'yes')
-                        <div>
-                            <span class="bold">{{ mb_ucwords($order->client->name) }}</span>
-                        </div>
-                    @endif
-
-                    @if ($order->client->email && $invoiceSetting->show_client_email == 'yes')
-                        <div>
-                            <span>{{ $order->client->email }}</span>
-                        </div>
-                    @endif
-
-                    @if ($order->client->mobile && $invoiceSetting->show_client_phone == 'yes')
-                        <div>
-                            <span>{{ $order->client->mobile }}</span>
-                        </div>
-                    @endif
-
-                    @if ($order->clientDetails->company_name && $invoiceSetting->show_client_company_name == 'yes')
-                        <div>
-                            <span>{{ mb_ucwords($order->clientDetails->company_name) }}</span>
-                        </div>
-                    @endif
-
-                    @if ($order->client->clientDetails->address && $invoiceSetting->show_client_company_address == 'yes')
-                        <div class="mb-3">
-                            <b>@lang('app.address') :</b>
-                            <div>{!! nl2br($order->clientDetails->address) !!}</div>
-                        </div>
-                    @endif
-                @endif
-
-                @if ($order->show_shipping_address === 'yes' && $client->clientDetails->shipping_address && $invoiceSetting->show_client_company_address == 'yes')
-                    <div>
-                        <b>@lang('app.shippingAddress') :</b>
-                        <div>{!! nl2br($order->clientDetails->shipping_address) !!}</div>
-                    </div>
-                @endif
-
-                @if($invoiceSetting->show_gst == 'yes' && !is_null($order->clientDetails) && !is_null($order->clientDetails->gst_number))
-                    <div>
-                        <span> @lang('app.gstIn'): {{ $order->clientDetails->gst_number }} </span>
-                    </div>
-                @endif
-            </section>
-        @endif
+        <section id="client-info">
+            @include('orders.pdf.billed_to')
+        </section>
 
         <div class="clearfix"></div>
 

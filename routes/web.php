@@ -13,6 +13,7 @@ use App\Http\Controllers\ImageController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\DistributorController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\SearchController;
@@ -158,6 +159,7 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     Route::post('clients/import', [ClientController::class, 'importStore'])->name('clients.import.store');
     Route::post('clients/import/process', [ClientController::class, 'importProcess'])->name('clients.import.process');
     Route::resource('clients', ClientController::class);
+    Route::resource('distributors', DistributorController::class);
     Route::get('clients/finance-count/{id}', [ClientController::class, 'financeCount'])->name('clients.finance_count');
 
     Route::post('client-contacts/apply-quick-action', [ClientContactController::class, 'applyQuickAction'])->name('client-contacts.apply_quick_action');
@@ -366,7 +368,7 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     Route::post('stock-transfers/{id}/cancel', [\App\Http\Controllers\StockTransferController::class, 'cancel'])->name('stock-transfers.cancel');
     Route::post('stock-transfers/{id}/approve', [\App\Http\Controllers\TransferApprovalController::class, 'approve'])->name('stock-transfers.approve');
     Route::post('stock-transfers/{id}/reject', [\App\Http\Controllers\TransferApprovalController::class, 'reject'])->name('stock-transfers.reject');
-    Route::post('stock-transfers/{id}/dispatch', [\App\Http\Controllers\TransferDispatchController::class, 'dispatch'])->name('stock-transfers.dispatch');
+    Route::post('stock-transfers/{id}/dispatch', [\App\Http\Controllers\TransferDispatchController::class, 'dispatchTransfer'])->name('stock-transfers.dispatch');
     Route::post('stock-transfers/{id}/receive', [\App\Http\Controllers\TransferReceiptController::class, 'receive'])->name('stock-transfers.receive');
     Route::get('stock-transfers/{id}/print-challan', [\App\Http\Controllers\TransferPrintController::class, 'printChallan'])->name('stock-transfers.print_challan');
     Route::get('stock-transfers/{id}/print-grn', [\App\Http\Controllers\TransferPrintController::class, 'printGRN'])->name('stock-transfers.print_grn');

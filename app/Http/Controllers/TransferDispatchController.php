@@ -18,7 +18,7 @@ class TransferDispatchController extends AccountBaseController
         $this->historyService = new TransferHistoryService();
     }
 
-    public function dispatch(Request $request, $id)
+    public function dispatchTransfer(Request $request, $id)
     {
         abort_403(user()->permission('manage_dispatch') == 'none');
 

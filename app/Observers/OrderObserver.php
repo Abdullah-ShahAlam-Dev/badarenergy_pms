@@ -86,13 +86,13 @@ class OrderObserver
 
         }
 
-            // Notify client
-            $notifyUser = User::withoutGlobalScope(ActiveScope::class)->findOrFail($order->client_id);
-
-        if (request()->type && request()->type == 'send') {
-            event(new NewOrderEvent($order, $notifyUser));
+        // Notify client
+        if ($order->client_id) {
+            $notifyUser = User::withoutGlobalScope(ActiveScope::class)->find($order->client_id);
+            if ($notifyUser && request()->type && request()->type == 'send') {
+                event(new NewOrderEvent($order, $notifyUser));
+            }
         }
-
     }
 
     public function saving(Order $order)
@@ -111,13 +111,14 @@ class OrderObserver
         // Send notification
         if (($order->isDirty('order_date') || $order->isDirty('sub_total') || $order->isDirty('total') || $order->isDirty('status') || $order->isDirty('currency_id') || $order->isDirty('show_shipping_address') || $order->isDirty('note') || $order->isDirty('last_updated_by')) && $order->added_by != null) {
 
-            $clientId = $order->client_id ?: $order->added_by;
+            $clientId = $order->client_id ?: ($order->care_of_id ?: $order->added_by);
 
-                // Notify client
-                $notifyUser = User::withoutGlobalScope(ActiveScope::class)->findOrFail($clientId);
-
-                event(new OrderUpdatedEvent($order, $notifyUser));
-
+            if ($clientId) {
+                $notifyUser = User::withoutGlobalScope(ActiveScope::class)->find($clientId);
+                if ($notifyUser) {
+                    event(new OrderUpdatedEvent($order, $notifyUser));
+                }
+            }
         }
 
     }

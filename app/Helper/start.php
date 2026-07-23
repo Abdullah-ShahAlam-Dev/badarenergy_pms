@@ -783,6 +783,7 @@ if (!function_exists('sidebar_user_perms')) {
 
             $sidebarPermissionsArray = [
                 'view_clients',
+                'view_distributors',
                 'view_lead',
                 'view_employees',
                 'view_leave',

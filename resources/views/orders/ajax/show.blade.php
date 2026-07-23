@@ -71,6 +71,26 @@ $deleteOrderPermission = user()->permission('delete_order');
                                 </td>
                             </tr>
                             <tr>
+                                <td class="bg-light-grey border-right-0 f-w-500">Customer Type</td>
+                                <td class="border-left-0 text-capitalize">
+                                    @if($order->customer_type == 'end_to_end')
+                                        <span class="badge badge-info px-2 py-1">End to End Customer</span>
+                                    @elseif($order->customer_type == 'distributor')
+                                        <span class="badge badge-primary px-2 py-1">Distributor</span>
+                                    @elseif($order->customer_type == 'care_of')
+                                        <span class="badge badge-warning px-2 py-1">Care of</span>
+                                    @else
+                                        <span class="badge badge-secondary px-2 py-1">Dealer</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @if($order->careOf)
+                            <tr>
+                                <td class="bg-light-grey border-right-0 f-w-500">Care of</td>
+                                <td class="border-left-0">{{ $order->careOf->name }}</td>
+                            </tr>
+                            @endif
+                            <tr>
                                 <td class="bg-light-grey border-right-0 f-w-500">Sale Type</td>
                                 <td class="border-left-0">
                                     @if($order->sale_type == 1)
@@ -125,24 +145,44 @@ $deleteOrderPermission = user()->permission('delete_order');
                     <td class="f-14 text-dark">
                         <p>@lang("modules.invoices.billedTo"):</p>
                         <p class="mt-3 mb-0">
-                        @if ($order->client->name && $invoiceSetting->show_client_name == 'yes')
-                            {{ $order->client->name }}<br>
-                        @endif
+                        @if ($order->customer_type == 'distributor' && $order->distributor)
+                            <strong>{{ $order->distributor->name }}</strong> <span class="badge badge-primary">Distributor</span><br>
+                            @if($order->distributor->company_name) {{ $order->distributor->company_name }}<br> @endif
+                            @if($order->distributor->email) {{ $order->distributor->email }}<br> @endif
+                            @if($order->distributor->phone) {{ $order->distributor->phone }}<br> @endif
+                            @if($order->distributor->address) {!! nl2br(e($order->distributor->address)) !!} @endif
+                        @elseif ($order->customer_type == 'care_of' && $order->careOf)
+                            <strong>{{ $order->careOf->name }}</strong> <span class="badge badge-warning">Care of</span><br>
+                            @if($order->careOf->email) {{ $order->careOf->email }}<br> @endif
+                            @if($order->careOf->mobile) {{ $order->careOf->mobile }}<br> @endif
+                        @elseif ($order->customer_type == 'end_to_end' || (is_null($order->client_id) && is_null($order->distributor_id)))
+                            <strong>{{ $order->custom_customer_name }}</strong><br>
+                            @if($order->custom_customer_number)
+                                {{ $order->custom_customer_number }}<br>
+                            @endif
+                            @if($order->custom_customer_address)
+                                {!! nl2br(e($order->custom_customer_address)) !!}
+                            @endif
+                        @elseif ($order->client)
+                            @if ($order->client->name && $invoiceSetting->show_client_name == 'yes')
+                                {{ $order->client->name }}<br>
+                            @endif
 
-                        @if ($order->client->email && $invoiceSetting->show_client_email == 'yes')
-                            {{ $order->client->email }}<br>
-                        @endif
+                            @if ($order->client->email && $invoiceSetting->show_client_email == 'yes')
+                                {{ $order->client->email }}<br>
+                            @endif
 
-                        @if ($order->client->mobile && $invoiceSetting->show_client_phone == 'yes')
-                            {{ $order->client->mobile }}<br>
-                        @endif
+                            @if ($order->client->mobile && $invoiceSetting->show_client_phone == 'yes')
+                                {{ $order->client->mobile }}<br>
+                            @endif
 
-                        @if ($order->client->clientDetails->company_name && $invoiceSetting->show_client_company_name == 'yes')
-                            {{ $order->client->clientDetails->company_name }}<br>
-                        @endif
+                            @if (optional($order->client->clientDetails)->company_name && $invoiceSetting->show_client_company_name == 'yes')
+                                {{ $order->client->clientDetails->company_name }}<br>
+                            @endif
 
-                        @if ($order->client->clientDetails->address && $invoiceSetting->show_client_company_address == 'yes')
-                            {!! nl2br($order->client->clientDetails->address) !!}
+                            @if (optional($order->client->clientDetails)->address && $invoiceSetting->show_client_company_address == 'yes')
+                                {!! nl2br($order->client->clientDetails->address) !!}
+                            @endif
                         @endif
                         </p>
                     </td>

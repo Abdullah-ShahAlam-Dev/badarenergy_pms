@@ -1643,6 +1643,7 @@ return array (
     'timelogAlreadyExist' => 'Time-log already exist for this user.',
     'module' => array (
         'clients' => 'Dealers',
+        'distributors' => 'Distributors',
         'employees' => 'Employees',
         'projects' => 'Projects',
         'proposals' => 'Proposals',
@@ -1953,7 +1954,7 @@ return array (
     ),
     'ticketForm' => 'Ticket Form',
     'orders' => array (
-        'createOrder' => 'Create Order',
+        'createOrder' => 'Sale Order',
         'orderDate' => 'Order Date',
         'orderNumber' => 'Order Number',
     ),

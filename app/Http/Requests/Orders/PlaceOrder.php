@@ -30,7 +30,15 @@ class PlaceOrder extends FormRequest
 
         $rules['order_number'] = 'required|unique:orders,order_number,null,id,company_id,' . company()->id;
 
-        if (request()->has('client_id')) {
+        $rules['customer_type'] = 'required|in:dealer,distributor,end_to_end,care_of';
+
+        if (request('customer_type') === 'end_to_end') {
+            $rules['custom_customer_name'] = 'required|string|max:255';
+        } elseif (request('customer_type') === 'care_of') {
+            $rules['care_of_id'] = 'required';
+        } elseif (request('customer_type') === 'distributor') {
+            $rules['distributor_id'] = 'required';
+        } else {
             $rules['client_id'] = 'required';
         }
 
@@ -40,7 +48,10 @@ class PlaceOrder extends FormRequest
     public function messages()
     {
         return [
-            'client_id.required' => __('modules.projects.selectClient')
+            'client_id.required' => __('modules.projects.selectClient'),
+            'distributor_id.required' => 'Please select a Distributor.',
+            'custom_customer_name.required' => 'Customer name is required.',
+            'care_of_id.required' => 'Please select a Care of employee.'
         ];
     }
 

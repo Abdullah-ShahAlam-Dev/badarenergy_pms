@@ -349,44 +349,7 @@
                     <table border="0" cellpadding="0" cellspacing="0" width="100%">
                         <tr>
                             <td class="f-14 text-black">
-                                @if (($invoiceSetting->show_client_name == 'yes' || $invoiceSetting->show_client_email == 'yes' || $invoiceSetting->show_client_phone == 'yes' || $invoiceSetting->show_client_company_name == 'yes' || $invoiceSetting->show_client_company_address == 'yes') && $client)
-                                    <p class="line-height mb-0">
-                                        <span class="text-grey text-capitalize">
-                                            @lang("modules.invoices.billedTo")</span><br>
-
-                                            @if ($client->name && $invoiceSetting->show_client_name == 'yes')
-                                                {{ mb_ucwords($client->name) }}<br>
-                                            @endif
-
-                                            @if ($client->email && $invoiceSetting->show_client_email == 'yes')
-                                                {{ $client->email }}<br>
-                                            @endif
-
-                                            @if ($client->mobile && $invoiceSetting->show_client_phone == 'yes')
-                                                {{ $client->mobile }}<br>
-                                            @endif
-
-                                            @if ($client->clientDetails->company_name && $invoiceSetting->show_client_company_name == 'yes')
-                                                {{ mb_ucwords($client->clientDetails->company_name) }}<br>
-                                            @endif
-
-                                            @if ($client->clientDetails->address && $invoiceSetting->show_client_company_address == 'yes')
-                                                {!! nl2br($client->clientDetails->address) !!}
-                                            @endif
-                                    </p>
-                                @endif
-
-                                @if ($invoiceSetting->show_gst == 'yes' && !is_null($client->clientDetails->gst_number))
-                                    <br>@lang('app.gstIn'):
-                                    {{ $client->clientDetails->gst_number }}
-                                @endif
-                            </td>
-                            <td class="f-14 text-black">
-                                @if ($order->show_shipping_address == 'yes' && $client->clientDetails->shipping_address && $invoiceSetting->show_client_company_address == 'yes')
-                                    <p class="line-height"><span
-                                            class="text-grey text-capitalize">@lang('app.shippingAddress')</span><br>
-                                        {!! nl2br($client->clientDetails->shipping_address) !!}</p>
-                                @endif
+                                @include('orders.pdf.billed_to')
                             </td>
                             <td align="right">
                                 <br />

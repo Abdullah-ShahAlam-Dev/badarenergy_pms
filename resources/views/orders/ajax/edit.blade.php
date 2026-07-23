@@ -81,6 +81,85 @@ $addProductPermission = user()->permission('add_product');
             </div>
             <!-- CURRENCY END -->
 
+            <!-- CUSTOMER TYPE START -->
+            <div class="col-md-3 mb-4">
+                <div class="form-group c-inv-select mb-0">
+                    <x-forms.label fieldId="customer_type" fieldLabel="Customer Type" fieldRequired="true"></x-forms.label>
+                    <div class="select-others height-35 rounded">
+                        <select class="form-control select-picker" name="customer_type" id="customer_type">
+                            <option value="dealer" {{ ($order->customer_type ?? 'dealer') == 'dealer' ? 'selected' : '' }}>Dealers</option>
+                            <option value="distributor" {{ ($order->customer_type ?? '') == 'distributor' ? 'selected' : '' }}>Distributor</option>
+                            <option value="end_to_end" {{ ($order->customer_type ?? '') == 'end_to_end' ? 'selected' : '' }}>End to End Customer</option>
+                            <option value="care_of" {{ ($order->customer_type ?? '') == 'care_of' ? 'selected' : '' }}>Care of</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <!-- CUSTOMER TYPE END -->
+
+            <!-- CLIENT / DEALER / DISTRIBUTOR / END-TO-END CUSTOMER / CARE OF START -->
+
+            <!-- DEALERS SELECTION START -->
+            <div class="col-md-4 mb-4 {{ ($order->customer_type ?? 'dealer') != 'dealer' ? 'd-none' : '' }}" id="dealer_select_div">
+                <x-forms.label fieldId="client_id" fieldLabel="Select Dealer" fieldRequired="true"></x-forms.label>
+                <div class="select-others height-35 rounded">
+                    <select class="form-control select-picker" data-live-search="true" data-size="8" name="client_id" id="client_id">
+                        <option value="">-- Select Dealer --</option>
+                        @foreach ($dealers as $dlr)
+                            <option value="{{ $dlr->id }}" {{ $order->client_id == $dlr->id ? 'selected' : '' }}>{{ mb_ucwords($dlr->name) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <!-- DEALERS SELECTION END -->
+
+            <!-- DISTRIBUTORS SELECTION START -->
+            <div class="col-md-4 mb-4 {{ ($order->customer_type ?? '') != 'distributor' ? 'd-none' : '' }}" id="distributor_select_div">
+                <x-forms.label fieldId="distributor_id" fieldLabel="Select Distributor" fieldRequired="true"></x-forms.label>
+                <div class="select-others height-35 rounded">
+                    <select class="form-control select-picker" data-live-search="true" data-size="8" name="distributor_id" id="distributor_id">
+                        <option value="">-- Select Distributor --</option>
+                        @foreach ($distributors as $dst)
+                            <option value="{{ $dst->id }}" {{ $order->distributor_id == $dst->id ? 'selected' : '' }}>{{ mb_ucwords($dst->name) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <!-- DISTRIBUTORS SELECTION END -->
+
+            <!-- CARE OF SELECTION START -->
+            <div class="col-md-4 mb-4 {{ ($order->customer_type ?? '') != 'care_of' ? 'd-none' : '' }}" id="care_of_select_div">
+                <x-forms.label fieldId="care_of_id" fieldLabel="Select Employee (Care of)" fieldRequired="true"></x-forms.label>
+                <div class="select-others height-35 rounded">
+                    <select class="form-control select-picker" data-live-search="true" data-size="8" name="care_of_id" id="care_of_id">
+                        <option value="">-- Select Employee --</option>
+                        @foreach ($employees as $emp)
+                            <option value="{{ $emp->id }}" {{ $order->care_of_id == $emp->id ? 'selected' : '' }}>{{ mb_ucwords($emp->name) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <!-- CARE OF SELECTION END -->
+
+            <!-- END TO END CUSTOMER FIELDS START -->
+            <div class="col-md-12 mb-4 {{ ($order->customer_type ?? '') != 'end_to_end' ? 'd-none' : '' }}" id="end_to_end_customer_div">
+                <div class="card border-0 bg-light p-3">
+                    <h6 class="f-15 text-dark font-weight-bold mb-3">End to End Customer Details</h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <x-forms.text fieldId="custom_customer_name" fieldName="custom_customer_name" fieldLabel="Customer Name" fieldPlaceholder="Enter Customer Name" fieldRequired="true" :fieldValue="$order->custom_customer_name"></x-forms.text>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <x-forms.text fieldId="custom_customer_number" fieldName="custom_customer_number" fieldLabel="Phone Number (Optional)" fieldPlaceholder="Enter Phone Number" :fieldValue="$order->custom_customer_number"></x-forms.text>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <x-forms.text fieldId="custom_customer_address" fieldName="custom_customer_address" fieldLabel="Address (Optional)" fieldPlaceholder="Enter Address" :fieldValue="$order->custom_customer_address"></x-forms.text>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- END TO END CUSTOMER FIELDS END -->
+
             <!-- PROJECT AND GENERATED BY REMOVED -->
 
             @if (!in_array('client', user_roles()))
@@ -569,8 +648,48 @@ $addProductPermission = user()->permission('add_product');
             }
         });
 
-        $('#client_id').change(function() {
+        $('#customer_type').change(function() {
+            var val = $(this).val();
+            if (val == 'dealer') {
+                $('#dealer_select_div').removeClass('d-none');
+                $('#distributor_select_div, #end_to_end_customer_div, #care_of_select_div').addClass('d-none');
+                var dealerId = $('#client_id_dealer').val();
+                $('#client_id').val(dealerId);
+                if (dealerId) changeClient(dealerId);
+            } else if (val == 'distributor') {
+                $('#distributor_select_div').removeClass('d-none');
+                $('#dealer_select_div, #end_to_end_customer_div, #care_of_select_div').addClass('d-none');
+                var distId = $('#client_id_distributor').val();
+                $('#client_id').val(distId);
+                if (distId) changeClient(distId);
+            } else if (val == 'end_to_end') {
+                $('#end_to_end_customer_div').removeClass('d-none');
+                $('#dealer_select_div, #distributor_select_div, #care_of_select_div').addClass('d-none');
+                $('#client_id').val('');
+                $('#client_billing_address').html('<span class="text-lightest">End to End Customer</span>');
+                $('#client_shipping_address').html('<span class="text-lightest">End to End Customer</span>');
+            } else if (val == 'care_of') {
+                $('#care_of_select_div').removeClass('d-none');
+                $('#dealer_select_div, #distributor_select_div, #end_to_end_customer_div').addClass('d-none');
+                $('#client_id').val('');
+                $('#client_billing_address').html('<span class="text-lightest">Care of (Employee)</span>');
+                $('#client_shipping_address').html('<span class="text-lightest">Care of (Employee)</span>');
+            }
+        });
+
+        $('#client_id_dealer').change(function() {
             var id = $(this).val();
+            $('#client_id').val(id);
+            if (id) changeClient(id);
+        });
+
+        $('#client_id_distributor').change(function() {
+            var id = $(this).val();
+            $('#client_id').val(id);
+            if (id) changeClient(id);
+        });
+
+        function changeClient(id) {
             var url = "{{ route('clients.project_list', ':id') }}";
             url = url.replace(':id', id);
             var token = "{{ csrf_token() }}";

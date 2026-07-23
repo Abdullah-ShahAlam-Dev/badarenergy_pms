@@ -80,6 +80,11 @@ class OrderController extends AccountBaseController
 
         $this->pageTitle = __('modules.orders.createOrder');
         $this->clients = User::allClients();
+        $this->dealers = User::allClients();
+        $this->distributors = \App\Models\Distributor::where('status', 'active')->get();
+        $this->employees = User::allEmployees(null, true, 'all')->reject(function ($user) {
+            return $user->hasRole('admin');
+        });
         $this->products = Product::all();
         $this->categories = ProductCategory::all();
         $this->unit_types = UnitType::all();
@@ -239,26 +244,61 @@ class OrderController extends AccountBaseController
         $orderDate = $request->order_date ? \Carbon\Carbon::createFromFormat(company()->date_format, $request->order_date)->format('Y-m-d') : now()->format('Y-m-d');
         $dueDate = $request->due_date ? \Carbon\Carbon::createFromFormat(company()->date_format, $request->due_date)->format('Y-m-d') : null;
 
-        // Credit Validation check (only if client exists and sale_type is credit/0)
-        if ($request->client_id && ($request->sale_type === '0' || $request->sale_type === 0 || !$request->has('sale_type'))) {
-            $clientUser = User::findOrFail($request->client_id);
-            $validationService = new \App\Services\DealerValidationService();
+        $customerType = $request->customer_type ?: 'dealer';
 
-            // Validate Credit Days
-            $daysResult = $validationService->validateCreditDays($clientUser);
-            if (!$daysResult['status']) {
-                return Reply::error($daysResult['message']);
-            }
+        // Credit Validation check (only if client exists and sale_type is credit/0 and customer_type is dealer/distributor)
+        if (in_array($customerType, ['dealer', 'distributor']) && $request->client_id && ($request->sale_type === '0' || $request->sale_type === 0 || !$request->has('sale_type'))) {
+            $clientUser = User::find($request->client_id);
+            if ($clientUser) {
+                $validationService = new \App\Services\DealerValidationService();
 
-            // Validate Credit Limit
-            $limitResult = $validationService->validateCreditLimit($clientUser, (float) $request->total);
-            if (!$limitResult['status']) {
-                return Reply::error($limitResult['message']);
+                // Validate Credit Days
+                $daysResult = $validationService->validateCreditDays($clientUser);
+                if (!$daysResult['status']) {
+                    return Reply::error($daysResult['message']);
+                }
+
+                // Validate Credit Limit
+                $limitResult = $validationService->validateCreditLimit($clientUser, (float) $request->total);
+                if (!$limitResult['status']) {
+                    return Reply::error($limitResult['message']);
+                }
             }
         }
 
         $order = new Order();
-        $order->client_id = $request->client_id ?: user()->id;
+        $order->customer_type = $customerType;
+
+        if ($customerType === 'end_to_end') {
+            $order->client_id = null;
+            $order->distributor_id = null;
+            $order->care_of_id = null;
+            $order->custom_customer_name = $request->custom_customer_name;
+            $order->custom_customer_number = $request->custom_customer_number;
+            $order->custom_customer_address = $request->custom_customer_address;
+        } elseif ($customerType === 'care_of') {
+            $order->client_id = null;
+            $order->distributor_id = null;
+            $order->care_of_id = $request->care_of_id;
+            $order->custom_customer_name = null;
+            $order->custom_customer_number = null;
+            $order->custom_customer_address = null;
+        } elseif ($customerType === 'distributor') {
+            $order->client_id = null;
+            $order->distributor_id = $request->distributor_id;
+            $order->care_of_id = null;
+            $order->custom_customer_name = null;
+            $order->custom_customer_number = null;
+            $order->custom_customer_address = null;
+        } else {
+            $order->client_id = $request->client_id;
+            $order->distributor_id = null;
+            $order->care_of_id = null;
+            $order->custom_customer_name = null;
+            $order->custom_customer_number = null;
+            $order->custom_customer_address = null;
+        }
+
         $order->project_id = $request->project_id ?: null;
         $order->order_date = $orderDate;
         $order->due_date = $dueDate;
@@ -286,21 +326,22 @@ class OrderController extends AccountBaseController
         }
         $order->save();
 
-        if ($order->show_shipping_address == 'yes') {
+        if ($order->show_shipping_address == 'yes' && $order->client_id) {
             /** @phpstan-ignore-next-line */
             $client = $order->clientdetails;
-            $client->shipping_address = $request->shipping_address;
-            $client->saveQuietly();
+            if ($client) {
+                $client->shipping_address = $request->shipping_address;
+                $client->saveQuietly();
+            }
         }
-
 
         if ($request->has('status') && $request->status == 'completed') {
             $clientId = $order->client_id;
-            // Notify client
-            $notifyUser = User::withoutGlobalScope(ActiveScope::class)->findOrFail($clientId);
-
-            if ($notifyUser) {
-                event(new NewOrderEvent($order, $notifyUser));
+            if ($clientId) {
+                $notifyUser = User::withoutGlobalScope(ActiveScope::class)->find($clientId);
+                if ($notifyUser) {
+                    event(new NewOrderEvent($order, $notifyUser));
+                }
             }
 
             $invoice = $this->makeOrderInvoice($order);
@@ -364,6 +405,11 @@ class OrderController extends AccountBaseController
         $this->products = Product::all();
         $this->categories = ProductCategory::all();
         $this->clients = User::allClients();
+        $this->dealers = User::allClients();
+        $this->distributors = \App\Models\Distributor::where('status', 'active')->get();
+        $this->employees = User::allEmployees(null, true, 'all')->reject(function ($user) {
+            return $user->hasRole('admin');
+        });
         $this->companyAddresses = CompanyAddress::all();
         $this->warehouses = \App\Models\Warehouse::all();
         $this->offlineMethods = \App\Models\OfflinePaymentMethod::activeMethod();
@@ -453,29 +499,65 @@ class OrderController extends AccountBaseController
             }
         }
 
-        // Credit Validation check (only if client exists and sale_type is credit/0)
+        $customerType = $request->customer_type ?: $order->customer_type ?: 'dealer';
+
+        // Credit Validation check (only if client exists and sale_type is credit/0 and customer_type is dealer/distributor)
         $clientId = $request->client_id ?: $order->client_id;
         $saleType = $request->has('sale_type') ? $request->sale_type : $order->sale_type;
 
-        if ($clientId && ($saleType === '0' || $saleType === 0)) {
-            $clientUser = User::findOrFail($clientId);
-            $validationService = new \App\Services\DealerValidationService();
+        if (in_array($customerType, ['dealer', 'distributor']) && $clientId && ($saleType === '0' || $saleType === 0)) {
+            $clientUser = User::find($clientId);
+            if ($clientUser) {
+                $validationService = new \App\Services\DealerValidationService();
 
-            // Validate Credit Days
-            $daysResult = $validationService->validateCreditDays($clientUser);
-            if (!$daysResult['status']) {
-                return Reply::error($daysResult['message']);
-            }
+                // Validate Credit Days
+                $daysResult = $validationService->validateCreditDays($clientUser);
+                if (!$daysResult['status']) {
+                    return Reply::error($daysResult['message']);
+                }
 
-            // Validate Credit Limit
-            $limitResult = $validationService->validateCreditLimit($clientUser, (float) $request->total);
-            if (!$limitResult['status']) {
-                return Reply::error($limitResult['message']);
+                // Validate Credit Limit
+                $limitResult = $validationService->validateCreditLimit($clientUser, (float) $request->total);
+                if (!$limitResult['status']) {
+                    return Reply::error($limitResult['message']);
+                }
             }
         }
 
         if ($order->status == 'completed') {
             return Reply::error(__('messages.invalidRequest'));
+        }
+
+        $order->customer_type = $customerType;
+
+        if ($customerType === 'end_to_end') {
+            $order->client_id = null;
+            $order->distributor_id = null;
+            $order->care_of_id = null;
+            $order->custom_customer_name = $request->custom_customer_name;
+            $order->custom_customer_number = $request->custom_customer_number;
+            $order->custom_customer_address = $request->custom_customer_address;
+        } elseif ($customerType === 'care_of') {
+            $order->client_id = null;
+            $order->distributor_id = null;
+            $order->care_of_id = $request->care_of_id;
+            $order->custom_customer_name = null;
+            $order->custom_customer_number = null;
+            $order->custom_customer_address = null;
+        } elseif ($customerType === 'distributor') {
+            $order->client_id = null;
+            $order->distributor_id = $request->distributor_id;
+            $order->care_of_id = null;
+            $order->custom_customer_name = null;
+            $order->custom_customer_number = null;
+            $order->custom_customer_address = null;
+        } else {
+            $order->client_id = $request->client_id;
+            $order->distributor_id = null;
+            $order->care_of_id = null;
+            $order->custom_customer_name = null;
+            $order->custom_customer_number = null;
+            $order->custom_customer_address = null;
         }
 
         $order->project_id = $request->project_id ?: null;
@@ -1067,7 +1149,7 @@ class OrderController extends AccountBaseController
     public function download($id)
     {
         $this->invoiceSetting = invoice_setting();
-        $this->order = Order::with('client', 'unit', 'clientdetails')->findOrFail($id);
+        $this->order = Order::with('client', 'unit', 'clientdetails', 'distributor', 'careOf')->findOrFail($id);
         $this->client = $this->order->client;
 
         $this->viewPermission = user()->permission('view_order');
@@ -1117,7 +1199,7 @@ class OrderController extends AccountBaseController
     public function domPdfObjectForDownload($id)
     {
         $this->invoiceSetting = invoice_setting();
-        $this->order = Order::with('client', 'unit', 'clientdetails')->findOrFail($id);
+        $this->order = Order::with('client', 'unit', 'clientdetails', 'distributor', 'careOf')->findOrFail($id);
         $this->client = $this->order->client;
         App::setLocale($this->invoiceSetting->locale);
         Carbon::setLocale($this->invoiceSetting->locale);

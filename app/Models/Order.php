@@ -87,6 +87,25 @@ class Order extends BaseModel
         return $this->belongsTo(User::class, 'client_id')->withoutGlobalScope(ActiveScope::class);
     }
 
+    public function careOf(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'care_of_id');
+    }
+
+    public function distributor(): BelongsTo
+    {
+        return $this->belongsTo(Distributor::class, 'distributor_id');
+    }
+
+    public function getCustomerNameDisplayAttribute()
+    {
+        if ($this->customer_type === 'end_to_end' || (!empty($this->custom_customer_name) && is_null($this->client_id))) {
+            return $this->custom_customer_name ?: 'End-to-End Customer';
+        }
+
+        return $this->client ? $this->client->name : '--';
+    }
+
     public function addedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'added_by');

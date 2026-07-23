@@ -54,6 +54,14 @@
         </x-menu-item>
     @endif
 
+    @if (!in_array('client', user_roles()) && in_array('distributors', user_modules()) && user()->permission('view_distributors') != 'none')
+        <x-menu-item icon="truck" text="Distributors" :link="route('distributors.index')" :active="request()->routeIs('distributors.*')">
+            <x-slot name="iconPath">
+                <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H6a2 2 0 1 1-4 0H1.5A1.5 1.5 0 0 1 0 10.5v-7zm4 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm8 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+            </x-slot>
+        </x-menu-item>
+    @endif
+
 <!-- NAV ITEM - HR COLLAPASE MENU -->
     @if (!in_array('client', user_roles()) && (in_array('employees', user_modules()) || in_array('leaves', user_modules()) || in_array('attendance', user_modules()) || in_array('holidays', user_modules())) && ($sidebarUserPermissions['view_employees'] != 5 || $sidebarUserPermissions['view_leave'] != 5 || $sidebarUserPermissions['view_attendance'] != 5 || $sidebarUserPermissions['view_holiday'] != 5) && ($sidebarUserPermissions['view_employees'] != 'none' || $sidebarUserPermissions['view_leave'] != 'none' || $sidebarUserPermissions['view_attendance'] != 'none' || $sidebarUserPermissions['view_holiday'] != 'none' || $sidebarUserPermissions['view_shift_roster'] != 'none'))
         <x-menu-item icon="people" :text="__('app.menu.hr')" :active="request()->routeIs('employees.*') || request()->routeIs('leaves.*') || request()->routeIs('shifts.*') || request()->routeIs('attendances.*') || request()->routeIs('holidays.*') || request()->routeIs('designations.*') || request()->routeIs('departments.*') || request()->routeIs('appreciations.*') || request()->routeIs('awards.*')">

@@ -212,7 +212,7 @@
 
     <!-- NAV ITEM - INVENTORY GROUP -->
     @if (!in_array('client', user_roles()) && in_array('inventory', user_modules()) && (user()->permission('view_inventory') != 'none' || in_array('admin', user_roles())))
-        <x-menu-item icon="box" :text="__('app.menu.inventory')" :active="request()->routeIs('warehouses.*') || request()->routeIs('inventory.*') || request()->routeIs('delivery-orders.*') || request()->routeIs('stock-transfers.*') || request()->routeIs('shipments.*') || request()->routeIs('stock-intakes.*')">
+        <x-menu-item icon="box" :text="__('app.menu.inventory')" :active="request()->routeIs('warehouses.*') || request()->routeIs('inventory.*') || request()->routeIs('delivery-orders.*') || request()->routeIs('stock-transfers.*') || request()->routeIs('shipments.*') || request()->routeIs('stock-intakes.*') || request()->routeIs('assembly-orders.*') || request()->routeIs('internal-product-issues.*')">
             <x-slot name="iconPath">
                 <path fill-rule="evenodd" d="M12 1a1 1 0 0 1 .897.553l2.917 5.834A.5.5 0 0 1 15.5 8V14a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1V8a.5.5 0 0 1 .186-.38L3.103 1.553A1 1 0 0 1 4 1h8zM4.646 2.057l-2.613 5.225h11.934L11.354 2.057H4.646zM14 8.283H2V14h12V8.283z"/>
             </x-slot>
@@ -229,8 +229,14 @@
                 @if (user()->permission('approve_stock_intake') != 'none' || in_array('admin', user_roles()))
                     <x-sub-menu-item :link="route('stock-intakes.index')" text="Stock Intakes" />
                 @endif
+                @if (\Route::has('assembly-orders.index'))
+                    <x-sub-menu-item :link="route('assembly-orders.index')" text="Assembly Line Jobs" :active="request()->routeIs('assembly-orders.*')" />
+                @endif
                 @if (user()->permission('manage_dispatch') != 'none' || in_array('admin', user_roles()))
                     <x-sub-menu-item :link="route('delivery-orders.index')" text="Delivery Orders" />
+                @endif
+                @if (\Route::has('internal-product-issues.index'))
+                    <x-sub-menu-item :link="route('internal-product-issues.index')" text="Internal Product Issues" :active="request()->routeIs('internal-product-issues.*')" />
                 @endif
                 @if (user()->permission('approve_stock_transfer') != 'none' || in_array('admin', user_roles()))
                     <x-sub-menu-item :link="route('stock-transfers.index')" text="Stock Transfers" />
@@ -241,12 +247,15 @@
 
     <!-- NAV ITEM - LEDGERS & AGING -->
     @if (!in_array('client', user_roles()) && \Route::has('ledgers.index'))
-        <x-menu-item icon="receipt" :text="__('app.menu.ledgers')" :active="request()->routeIs('ledgers.*') || request()->routeIs('aging.*')">
+        <x-menu-item icon="receipt" :text="__('app.menu.ledgers')" :active="request()->routeIs('ledgers.*') || request()->routeIs('aging.*') || request()->routeIs('care-of-ledgers.*')">
             <x-slot name="iconPath">
                 <path d="M1.5 2A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13zM1 3.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9zM3.5 4.5A.5.5 0 0 1 4 4h8a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5zm0 2A.5.5 0 0 1 4 6h8a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5zm0 2A.5.5 0 0 1 4 8h5a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5z"/>
             </x-slot>
             <div class="accordionItemContent pb-2">
                 <x-sub-menu-item :link="route('ledgers.index')" text="Receivables Summary" />
+                @if(\Route::has('care-of-ledgers.index'))
+                    <x-sub-menu-item :link="route('care-of-ledgers.index')" text="Care Of / Owner Ledgers" :active="request()->routeIs('care-of-ledgers.*')" />
+                @endif
                 @if(user()->permission('view_outstanding_dashboard') != 'none')
                     <x-sub-menu-item :link="route('aging.dashboard')" text="Outstanding Dashboard" />
                 @endif

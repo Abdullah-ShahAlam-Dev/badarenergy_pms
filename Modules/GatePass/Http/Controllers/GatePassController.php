@@ -73,6 +73,21 @@ class GatePassController extends AccountBaseController
             'quantity.*' => 'required|numeric'
         ]);
 
+        $itemsList = [];
+        if ($request->product_id) {
+            foreach ($request->product_id as $key => $productId) {
+                $product = Product::find($productId);
+                $name = $product ? $product->name : 'Unknown Product';
+                $itemsList[] = [
+                    'product_id' => $productId,
+                    'item_name' => $name,
+                ];
+            }
+        }
+
+        $approvalService = app(\App\Services\GatePassConditionalApprovalService::class);
+        $eval = $approvalService->evaluateGatePass($itemsList, true);
+
         $gatePass = new GatePassRequest();
         $gatePass->company_id = company()->id;
         $gatePass->user_id = user()->id;
@@ -80,6 +95,9 @@ class GatePassController extends AccountBaseController
         $gatePass->request_number = 'GP-' . date('Y') . '-' . sprintf('%04d', (GatePassRequest::withTrashed()->max('id') + 1));
         $gatePass->request_date = Carbon::parse($request->request_date)->toDateString();
         $gatePass->type = $request->type;
+        $gatePass->is_manual = true;
+        $gatePass->purpose_category = $request->purpose_category ?: 'other';
+        $gatePass->requires_battery_approval = $eval['requires_battery_approval'];
         $gatePass->return_type = $request->return_type;
         $gatePass->purpose = $request->purpose;
         $gatePass->from_location = $request->from_location;
@@ -87,7 +105,7 @@ class GatePassController extends AccountBaseController
         $gatePass->vehicle_number = $request->vehicle_number;
         $gatePass->driver_name = $request->driver_name;
         $gatePass->expected_return_date = $request->expected_return_date ? Carbon::parse($request->expected_return_date)->toDateString() : null;
-        $gatePass->status = 'pending_hod';
+        $gatePass->status = $eval['status'];
         $gatePass->save();
 
         // Save Items
@@ -113,8 +131,8 @@ class GatePassController extends AccountBaseController
         GatePassApprovalLog::create([
             'gate_pass_request_id' => $gatePass->id,
             'user_id' => user()->id,
-            'action' => 'submitted',
-            'remarks' => 'Request submitted for HOD approval',
+            'action' => $eval['requires_battery_approval'] ? 'submitted' : 'auto_approved',
+            'remarks' => $eval['message'],
             'ip_address' => $request->ip()
         ]);
 
@@ -238,7 +256,33 @@ class GatePassController extends AccountBaseController
 
     public function verifyPass($hash)
     {
-        $this->gatePass = GatePassRequest::where('qr_code', $hash)->with(['user', 'department', 'items', 'hod', 'store', 'security'])->firstOrFail();
+        $this->gatePass = GatePassRequest::where('qr_code', $hash)->with(['user', 'department', 'items', 'hod', 'store', 'security', 'exitScannedBy'])->firstOrFail();
         return view('gatepass::show', $this->data);
     }
+
+    public function securityExitScan(Request $request, $id)
+    {
+        $gatePass = GatePassRequest::findOrFail($id);
+
+        if ($gatePass->status !== 'approved' && $gatePass->status !== 'completed') {
+            return Reply::error('Gate Pass is not in Approved status. Warehouse exit denied.');
+        }
+
+        $gatePass->exit_scanned_at = now();
+        $gatePass->exit_scanned_by = user()->id;
+        $gatePass->security_id = user()->id;
+        $gatePass->status = 'completed';
+        $gatePass->save();
+
+        GatePassApprovalLog::create([
+            'gate_pass_request_id' => $gatePass->id,
+            'user_id' => user()->id,
+            'action' => 'exit_scanned',
+            'remarks' => 'Security exit verified and scanned at gate',
+            'ip_address' => $request->ip()
+        ]);
+
+        return Reply::success('Warehouse Exit Verified & Timestamped successfully.');
+    }
 }
+

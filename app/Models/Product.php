@@ -111,7 +111,10 @@ class Product extends BaseModel
         'downloadable',
         'downloadable_file',
         'default_image',
-        'is_serialized'
+        'is_serialized',
+        'origin_type',
+        'product_classification',
+        'product_source'
     ];
 
     protected $appends = ['total_amount', 'image_url', 'download_file_url'];

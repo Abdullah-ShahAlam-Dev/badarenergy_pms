@@ -49,9 +49,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class OrderItems extends BaseModel
 {
 
-    protected $fillable = ['order_id', 'product_id', 'item_name', 'item_summary', 'type', 'quantity', 'unit_price', 'amount', 'hsn_sac_code', 'taxes', 'unit_id'];
+    protected $fillable = ['order_id', 'product_id', 'batch_id', 'item_name', 'item_summary', 'type', 'quantity', 'unit_price', 'amount', 'hsn_sac_code', 'taxes', 'unit_id'];
 
-    protected $with = ['orderItemImage', 'product'];
+    protected $with = ['orderItemImage', 'product', 'batch'];
 
     public static function taxbyid($id)
     {
@@ -66,6 +66,11 @@ class OrderItems extends BaseModel
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(ProductBatch::class, 'batch_id');
     }
 
     public function getTaxListAttribute()
@@ -96,3 +101,4 @@ class OrderItems extends BaseModel
     }
 
 }
+

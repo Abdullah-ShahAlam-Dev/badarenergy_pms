@@ -117,8 +117,16 @@ class ProductController extends AccountBaseController
         $product->capacity = $request->capacity;
         $product->product_code = $request->product_code;
         $product->barcode = $request->barcode;
-        $product->type = $request->type;
-        $product->is_serialized = (bool) $request->is_serialized;
+        $product->origin_type = $request->origin_type ?: 'local';
+        $product->product_classification = $request->product_classification ?: 'ready_made';
+
+        if ($product->product_classification === 'assembly_part') {
+            $product->product_source = 'oem';
+            $product->is_serialized = false;
+        } else {
+            $product->product_source = $request->product_source ?: 'badar_energy';
+            $product->is_serialized = ($product->product_source === 'badar_energy');
+        }
 
         if (request()->hasFile('downloadable_file') && request()->downloadable == 'true') {
             Files::deleteFile($product->downloadable_file, ProductFiles::FILE_PATH);
@@ -269,8 +277,16 @@ class ProductController extends AccountBaseController
         $product->capacity = $request->capacity;
         $product->product_code = $request->product_code;
         $product->barcode = $request->barcode;
-        $product->type = $request->type;
-        $product->is_serialized = (bool) $request->is_serialized;
+        $product->origin_type = $request->origin_type ?: 'local';
+        $product->product_classification = $request->product_classification ?: 'ready_made';
+
+        if ($product->product_classification === 'assembly_part') {
+            $product->product_source = 'oem';
+            $product->is_serialized = false;
+        } else {
+            $product->product_source = $request->product_source ?: 'badar_energy';
+            $product->is_serialized = ($product->product_source === 'badar_energy');
+        }
 
         if (request()->hasFile('downloadable_file') && request()->downloadable == 'true') {
             Files::deleteFile($product->downloadable_file, ProductFiles::FILE_PATH);

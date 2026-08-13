@@ -39,13 +39,25 @@ class StoreProductRequest extends CoreRequest
             'voltage' => 'nullable|string',
             'capacity' => 'nullable|string',
             'barcode' => 'nullable|string',
-            'type' => 'nullable|in:imported,assembled',
-            'is_serialized' => 'required|boolean',
+            'type' => 'nullable|string',
+            'is_serialized' => 'nullable|boolean',
+            'origin_type' => 'nullable|string',
+            'product_classification' => 'nullable|string',
+            'product_source' => 'nullable|string',
         ];
 
         $rules = $this->customFieldRules($rules);
 
         return $rules;
+    }
+
+    protected function prepareForValidation()
+    {
+        if ($this->has('product_source')) {
+            $this->merge([
+                'is_serialized' => $this->product_source === 'badar_energy' ? 1 : 0,
+            ]);
+        }
     }
 
     public function messages()

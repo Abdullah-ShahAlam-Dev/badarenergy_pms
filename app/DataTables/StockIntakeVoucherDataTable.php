@@ -110,7 +110,13 @@ class StockIntakeVoucherDataTable extends BaseDataTable
             ->setRowId(function ($row) {
                 return 'row-' . $row->id;
             })
-            ->rawColumns(['action', 'voucher_number', 'shipment', 'status', 'items_count', 'check']);
+            ->addColumn('intake_type', function ($row) {
+                if ($row->intake_type === 'assembly') {
+                    return '<span class="badge badge-primary px-2 py-1"><i class="fa fa-cogs mr-1"></i>Assembled Product</span>';
+                }
+                return '<span class="badge badge-secondary px-2 py-1"><i class="fa fa-box mr-1"></i>Direct / Ready-Made</span>';
+            })
+            ->rawColumns(['action', 'voucher_number', 'shipment', 'status', 'intake_type', 'items_count', 'check']);
     }
 
     /**
@@ -184,6 +190,12 @@ class StockIntakeVoucherDataTable extends BaseDataTable
             ],
             'status' => [
                 'title' => 'Status',
+            ],
+            'intake_type' => [
+                'title' => 'Intake Type',
+                'exportable' => true,
+                'orderable'  => false,
+                'searchable' => false,
             ],
             'items_count' => [
                 'title' => 'Items Count',

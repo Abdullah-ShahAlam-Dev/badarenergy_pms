@@ -12,9 +12,11 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     Route::post('gate-pass/record-return/{id}', 'GatePassApprovalController@recordReturn')->name('gate-pass.record-return');
     Route::post('gate-pass/manually-close/{id}', 'GatePassApprovalController@manuallyClose')->name('gate-pass.manually-close');
     
-    // Printing & QR
+    // Printing & QR & Security Exit Scan
+    Route::post('gate-pass/security-exit-scan/{id}', 'GatePassController@securityExitScan')->name('gate-pass.security-exit-scan');
     Route::get('gate-pass/print/{id}', 'GatePassController@printPass')->name('gate-pass.print');
     Route::get('gate-pass/verify/{hash}', 'GatePassController@verifyPass')->name('gate-pass.verify');
     // Reports
     Route::get('gate-pass-report', 'GatePassReportController@index')->name('gate-pass.report');
 });
+

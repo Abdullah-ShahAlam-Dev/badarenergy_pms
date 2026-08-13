@@ -55,6 +55,15 @@
                     </div>
 
                     <div class="mb-3">
+                        <span class="text-muted f-12 d-block text-uppercase">Intake Type</span>
+                        @if (($voucher->intake_type ?? 'direct') === 'assembly')
+                            <span class="badge badge-primary px-2 py-1"><i class="fa fa-cogs mr-1"></i>Assembled Product (Assembly Line Output)</span>
+                        @else
+                            <span class="badge badge-secondary px-2 py-1"><i class="fa fa-box mr-1"></i>Direct Intake (Bane-Banaye / Ready-Made)</span>
+                        @endif
+                    </div>
+
+                    <div class="mb-3">
                         <span class="text-muted f-12 d-block text-uppercase">Intake Date</span>
                         <strong class="f-15 text-dark">{{ $voucher->intake_date ? $voucher->intake_date->format(company()->date_format) : '-' }}</strong>
                     </div>

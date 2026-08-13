@@ -616,6 +616,7 @@ class OrderController extends AccountBaseController
             $orderItem->type = $item;
             $orderItem->hsn_sac_code = (isset($hsn_sac_code[$key]) ? $hsn_sac_code[$key] : null);
             $orderItem->product_id = (isset($request->product_id[$key]) && !is_null($request->product_id[$key])) ? $request->product_id[$key] : null;
+            $orderItem->batch_id = (isset($request->batch_id[$key]) && !is_null($request->batch_id[$key])) ? $request->batch_id[$key] : null;
             $orderItem->unit_id = (isset($request->unit_id[$key]) && !is_null($request->unit_id[$key])) ? $request->unit_id[$key] : null;
             $orderItem->quantity = $quantity[$key];
             $orderItem->unit_price = round($cost_per_item[$key], 2);

@@ -123,30 +123,35 @@ $addProductSubCategoryPermission = user()->permission('manage_product_sub_catego
                             </div>
 
                             <div class="col-lg-4 col-md-6">
-                                <x-forms.label class="my-3" fieldId="type" :fieldLabel="__('Category Type')">
+                                <x-forms.label class="my-3" fieldId="origin_type" :fieldLabel="__('Product Origin')" fieldRequired="true">
                                 </x-forms.label>
                                 <div class="form-group">
-                                    <select class="form-control select-picker" name="type" id="type">
-                                        <option value="imported" @if($product->type == 'imported') selected @endif>Imported</option>
-                                        <option value="assembled" @if($product->type == 'assembled') selected @endif>Assembled</option>
+                                    <select class="form-control select-picker" name="origin_type" id="origin_type">
+                                        <option value="local" @if(($product->origin_type ?? 'local') == 'local') selected @endif>Local</option>
+                                        <option value="imported" @if(($product->origin_type ?? 'local') == 'imported') selected @endif>Imported</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div class="col-lg-4 col-md-6">
-                                <div class="form-group my-3">
-                                    <x-forms.label fieldId="is_serialized" :fieldLabel="__('Product Source')" fieldRequired="true" />
-                                    <div class="d-flex">
-                                        <x-forms.radio fieldId="serialize-badar" fieldLabel="Badar Energy"
-                                                       fieldName="is_serialized" fieldValue="1"
-                                                       :checked="$product->is_serialized == 1">
-                                        </x-forms.radio>
-                                        <x-forms.radio fieldId="serialize-oem" fieldLabel="OEM"
-                                                       fieldValue="0"
-                                                       fieldName="is_serialized"
-                                                       :checked="$product->is_serialized == 0">
-                                        </x-forms.radio>
-                                    </div>
+                                <x-forms.label class="my-3" fieldId="product_classification" :fieldLabel="__('Product Type')" fieldRequired="true">
+                                </x-forms.label>
+                                <div class="form-group">
+                                    <select class="form-control select-picker" name="product_classification" id="product_classification">
+                                        <option value="ready_made" @if(($product->product_classification ?? 'ready_made') == 'ready_made') selected @endif>Ready-Made Product</option>
+                                        <option value="assembly_part" @if(($product->product_classification ?? 'ready_made') == 'assembly_part') selected @endif>Assembly Part (Raw Component)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4 col-md-6" id="product_source_wrapper">
+                                <x-forms.label class="my-3" fieldId="product_source" :fieldLabel="__('Product Source')" fieldRequired="true">
+                                </x-forms.label>
+                                <div class="form-group">
+                                    <select class="form-control select-picker" name="product_source" id="product_source">
+                                        <option value="badar_energy" @if(($product->product_source ?? ($product->is_serialized ? 'badar_energy' : 'oem')) == 'badar_energy') selected @endif @if(($product->product_classification ?? 'ready_made') == 'assembly_part') disabled @endif>Badar Energy</option>
+                                        <option value="oem" @if(($product->product_source ?? ($product->is_serialized ? 'badar_energy' : 'oem')) == 'oem') selected @endif>OEM</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -457,6 +462,18 @@ $addProductSubCategoryPermission = user()->permission('manage_product_sub_catego
         <x-forms.custom-field-filejs/>
 
         init(RIGHT_MODAL);
+
+        $('#product_classification').change(function () {
+            var val = $(this).val();
+            if (val === 'assembly_part') {
+                $('#product_source').val('oem');
+                $('#product_source').find('option[value="badar_energy"]').prop('disabled', true);
+                $('#product_source').selectpicker('refresh');
+            } else {
+                $('#product_source').find('option[value="badar_energy"]').prop('disabled', false);
+                $('#product_source').selectpicker('refresh');
+            }
+        });
 
         $('#downloadable').change(function() {
             if ($(this).is(':checked')) {

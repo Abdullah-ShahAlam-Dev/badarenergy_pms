@@ -80,13 +80,42 @@ class StockIntakeVoucherController extends AccountBaseController
             }
         }
 
-        $data = $request->only(['warehouse_id', 'shipment_id', 'remarks']);
+        $companyId = company() ? company()->id : 1;
+        $shipmentId = $request->shipment_id;
+
+        if ($shipmentId === 'create_new' || (!empty($request->container_number) && (empty($shipmentId) || $shipmentId === 'create_new'))) {
+            $generator = app(\App\Services\ShipmentGeneratorService::class);
+            $shipment = new \App\Models\Shipment();
+            $shipment->company_id = $companyId;
+            $shipment->shipment_number = $generator->generate($companyId);
+            $shipment->container_number = strip_tags($request->container_number);
+            $shipment->bill_of_lading = strip_tags($request->bill_of_lading);
+            $shipment->manufacturing_ref = strip_tags($request->manufacturing_ref);
+            $shipment->port_of_origin = strip_tags($request->port_of_origin);
+            $shipment->port_of_discharge = strip_tags($request->port_of_discharge);
+            if ($request->eta) {
+                try {
+                    $shipment->eta = \Carbon\Carbon::createFromFormat(company()->date_format, $request->eta)->format('Y-m-d');
+                } catch (\Exception $e) {
+                    $shipment->eta = \Carbon\Carbon::parse($request->eta)->format('Y-m-d');
+                }
+            }
+            $shipment->status = $request->shipment_status ?: 'arrived';
+            $shipment->remarks = strip_tags($request->shipment_remarks);
+            $shipment->save();
+
+            $shipmentId = $shipment->id;
+        }
+
+        $data = $request->only(['warehouse_id', 'intake_type', 'remarks']);
+        $data['shipment_id'] = ($shipmentId && $shipmentId !== 'create_new') ? $shipmentId : null;
         $data['intake_date'] = $intakeDate;
+        $data['intake_type'] = $request->intake_type ?: 'direct';
 
         $service = app(StockIntakeService::class);
         $service->createVoucher($data, $request->items);
 
-        return Reply::successWithData(__('messages.recordSaved'), [
+        return Reply::successWithData('Shipment and Stock Intake Voucher created successfully.', [
             'redirectUrl' => route('stock-intakes.index'),
         ]);
     }

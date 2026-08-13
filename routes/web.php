@@ -198,6 +198,16 @@ Route::group(['middleware' => 'auth', 'prefix' => 'account'], function () {
     Route::get('stock-intakes/{id}/barcodes/{serial_id}', [StockIntakeVoucherController::class, 'printSingleBarcode'])->name('stock-intakes.print-single-barcode');
     Route::resource('stock-intakes', StockIntakeVoucherController::class);
 
+    // Assembly Line Jobs (Phase 2)
+    Route::post('assembly-orders/{id}/complete', [\App\Http\Controllers\AssemblyOrderController::class, 'complete'])->name('assembly-orders.complete');
+    Route::post('assembly-orders/{id}/log-fault', [\App\Http\Controllers\AssemblyOrderController::class, 'logFault'])->name('assembly-orders.log-fault');
+    Route::resource('assembly-orders', \App\Http\Controllers\AssemblyOrderController::class);
+
+    // Internal Product Issues & Care Of Ledgers (Phase 3)
+    Route::resource('internal-product-issues', \App\Http\Controllers\InternalProductIssueController::class)->only(['index', 'create', 'store']);
+    Route::post('care-of-ledgers/{careOfId}/settlement', [\App\Http\Controllers\CareOfLedgerController::class, 'postSettlement'])->name('care-of-ledgers.post-settlement');
+    Route::resource('care-of-ledgers', \App\Http\Controllers\CareOfLedgerController::class)->only(['index', 'show']);
+
     // client category & subcategory
     Route::resource('clientCategory', ClientCategoryController::class);
 

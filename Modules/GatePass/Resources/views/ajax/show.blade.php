@@ -16,13 +16,21 @@
             </div>
             <div class="card-body">
                 <div class="row mb-4">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <p class="mb-1 text-lightest f-12">Requested By</p>
                         <x-employee :user="$gatePass->user" />
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <p class="mb-1 text-lightest f-12">Department</p>
                         <p class="mb-0 text-dark-grey f-14 font-weight-bold">{{ $gatePass->department->team_name ?? '--' }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1 text-lightest f-12">Battery Approval Status</p>
+                        @if($gatePass->requires_battery_approval)
+                            <span class="badge badge-warning text-dark p-2"><i class="fa fa-battery-quarter mr-1"></i> Mandatory Manager Approval (Battery Parts)</span>
+                        @else
+                            <span class="badge badge-info p-2"><i class="fa fa-check-circle mr-1"></i> Auto-Approved (Non-Battery)</span>
+                        @endif
                     </div>
                 </div>
 
@@ -83,6 +91,30 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Security Gate Exit Verification Stamp -->
+                <div class="card bg-light border p-3 rounded mb-4">
+                    <h6 class="f-15 f-w-500 mb-2"><i class="fa fa-shield text-primary mr-1"></i> Security Gate Exit Verification Stamp</h6>
+                    @if($gatePass->exit_scanned_at)
+                        <div class="alert alert-success mb-0 py-2">
+                            <i class="fa fa-check-circle mr-1"></i> <strong>Exit Verified & Passed Gate:</strong>
+                            Scanned by <strong>{{ $gatePass->exitScannedBy->name ?? 'Security Guard' }}</strong> on 
+                            <strong>{{ $gatePass->exit_scanned_at->format('Y-m-d H:i:s') }}</strong>.
+                        </div>
+                    @else
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted f-13">Status: Pending Warehouse Exit Verification</span>
+                            @if(in_array($gatePass->status, ['approved', 'pending_security']))
+                                <x-form id="security-exit-scan-form" action="{{ route('gate-pass.security-exit-scan', $gatePass->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-success rounded" onclick="return confirm('Verify warehouse exit for this Gate Pass?')">
+                                        <i class="fa fa-barcode mr-1"></i> Verify & Stamp Exit Gate Pass
+                                    </button>
+                                </x-form>
+                            @endif
+                        </div>
+                    @endif
                 </div>
 
                 <!-- Approval Section -->

@@ -264,6 +264,11 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
         return ($this->image) ? asset_url_local_s3('avatar/' . $this->image) : 'https://www.gravatar.com/avatar/' . $gravatarHash . '.png?s=200&d=mp';
     }
 
+    public function careOfLedgers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CareOfLedger::class, 'care_of_id');
+    }
+
     public function hasGravatar($email)
     {
         // Craft a potential url and test its headers

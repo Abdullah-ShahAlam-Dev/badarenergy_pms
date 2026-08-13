@@ -35,39 +35,53 @@
         </div>
         <!-- SUBCATEGORY END -->
 
-        <!-- UNITTYPE START-->
-
+        <!-- PRODUCT SOURCE / TYPE START -->
         <div class="select-box d-flex py-2 px-lg-2 px-md-2 px-0 border-right-grey border-right-grey-sm-0">
             <p class="mb-0 pr-2 f-14 text-dark-grey d-flex align-items-center">
-                @lang('modules.invoices.unitType')</p>
-            <div class="select-status d-flex">
-                <select class="form-control select-picker" name="unit_type_id" id="unit_type_id">
-                    <option value="all">@lang('app.all')</option>
-                    @foreach ($unitTypes  as $unitType)
-                        <option value="{{ $unitType->id }}">{{ $unitType->unit_type }}</option>
-                    @endforeach
-                </select>
-            </div>
-        </div>
-
-        <!-- UNITTYPE END-->
-
-        <!-- PRODUCT SOURCE START -->
-        <div class="select-box d-flex py-2 px-lg-2 px-md-2 px-0 border-right-grey border-right-grey-sm-0">
-            <p class="mb-0 pr-2 f-14 text-dark-grey d-flex align-items-center">
-                Product Source</p>
+                Type & Source</p>
             <div class="select-status d-flex">
                 <select class="form-control select-picker" name="is_serialized" id="is_serialized_filter">
                     <option value="all">@lang('app.all')</option>
-                    <option value="1">Badar Energy</option>
-                    <option value="0">OEM</option>
+                    <option value="ready_made">Ready-Made</option>
+                    <option value="assembly_part">Assembly Part</option>
+                    <option value="badar_energy">Badar Energy</option>
+                    <option value="oem">OEM</option>
                 </select>
             </div>
         </div>
         <!-- PRODUCT SOURCE END -->
 
+        <!-- PRODUCT ORIGIN START -->
+        <div class="select-box d-flex py-2 px-lg-2 px-md-2 px-0 border-right-grey border-right-grey-sm-0">
+            <p class="mb-0 pr-2 f-14 text-dark-grey d-flex align-items-center">
+                Origin</p>
+            <div class="select-status d-flex">
+                <select class="form-control select-picker" name="origin_type" id="origin_type_filter">
+                    <option value="all">@lang('app.all')</option>
+                    <option value="local">Local</option>
+                    <option value="imported">Imported</option>
+                </select>
+            </div>
+        </div>
+        <!-- PRODUCT ORIGIN END -->
+
+        <!-- STOCK AVAILABILITY START -->
+        <div class="select-box d-flex py-2 px-lg-2 px-md-2 px-0 border-right-grey border-right-grey-sm-0">
+            <p class="mb-0 pr-2 f-14 text-dark-grey d-flex align-items-center">
+                Stock Status</p>
+            <div class="select-status d-flex">
+                <select class="form-control select-picker" name="stock_status" id="stock_status_filter">
+                    <option value="all">@lang('app.all')</option>
+                    <option value="in_stock">In Stock (>=10)</option>
+                    <option value="low_stock">Low Stock (&lt;10)</option>
+                    <option value="out_of_stock">Out of Stock (0)</option>
+                </select>
+            </div>
+        </div>
+        <!-- STOCK AVAILABILITY END -->
+
         <!-- SEARCH BY TASK START -->
-        <div class="task-search d-flex  py-1 px-lg-3 px-0 border-right-grey align-items-center">
+        <div class="task-search d-flex py-1 px-lg-3 px-0 border-right-grey align-items-center">
             <form class="w-100 mr-1 mr-lg-0 mr-md-1 ml-md-1 ml-0 ml-lg-0">
                 <div class="input-group bg-grey rounded">
                     <div class="input-group-prepend">
@@ -76,7 +90,7 @@
                         </span>
                     </div>
                     <input type="text" class="form-control f-14 p-1 border-additional-grey" id="search-text-field"
-                        placeholder="@lang('app.startTyping')">
+                        placeholder="Search Name, Code, Barcode, Voltage...">
                 </div>
             </form>
         </div>
@@ -101,8 +115,6 @@ $addOrderPermission = user()->permission('add_order');
 @section('content')
     <!-- CONTENT WRAPPER START -->
     <div class="content-wrapper">
-        <!-- Add Task Export Buttons Start -->
-        {{-- <input type="hidden" name="user_id" class="user_id" value={{user()->id}}> --}}
         <div class="d-flex justify-content-between action-bar">
             <div id="table-actions" class="flex-grow-1 align-items-center">
                 @if ($addProductPermission == 'all' || $addProductPermission == 'added')
@@ -123,15 +135,12 @@ $addOrderPermission = user()->permission('add_order');
                 </div>
             @endif
 
-
             @if (!in_array('client', user_roles()))
                 <x-datatable.actions>
                     <div class="select-status mr-3 pl-3">
                         <select name="action_type" class="form-control select-picker" id="quick-action-type" disabled>
                             <option value="">@lang('app.selectAction')</option>
-                            {{-- <option value="change-status">@lang('modules.tasks.changeStatus')</option> --}}
                             <option value="change-purchase">@lang('app.purchaseAllow')</option>
-
                             <option value="delete">@lang('app.delete')</option>
                         </select>
                     </div>
@@ -145,36 +154,20 @@ $addOrderPermission = user()->permission('add_order');
             @endif
         </div>
 
-        <!-- Add Task Export Buttons End -->
-        <!-- Task Box Start -->
         <div class="d-flex flex-column w-tables rounded mt-3 bg-white table-responsive">
-
             {!! $dataTable->table(['class' => 'table table-hover border-0 w-100']) !!}
-
         </div>
-        <!-- Task Box End -->
     </div>
-    <!-- CONTENT WRAPPER END -->
-
 @endsection
 
 @push('scripts')
     @include('sections.datatable_js')
 
     <script>
-
-        $(window).on('load', function() {
-            @if($cartProductCount == 0)
-              $('#emptyCartBox').hide();
-            @endif
-        });
-
         var subCategories = @json($subCategories);
 
         $('#category_id').change(function(e) {
-            // get projects of selected users
             var opts = '';
-
             var subCategory = subCategories.filter(function(item) {
                 return item.category_id == e.target.value
             });
@@ -183,66 +176,50 @@ $addOrderPermission = user()->permission('add_order');
                 opts += `<option value='${project.id}'>${project.category_name}</option>`
             })
 
-            $('#sub_category').html('<option value="all">@lang("app.all")</option>' + opts)
+            $('#sub_category').html('<option value="all">@lang("app.all")</option>' + opts);
             $("#sub_category").selectpicker("refresh");
         });
 
         $('#products-table').on('preXhr.dt', function(e, settings, data) {
-            var categoryID = $('#category_id').val();
-            var subCategoryID = $('#sub_category').val();
-            var searchText = $('#search-text-field').val();
-            var unitTypeID  = $('#unit_type_id').val();
-            var isSerialized = $('#is_serialized_filter').val();
-
-            data['category_id'] = categoryID;
-            data['sub_category_id'] = subCategoryID;
-            data['searchText'] = searchText;
-            data['unit_type_id'] = unitTypeID;
-            data['is_serialized'] = isSerialized;
+            data['category_id'] = $('#category_id').val();
+            data['sub_category_id'] = $('#sub_category').val();
+            data['searchText'] = $('#search-text-field').val();
+            data['unit_type_id'] = $('#unit_type_id').val();
+            data['is_serialized'] = $('#is_serialized_filter').val();
+            data['origin_type'] = $('#origin_type_filter').val();
+            data['stock_status'] = $('#stock_status_filter').val();
         });
+
         const showTable = () => {
             window.LaravelDataTables["products-table"].draw(false);
         }
 
-        $('#category_id, #sub_category, #unit_type_id, #is_serialized_filter').on('change keyup', function() {
-            if ($('#category_id').val() != "all" && $('#category_id').val() != "") {
+        $('#category_id, #sub_category, #unit_type_id, #is_serialized_filter, #origin_type_filter, #stock_status_filter').on('change keyup', function() {
+            if ($('#category_id').val() != "all" || $('#sub_category').val() != "all" || $('#unit_type_id').val() != "all" || $('#is_serialized_filter').val() != "all" || $('#origin_type_filter').val() != "all" || $('#stock_status_filter').val() != "all") {
                 $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else if ($('#sub_category').val() != "all" && $('#sub_category').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else if ($('#unit_type_id').val() != "all" && $('#unit_type_id').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
-            } else if ($('#is_serialized_filter').val() != "all" && $('#is_serialized_filter').val() != "") {
-                $('#reset-filters').removeClass('d-none');
-                showTable();
             } else {
                 $('#reset-filters').addClass('d-none');
-                showTable();
             }
+            showTable();
         });
 
         $('#search-text-field').on('keyup', function() {
             if ($('#search-text-field').val() != "") {
                 $('#reset-filters').removeClass('d-none');
-                showTable();
             }
+            showTable();
         });
 
         $('#reset-filters').click(function() {
-            $('#filter-form')[0].reset();
-
             $('#category_id').val('all');
-            $('.select-picker').val('all');
-            $('#is_serialized_filter').val('all');
-
             $('#sub_category').html('<option value="all">@lang("app.all")</option>');
-
             $('#unit_type_id').val('all');
+            $('#is_serialized_filter').val('all');
+            $('#origin_type_filter').val('all');
+            $('#stock_status_filter').val('all');
+            $('#search-text-field').val('');
   
             $('.select-picker').selectpicker("refresh");
-
             $('#reset-filters').addClass('d-none');
 
             showTable();
@@ -252,7 +229,6 @@ $addOrderPermission = user()->permission('add_order');
             const actionValue = $(this).val();
             if (actionValue != '') {
                 $('#quick-action-apply').removeAttr('disabled');
-
                 if (actionValue == 'change-purchase') {
                     $('.quick-action-field').addClass('d-none');
                     $('#change-status-action').removeClass('d-none');
@@ -290,7 +266,6 @@ $addOrderPermission = user()->permission('add_order');
                         applyQuickAction();
                     }
                 });
-
             } else {
                 applyQuickAction();
             }
@@ -323,7 +298,6 @@ $addOrderPermission = user()->permission('add_order');
 
         $('body').on('click', '.productView', function() {
             let id = $(this).data('product-id');
-
             var url = "{{ route('products.show', ':id') }}";
             url = url.replace(':id', id);
 
@@ -354,7 +328,6 @@ $addOrderPermission = user()->permission('add_order');
                 if (result.isConfirmed) {
                     var url = "{{ route('products.destroy', ':id') }}";
                     url = url.replace(':id', id);
-
                     var token = "{{ csrf_token() }}";
 
                     $.easyAjax({
@@ -373,50 +346,5 @@ $addOrderPermission = user()->permission('add_order');
                 }
             });
         });
-
-        $('body').on('click', '.add-product', function() {
-            let cartItems = [];
-            var productId = $(this).data('product-id');
-            let url = "{{ route('products.add_cart_item') }}";
-
-            $.easyAjax({
-                url: url,
-                container: '.content-wrapper',
-                type: "POST",
-                data: {
-                    'productID': productId,
-                    '_token': "{{ csrf_token() }}"
-                },
-                success: function(response) {
-                        cartItems = response.cartProduct;
-                        $('.productCounter').html(cartItems);
-                }
-            })
-
-        });
-
-        $('body').on('click', '.empty-cart', function() {
-            let id = $(this).data('user-id');
-
-            var url = "{{ route('products.remove_cart_item', ':id') }}";
-            url = url.replace(':id', id);
-            $.easyAjax({
-                url: url,
-                container: '#saveInvoiceForm',
-                type: "POST",
-                blockUI: true,
-                data: {
-                    _token: "{{ csrf_token() }}",
-                    type: "all_data",
-                },
-                success: function(response) {
-                    cartItems = response.productItems;
-                    $('.productCounter').html(cartItems);
-                    $('#emptyCartBox').hide();
-
-                }
-            });
-        });
-
     </script>
 @endpush

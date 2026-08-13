@@ -50,6 +50,23 @@
                             fieldName="to_location" fieldPlaceholder="e.g. Client Site" />
                     </div>
 
+                    <div class="col-lg-4 col-md-6">
+                        <x-forms.select fieldId="purpose_category" fieldLabel="Movement / Purpose Category" fieldName="purpose_category">
+                            <option value="other">Other / General</option>
+                            <option value="screen">Screen / Display</option>
+                            <option value="bms">BMS Board</option>
+                            <option value="expo_center">Expo Center</option>
+                            <option value="internal_movement">Internal Location Movement</option>
+                            <option value="sale_dispatch">Sale Dispatch</option>
+                        </x-forms.select>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="alert alert-info py-2 f-13">
+                            <i class="fa fa-info-circle mr-1"></i> <strong>Approval Rule:</strong> Gate Passes containing <u>Battery Parts</u> require mandatory HOD/Manager approval before exit. Non-battery items (Display Screen, BMS alone, Expo materials) are auto-approved for direct warehouse exit.
+                        </div>
+                    </div>
+
                     <div class="col-md-12">
                         <x-forms.textarea fieldId="purpose" :fieldLabel="__('gatepass::modules.gatePass.purpose')"
                             fieldName="purpose" fieldRequired="true" />

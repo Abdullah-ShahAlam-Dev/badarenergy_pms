@@ -22,6 +22,9 @@ class GatePassRequest extends BaseModel
         'request_number',
         'request_date',
         'type',
+        'is_manual',
+        'requires_battery_approval',
+        'purpose_category',
         'return_type',
         'purpose',
         'from_location',
@@ -37,12 +40,17 @@ class GatePassRequest extends BaseModel
         'remarks',
         'hod_remarks',
         'store_remarks',
-        'security_remarks'
+        'security_remarks',
+        'exit_scanned_at',
+        'exit_scanned_by'
     ];
 
     protected $casts = [
         'request_date' => 'datetime',
         'expected_return_date' => 'datetime',
+        'exit_scanned_at' => 'datetime',
+        'is_manual' => 'boolean',
+        'requires_battery_approval' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime'
@@ -92,4 +100,10 @@ class GatePassRequest extends BaseModel
     {
         return $this->belongsTo(User::class, 'security_id');
     }
+
+    public function exitScannedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'exit_scanned_by');
+    }
 }
+

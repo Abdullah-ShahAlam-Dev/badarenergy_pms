@@ -17,6 +17,7 @@ class StockIntakeVoucher extends BaseModel
         'voucher_number',
         'intake_date',
         'status',
+        'intake_type',
         'remarks',
         'created_by',
     ];

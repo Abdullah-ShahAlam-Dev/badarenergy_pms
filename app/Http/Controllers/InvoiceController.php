@@ -488,11 +488,24 @@ class InvoiceController extends AccountBaseController
             return response()->download(storage_path('app/public/invoice-files') . '/' . $this->invoice->file);
         }
 
-        $pdfOption = $this->domPdfObjectForDownload($id);
-        $pdf = $pdfOption['pdf'];
-        $filename = $pdfOption['fileName'];
+        $this->printView = true;
+        $this->paidAmount = $this->invoice->getPaidAmount();
+        $this->creditNote = 0;
+        if ($this->invoice->credit_note) {
+            $this->creditNote = CreditNotes::where('invoice_id', $id)->select('cn_number')->first();
+        }
+        $this->discount = 0;
+        if ($this->invoice->discount > 0) {
+            if ($this->invoice->discount_type == 'percent') {
+                $this->discount = (($this->invoice->discount / 100) * $this->invoice->sub_total);
+            } else {
+                $this->discount = $this->invoice->discount;
+            }
+        }
+        $this->taxes = [];
+        $this->payments = Payment::with(['offlineMethod'])->where('invoice_id', $this->invoice->id)->where('status', 'complete')->orderBy('paid_on', 'desc')->get();
 
-        return request()->view ? $pdf->stream($filename . '.pdf') : $pdf->download($filename . '.pdf');
+        return view('invoices.pdf.' . $this->invoiceSetting->template, $this->data);
     }
 
     public function domPdfObjectForDownload($id)
@@ -530,28 +543,27 @@ class InvoiceController extends AccountBaseController
         $items = InvoiceItems::whereNotNull('taxes')->where('invoice_id', $this->invoice->id)->get();
 
         foreach ($items as $item) {
+            if ($item->taxes) {
+                $decodedTaxes = json_decode($item->taxes);
+                if (is_array($decodedTaxes) || is_object($decodedTaxes)) {
+                    foreach ($decodedTaxes as $tax) {
+                        $this->tax = InvoiceItems::taxbyid($tax)->first();
 
-            foreach (json_decode($item->taxes) as $tax) {
-                $this->tax = InvoiceItems::taxbyid($tax)->first();
-
-                if (!isset($taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'])) {
-
-                    if ($this->invoice->calculate_tax == 'after_discount' && $this->discount > 0) {
-                        $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = ($item->amount - ($item->amount / $this->invoice->sub_total) * $this->discount) * ($this->tax->rate_percent / 100);
-
-                    }
-                    else {
-                        $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $item->amount * ($this->tax->rate_percent / 100);
-                    }
-
-                }
-                else {
-                    if ($this->invoice->calculate_tax == 'after_discount' && $this->discount > 0) {
-                        $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + (($item->amount - ($item->amount / $this->invoice->sub_total) * $this->discount) * ($this->tax->rate_percent / 100));
-
-                    }
-                    else {
-                        $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + ($item->amount * ($this->tax->rate_percent / 100));
+                        if ($this->tax) {
+                            if (!isset($taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'])) {
+                                if ($this->invoice->calculate_tax == 'after_discount' && $this->discount > 0) {
+                                    $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = ($item->amount - ($item->amount / $this->invoice->sub_total) * $this->discount) * ($this->tax->rate_percent / 100);
+                                } else {
+                                    $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $item->amount * ($this->tax->rate_percent / 100);
+                                }
+                            } else {
+                                if ($this->invoice->calculate_tax == 'after_discount' && $this->discount > 0) {
+                                    $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + (($item->amount - ($item->amount / $this->invoice->sub_total) * $this->discount) * ($this->tax->rate_percent / 100));
+                                } else {
+                                    $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] = $taxList[$this->tax->tax_name . ': ' . $this->tax->rate_percent . '%'] + ($item->amount * ($this->tax->rate_percent / 100));
+                                }
+                            }
+                        }
                     }
                 }
             }

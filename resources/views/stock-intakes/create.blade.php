@@ -18,9 +18,10 @@
                                     <x-forms.select fieldId="shipment_id" fieldLabel="Select Shipment (Optional)"
                                         fieldName="shipment_id" search="true">
                                         <option value="">-- No Linked Shipment --</option>
+                                        <option value="create_new">+ Create New Shipment In This Intake</option>
                                         @foreach ($shipments as $shp)
                                             <option value="{{ $shp->id }}">
-                                                {{ $shp->shipment_number }} (ETA: {{ $shp->eta ? $shp->eta->format(company()->date_format) : '-' }})
+                                                {{ $shp->shipment_number }} (BL: {{ $shp->bill_of_lading ?: 'N/A' }}, Container: {{ $shp->container_number ?: 'N/A' }})
                                             </option>
                                         @endforeach
                                     </x-forms.select>
@@ -44,9 +45,61 @@
                                         fieldPlaceholder="Select Date" />
                                 </div>
 
+                                <!-- Intake Type -->
+                                <div class="col-md-4">
+                                    <x-forms.select fieldId="intake_type" fieldLabel="Intake Type"
+                                        fieldName="intake_type" fieldRequired="true">
+                                        <option value="direct">Direct Intake (Bane-Banaye / Ready-Made)</option>
+                                        <option value="assembly">Assembled Product (Assembly Line Output)</option>
+                                    </x-forms.select>
+                                </div>
+
+                                <!-- INLINE NEW SHIPMENT FORM CARD (COLLAPSIBLE) -->
+                                <div class="col-md-12 d-none mt-2 mb-3" id="new_shipment_card">
+                                    <div class="card bg-light border border-primary rounded p-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="f-15 font-weight-bold text-primary mb-0">
+                                                <i class="fa fa-ship mr-1"></i> Inline New Shipment Details
+                                            </h5>
+                                            <span class="badge badge-primary">Auto Generated Shipment Number</span>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <x-forms.text fieldId="container_number" fieldLabel="Container #" fieldName="container_number" fieldPlaceholder="e.g. MSKU-998811" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <x-forms.text fieldId="bill_of_lading" fieldLabel="Bill of Lading (BL #)" fieldName="bill_of_lading" fieldPlaceholder="e.g. BL-554433" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <x-forms.text fieldId="manufacturing_ref" fieldLabel="OEM Batch / Ref #" fieldName="manufacturing_ref" fieldPlaceholder="e.g. BATCH-2026-01" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <x-forms.select fieldId="shipment_status" fieldLabel="Shipment Status" fieldName="shipment_status">
+                                                    <option value="arrived" selected>Arrived</option>
+                                                    <option value="in_transit">In Transit</option>
+                                                    <option value="customs_clearance">Customs Clearance</option>
+                                                    <option value="dispatched">Dispatched</option>
+                                                </x-forms.select>
+                                            </div>
+                                            <div class="col-md-4 mt-2">
+                                                <x-forms.text fieldId="port_of_origin" fieldLabel="Port of Origin" fieldName="port_of_origin" fieldPlaceholder="e.g. Ningbo, China" />
+                                            </div>
+                                            <div class="col-md-4 mt-2">
+                                                <x-forms.text fieldId="port_of_discharge" fieldLabel="Port of Discharge" fieldName="port_of_discharge" fieldPlaceholder="e.g. Karachi, Pakistan" />
+                                            </div>
+                                            <div class="col-md-4 mt-2">
+                                                <x-forms.datepicker fieldId="eta" fieldLabel="Estimated Arrival (ETA)" fieldName="eta" fieldPlaceholder="Select Date" />
+                                            </div>
+                                            <div class="col-md-12 mt-2">
+                                                <x-forms.textarea fieldId="shipment_remarks" fieldLabel="Shipment Remarks" fieldName="shipment_remarks" fieldPlaceholder="Enter any remarks regarding shipping line, supplier..." />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Remarks -->
                                 <div class="col-lg-12 col-md-12 mt-2">
-                                    <x-forms.textarea fieldId="remarks" fieldLabel="Remarks (Optional)"
+                                    <x-forms.textarea fieldId="remarks" fieldLabel="Intake Remarks (Optional)"
                                         fieldName="remarks"
                                         fieldPlaceholder="Enter any remarks regarding the quality, packaging, or arrival logs...">
                                     </x-forms.textarea>
@@ -129,6 +182,16 @@
         $(document).ready(function() {
             var rowIndex = 0;
             var rowTemplate = $('#item-row-template').html();
+
+            // Toggle inline shipment creation card
+            $('#shipment_id').change(function() {
+                if ($(this).val() === 'create_new') {
+                    $('#new_shipment_card').removeClass('d-none');
+                    dp('#eta');
+                } else {
+                    $('#new_shipment_card').addClass('d-none');
+                }
+            });
 
             // Append initial row on page load
             addRow();

@@ -28,6 +28,7 @@ class StockIntakeService
             $voucher->shipment_id = $data['shipment_id'] ?? null;
             $voucher->warehouse_id = $data['warehouse_id'];
             $voucher->intake_date = $data['intake_date'];
+            $voucher->intake_type = $data['intake_type'] ?? 'direct';
             $voucher->remarks = $data['remarks'] ?? null;
             $voucher->created_by = auth()->id() ?: (\App\Models\User::first() ? \App\Models\User::first()->id : null);
 
@@ -38,13 +39,33 @@ class StockIntakeService
 
             // Insert line items
             foreach ($items as $item) {
+                $batchId = $item['batch_id'] ?? null;
+                $productId = $item['product_id'];
+
+                // If batch_id is empty, check if we should auto-generate a sequential batch number
+                if (empty($batchId)) {
+                    $product = \App\Models\Product::find($productId);
+                    if ($product && (!isset($product->is_serialized) || !$product->is_serialized)) {
+                        $nextBatchNo = \App\Models\ProductBatch::generateNextBatchNumber($companyId, $productId);
+                        $batch = \App\Models\ProductBatch::create([
+                            'company_id' => $companyId,
+                            'product_id' => $productId,
+                            'batch_number' => $nextBatchNo,
+                            'manufacturing_date' => $item['manufacturing_date'] ?? now()->toDateString(),
+                            'expiry_date' => $item['expiry_date'] ?? null,
+                            'supplier_batch' => $item['supplier_batch'] ?? null,
+                        ]);
+                        $batchId = $batch->id;
+                    }
+                }
+
                 StockIntakeItem::create([
                     'intake_voucher_id' => $voucher->id,
-                    'product_id' => $item['product_id'],
+                    'product_id' => $productId,
                     'quantity_declared' => $item['quantity_declared'],
                     'quantity_received' => $item['quantity_received'],
                     'unit_cost' => $item['unit_cost'] ?? 0.00,
-                    'batch_id' => $item['batch_id'] ?? null,
+                    'batch_id' => $batchId,
                 ]);
             }
 

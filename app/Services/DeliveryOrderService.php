@@ -151,6 +151,7 @@ class DeliveryOrderService
                     $invoice->order_id = $order->id;
                     $invoice->company_id = $order->company_id;
                     $invoice->client_id = $order->client_id;
+                    $invoice->warehouse_id = $order->warehouse_id;
                     $invoice->sub_total = $order->sub_total;
                     $invoice->discount = $order->discount;
                     $invoice->discount_type = $order->discount_type;
